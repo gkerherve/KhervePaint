@@ -61,7 +61,10 @@ Everything lives in one `QGraphicsScene`:
   `QGraphicsItem` subclasses defined in `canvas.py` that mix in
   `SnapMixin`, so items snap to the grid both on creation and while
   being moved with the pointer. Circle is an ellipse constrained
-  square. Text items edit inline on double-click.
+  square. Text items edit inline on double-click. A selected line
+  shows `EndpointHandle` children at each end — dragging one moves
+  that endpoint (snapping applies); handles are implementation
+  details and must never be serialised or counted as vector items.
 - **Grid** is drawn in `PaintView.drawForeground` so it never appears
   in PNG exports. Grid size / show / snap live on the scene and
   round-trip through `.kpaint`.

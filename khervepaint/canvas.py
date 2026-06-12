@@ -49,10 +49,78 @@ class SnapMixin:
         return super().itemChange(change, value)
 
 
+HANDLE_SIZE = 10
+
+
+class EndpointHandle(QGraphicsRectItem):
+    """Drag handle pinned to one end of a LineItem.
+
+    Dragging is handled manually (grab on press) instead of via
+    ItemIsMovable so the parent line keeps its selection while the
+    handle is dragged.
+    """
+
+    def __init__(self, line_item: "LineItem", index: int):
+        s = HANDLE_SIZE
+        super().__init__(-s / 2, -s / 2, s, s, line_item)
+        self._line_item = line_item
+        self.index = index
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        self.setPen(QPen(QColor("#2176c7"), 0))
+        self.setBrush(QBrush(QColor("#ffffff")))
+        self.setCursor(Qt.SizeAllCursor)
+        self.setZValue(10)
+        self.hide()
+
+    def mousePressEvent(self, event):
+        # Clicking a non-selectable item cleared the scene selection —
+        # restore it so the handles stay visible during the drag.
+        self._line_item.setSelected(True)
+        event.accept()
+
+    def mouseMoveEvent(self, event):
+        scene_pos = event.scenePos()
+        if self.scene() is not None and self.scene().snap_enabled:
+            scene_pos = self.scene().snap(scene_pos)
+        pos = self._line_item.mapFromScene(scene_pos)
+        self.setPos(pos)
+        self._line_item.endpoint_moved(self.index, pos)
+
+    def mouseReleaseEvent(self, event):
+        if self.scene() is not None:
+            self.scene().changed_by_user.emit()
+        event.accept()
+
+
 class LineItem(SnapMixin, QGraphicsLineItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
+        self._handles = None
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            self._show_handles(bool(value))
+        return super().itemChange(change, value)
+
+    def _show_handles(self, show: bool):
+        if show and self._handles is None:
+            self._handles = (EndpointHandle(self, 0),
+                             EndpointHandle(self, 1))
+        if self._handles is not None:
+            self.sync_handles()
+            for handle in self._handles:
+                handle.setVisible(show)
+
+    def sync_handles(self):
+        if self._handles is not None:
+            self._handles[0].setPos(self.line().p1())
+            self._handles[1].setPos(self.line().p2())
+
+    def endpoint_moved(self, index: int, pos):
+        ln = self.line()
+        (ln.setP1 if index == 0 else ln.setP2)(pos)
+        self.setLine(ln)
 
 
 class RectItem(SnapMixin, QGraphicsRectItem):
