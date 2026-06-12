@@ -17,8 +17,11 @@ the Free Software Foundation, either version 3 of the License, or
 import base64
 import json
 
-from PyQt5.QtCore import QBuffer, QByteArray, QLineF, QRectF, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QImage, QPainter, QPen, QPixmap
+from PyQt5.QtCore import (QBuffer, QByteArray, QLineF, QMarginsF, QRectF,
+                          QSize, QSizeF, Qt)
+from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
+                         QPdfWriter, QPen, QPixmap)
+from PyQt5.QtSvg import QSvgGenerator
 
 from .canvas import (EllipseItem, GroupItem, LineItem, PaintScene, RectItem,
                      TextItem)
@@ -174,3 +177,37 @@ def export_png(scene: PaintScene, path: str):
     painter.end()
     if not image.save(path, "PNG"):
         raise ValueError(f"cannot write image: {path}")
+
+
+def export_svg(scene: PaintScene, path: str):
+    """Render raster + vector layers to an SVG (raster embedded)."""
+    scene.clearSelection()
+    rect = scene.sceneRect()
+    generator = QSvgGenerator()
+    generator.setFileName(path)
+    generator.setSize(QSize(int(rect.width()), int(rect.height())))
+    generator.setViewBox(QRectF(0, 0, rect.width(), rect.height()))
+    generator.setTitle("KhervePaint export")
+    painter = QPainter(generator)
+    painter.setRenderHint(QPainter.Antialiasing)
+    scene.render(painter, source=rect)
+    painter.end()
+
+
+def export_pdf(scene: PaintScene, path: str):
+    """Render to a single-page PDF sized to the canvas (96 dpi)."""
+    scene.clearSelection()
+    rect = scene.sceneRect()
+    writer = QPdfWriter(path)
+    writer.setResolution(96)
+    # Page size is in points (1/72 inch); the canvas is in 96-dpi px.
+    writer.setPageSize(QPageSize(
+        QSizeF(rect.width() * 72 / 96, rect.height() * 72 / 96),
+        QPageSize.Point))
+    writer.setPageMargins(QMarginsF(0, 0, 0, 0))
+    painter = QPainter(writer)
+    painter.setRenderHint(QPainter.Antialiasing)
+    scene.render(painter,
+                 target=QRectF(0, 0, writer.width(), writer.height()),
+                 source=rect)
+    painter.end()

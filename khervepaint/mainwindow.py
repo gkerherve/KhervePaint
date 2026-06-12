@@ -89,8 +89,8 @@ class MainWindow(QMainWindow):
                       self.open_file)
         bar.addAction(icons.icon("mdi.content-save-outline"), "Save",
                       self.save_file)
-        bar.addAction(icons.icon("mdi.export"), "Export PNG",
-                      self.export_png)
+        bar.addAction(icons.icon("mdi.export"), "Export PNG / SVG / PDF",
+                      self.export_file)
         bar.addSeparator()
 
         self._stroke_btn = QToolButton()
@@ -160,7 +160,8 @@ class MainWindow(QMainWindow):
         file_menu.addAction("Save &As...", self.save_file_as,
                             QKeySequence.SaveAs)
         file_menu.addSeparator()
-        file_menu.addAction("&Export PNG...", self.export_png, "Ctrl+E")
+        file_menu.addAction("&Export PNG / SVG / PDF...",
+                            self.export_file, "Ctrl+E")
         file_menu.addSeparator()
         file_menu.addAction("E&xit", self.close, "Ctrl+Q")
 
@@ -302,17 +303,23 @@ class MainWindow(QMainWindow):
         self._path = path
         self.save_file()
 
-    def export_png(self):
+    def export_file(self):
+        exporters = {".png": document.export_png,
+                     ".svg": document.export_svg,
+                     ".pdf": document.export_pdf}
         suggestion = str(Path(self._path).with_suffix(".png")) \
             if self._path else ""
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Export PNG", suggestion, "PNG image (*.png)")
+        path, chosen = QFileDialog.getSaveFileName(
+            self, "Export", suggestion,
+            "PNG image (*.png);;SVG image (*.svg);;PDF document (*.pdf)")
         if not path:
             return
-        if not path.lower().endswith(".png"):
-            path += ".png"
+        ext = Path(path).suffix.lower()
+        if ext not in exporters:
+            ext = "." + chosen.split("*.")[-1].rstrip(")")
+            path += ext
         try:
-            document.export_png(self.scene, path)
+            exporters[ext](self.scene, path)
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not export:\n{exc}")
 

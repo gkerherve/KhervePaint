@@ -45,7 +45,10 @@ into a new module and import.
                        group/ungroup, zoom.
   - `document.py`    — `.kpaint` JSON (de)serialisation: vector items
                        (recursively through groups), raster layer as
-                       base64 PNG; flattened PNG export.
+                       base64 PNG; flattened export to PNG, SVG
+                       (QSvgGenerator, raster embedded) and
+                       single-page PDF (QPdfWriter, page sized to the
+                       canvas at 96 dpi).
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
@@ -99,7 +102,7 @@ backward compatible.
 - Eraser, flood fill, colour picker for the raster layer.
 - Layers panel; raster layer resize/crop.
 - Copy/paste of vector items, including across documents.
-- SVG export of the vector layer.
+- Resize handles on rect/ellipse (lines already have endpoint handles).
 
 ## Undo / redo policy
 

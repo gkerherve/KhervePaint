@@ -13,7 +13,9 @@ One canvas mixes two worlds:
   (Ctrl+G / Ctrl+Shift+G), with a grid overlay and snap-to-grid.
 
 Documents save as `.kpaint` (JSON: vector items + the raster layer
-embedded as base64 PNG) and export as flattened `.png`.
+embedded as base64 PNG) and export as flattened `.png`, `.svg` or
+single-page `.pdf` (Ctrl+E). Selected lines show endpoint handles —
+drag a handle to move just that end of the line.
 
 ## Run
 

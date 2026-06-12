@@ -148,6 +148,41 @@ def test_png_roundtrip(scene, tmp_path):
     assert other.vector_items() == []
 
 
+def test_svg_export(scene, tmp_path):
+    _populated(scene)
+    out = tmp_path / "out.svg"
+    document.export_svg(scene, str(out))
+    text = out.read_text(encoding="utf-8")
+    assert "<svg" in text
+    assert "hello" in text          # text item survives as SVG text
+
+
+def test_pdf_export(scene, tmp_path):
+    _populated(scene)
+    out = tmp_path / "out.pdf"
+    document.export_pdf(scene, str(out))
+    assert out.read_bytes().startswith(b"%PDF")
+
+
+def test_line_endpoint_handles(scene):
+    line = LineItem(QLineF(0, 0, 100, 50))
+    scene.addItem(line)
+    assert line._handles is None
+    line.setSelected(True)
+    assert all(h.isVisible() for h in line._handles)
+    assert line._handles[0].pos() == QPointF(0, 0)
+    assert line._handles[1].pos() == QPointF(100, 50)
+
+    line.endpoint_moved(1, QPointF(200, 80))
+    assert line.line() == QLineF(0, 0, 200, 80)
+
+    line.setSelected(False)
+    assert not any(h.isVisible() for h in line._handles)
+    # Handles are implementation details: not serialised, not listed.
+    assert scene.vector_items() == [line]
+    assert document.item_to_dict(line)["x2"] == 200
+
+
 def test_pencil_paints_raster(scene):
     before = scene.raster_item.pixmap().toImage()
     scene.pen = QPen(QColor("#000000"), 5)
