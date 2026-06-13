@@ -604,6 +604,8 @@ class PaintScene(QGraphicsScene):
             self._sel_handles = None
 
     def _on_selection_changed(self):
+        # Force a repaint so vacated selection outlines never linger.
+        self.update()
         # Drop handles whenever the active single selection goes away
         # (covers clearSelection() before export/fill/save, and
         # rubber-band multi-select).
