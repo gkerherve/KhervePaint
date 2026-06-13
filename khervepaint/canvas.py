@@ -19,7 +19,7 @@ import math
 
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, pyqtSignal
 from PyQt5.QtGui import (QBrush, QColor, QFont, QPainter, QPainterPath,
-                         QPen, QPixmap, QPolygonF, QTextCursor)
+                         QPen, QPixmap, QPolygonF, QTextCursor, QTransform)
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsItemGroup, QGraphicsLineItem,
                              QGraphicsPathItem, QGraphicsPixmapItem,
@@ -32,15 +32,18 @@ POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
 BUCKET = "bucket"
 ARROW, ROUNDRECT = "arrow", "roundrect"
+HALFCIRCLE, QUARTERCIRCLE = "halfcircle", "quartercircle"
 TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR = (
     "triangle", "diamond", "pentagon", "hexagon", "star")
 
 #: Parametric polygons created by dragging a bounding rect.
 POLYGON_KINDS = (TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR)
+#: Parametric arc shapes created by dragging a bounding rect.
+ARC_KINDS = (HALFCIRCLE, QUARTERCIRCLE)
 #: Tools defined by two points (drag start -> end).
 _TWO_POINT_TOOLS = (LINE, ARROW)
 #: Tools defined by a dragged bounding rect.
-_RECT_TOOLS = (RECT, CIRCLE, ELLIPSE, ROUNDRECT) + POLYGON_KINDS
+_RECT_TOOLS = (RECT, CIRCLE, ELLIPSE, ROUNDRECT) + POLYGON_KINDS + ARC_KINDS
 #: Tools that rubber-band a new vector item between press and release.
 _SHAPE_TOOLS = _TWO_POINT_TOOLS + _RECT_TOOLS
 
@@ -236,6 +239,67 @@ class RoundedRectItem(LabelMixin, SnapMixin, QGraphicsPathItem):
         r = min(self._radius, self._rect.width() / 2, self._rect.height() / 2)
         path.addRoundedRect(self._rect, r, r)
         self.setPath(path)
+
+
+def arc_path(kind: str, rect: QRectF, flip_h=False, flip_v=False
+             ) -> QPainterPath:
+    """A half- or quarter-disc filling *rect* (with optional flips)."""
+    r = QRectF(rect)
+    path = QPainterPath()
+    if r.width() <= 0 or r.height() <= 0:
+        return path
+    if kind == HALFCIRCLE:
+        # flat side on the bottom edge, arc bulging up over the top
+        ell = QRectF(r.left(), r.top(), r.width(), r.height() * 2)
+        path.arcMoveTo(ell, 0)
+        path.arcTo(ell, 0, 180)
+        path.closeSubpath()
+    else:                                  # quarter: corner at bottom-left
+        ell = QRectF(r.left() - r.width(), r.top(),
+                     r.width() * 2, r.height() * 2)
+        path.moveTo(r.left(), r.bottom())
+        path.arcTo(ell, 0, 90)
+        path.closeSubpath()
+    if flip_h or flip_v:
+        c = r.center()
+        t = QTransform()
+        t.translate(c.x(), c.y())
+        t.scale(-1 if flip_h else 1, -1 if flip_v else 1)
+        t.translate(-c.x(), -c.y())
+        path = t.map(path)
+    return path
+
+
+class ArcShapeItem(LabelMixin, SnapMixin, QGraphicsPathItem):
+    """Half- or quarter-circle, parametric on a bounding rect plus
+    horizontal/vertical flip flags (so it can be mirrored and still
+    round-trip)."""
+
+    def __init__(self, rect=None, kind=HALFCIRCLE):
+        super().__init__()
+        self.setFlags(_ITEM_FLAGS)
+        self._rect = QRectF(rect) if rect else QRectF()
+        self.kind = kind
+        self.flip_h = False
+        self.flip_v = False
+        self._rebuild()
+
+    def rect(self) -> QRectF:
+        return QRectF(self._rect)
+
+    def set_rect(self, rect: QRectF):
+        self._rect = QRectF(rect)
+        self._rebuild()
+
+    def mirror(self, horizontal=True):
+        if horizontal:
+            self.flip_h = not self.flip_h
+        else:
+            self.flip_v = not self.flip_v
+        self._rebuild()
+
+    def _rebuild(self):
+        self.setPath(arc_path(self.kind, self._rect, self.flip_h, self.flip_v))
 
 
 class PathItem(SnapMixin, QGraphicsPathItem):
@@ -694,15 +758,49 @@ class PaintScene(QGraphicsScene):
             return RoundedRectItem(QRectF())
         if tool in POLYGON_KINDS:
             return PolygonItem(kind=tool)
+        if tool in ARC_KINDS:
+            return ArcShapeItem(kind=tool)
         return EllipseItem(QRectF())          # RECT/CIRCLE/ELLIPSE ellipses
 
     @staticmethod
     def _apply_rect(item, rect: QRectF):
         """Resize a rect-defined item during the creation drag."""
-        if isinstance(item, (PolygonItem, RoundedRectItem)):
+        if isinstance(item, (PolygonItem, RoundedRectItem, ArcShapeItem)):
             item.set_rect(rect)
         else:
             item.setRect(rect)
+
+    # ------------------------------------------------------------ mirror
+    def mirror_selection(self, horizontal: bool = True):
+        """Flip the selected items in place (about their own centres)."""
+        items = [i for i in self.selectedItems() if i.parentItem() is None]
+        for item in items:
+            self._mirror_item(item, horizontal)
+        if items:
+            self.changed_by_user.emit()
+
+    def _mirror_item(self, item, horizontal: bool):
+        if isinstance(item, ArcShapeItem):
+            item.mirror(horizontal)
+            return
+        if isinstance(item, ImageItem):
+            item.setPixmap(item.pixmap().transformed(
+                QTransform().scale(-1 if horizontal else 1,
+                                   1 if horizontal else -1)))
+            return
+        c = item.boundingRect().center()
+        t = QTransform()
+        t.translate(c.x(), c.y())
+        t.scale(-1 if horizontal else 1, 1 if horizontal else -1)
+        t.translate(-c.x(), -c.y())
+        if isinstance(item, PolygonItem):
+            item.setPolygon(t.map(item.polygon()))
+        elif isinstance(item, LineItem):       # includes arrow
+            ln = item.line()
+            item.setLine(QLineF(t.map(ln.p1()), t.map(ln.p2())))
+        elif isinstance(item, PathItem):
+            item.setPath(t.map(item.path()))
+        # rect/ellipse/rounded-rect/text are symmetric: nothing to do
 
     def _shape_rect(self, pos: QPointF) -> QRectF:
         """Rect from drag start to *pos*; the circle tool stays square."""

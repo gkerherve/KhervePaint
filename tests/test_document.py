@@ -766,6 +766,70 @@ def test_save_marks_history_clean(window, tmp_path):
     assert win._undo_stack.isClean() is True
 
 
+def test_arc_shapes_roundtrip(scene, tmp_path):
+    from khervepaint.canvas import ArcShapeItem
+    half = ArcShapeItem(QRectF(0, 0, 40, 40), kind="halfcircle")
+    half.setPos(10, 10)
+    scene.addItem(half)
+    quarter = ArcShapeItem(QRectF(0, 0, 30, 30), kind="quartercircle")
+    quarter.flip_h = True
+    quarter._rebuild()
+    scene.addItem(quarter)
+
+    path = tmp_path / "arcs.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    arcs = [i for i in other.vector_items() if isinstance(i, ArcShapeItem)]
+    assert len(arcs) == 2
+    h = next(a for a in arcs if a.kind == "halfcircle")
+    assert h.rect() == QRectF(0, 0, 40, 40)
+    assert h.pos() == QPointF(10, 10)
+    q = next(a for a in arcs if a.kind == "quartercircle")
+    assert q.flip_h is True
+
+
+def test_arc_shape_roundtrip_svg(scene, tmp_path):
+    from khervepaint import svgio
+    from khervepaint.canvas import ArcShapeItem
+    arc = ArcShapeItem(QRectF(0, 0, 50, 50), kind="halfcircle")
+    scene.addItem(arc)
+    path = tmp_path / "arc.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    loaded = [i for i in other.vector_items() if isinstance(i, ArcShapeItem)]
+    assert len(loaded) == 1
+    assert loaded[0].kind == "halfcircle"
+
+
+def test_mirror_polygon_flips_geometry(scene):
+    from PyQt5.QtGui import QPolygonF
+    tri = PolygonItem(
+        QPolygonF([QPointF(0, 0), QPointF(40, 0), QPointF(0, 30)]),
+        kind="triangle")
+    scene.addItem(tri)
+    before = [(p.x(), p.y()) for p in tri.polygon()]
+    tri.setSelected(True)
+    scene.mirror_selection(horizontal=True)
+    after = [(p.x(), p.y()) for p in tri.polygon()]
+    assert after != before
+    # mirroring twice returns to the original geometry
+    scene.mirror_selection(horizontal=True)
+    again = [(round(p.x(), 3), round(p.y(), 3)) for p in tri.polygon()]
+    assert again == [(round(x, 3), round(y, 3)) for x, y in before]
+
+
+def test_mirror_arc_flips_flag(scene):
+    from khervepaint.canvas import ArcShapeItem
+    arc = ArcShapeItem(QRectF(0, 0, 40, 40), kind="quartercircle")
+    scene.addItem(arc)
+    arc.setSelected(True)
+    assert arc.flip_h is False
+    scene.mirror_selection(horizontal=True)
+    assert arc.flip_h is True
+
+
 def test_explode_hexagon_to_six_lines(scene):
     hexa = PolygonItem(kind="hexagon")
     hexa.set_rect(QRectF(0, 0, 60, 60))

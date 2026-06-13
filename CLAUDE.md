@@ -96,10 +96,11 @@ Everything lives in one `QGraphicsScene`:
   - Two-point tools (`_TWO_POINT_TOOLS`): line and arrow (`ArrowItem`
     extends `LineItem` and draws a filled head).
   - Rect-defined tools (`_RECT_TOOLS`): rect, circle (square ellipse),
-    ellipse, rounded rect (`RoundedRectItem`, real `radius`), and the
+    ellipse, rounded rect (`RoundedRectItem`, real `radius`), the
     parametric polygons (triangle/diamond/pentagon/hexagon/star) via
-    one `PolygonItem` whose geometry is always a vertex list — so an
-    SVG-imported `<polygon>` and a star behave identically.
+    one `PolygonItem` whose geometry is always a vertex list, and the
+    parametric arcs (`ArcShapeItem`: half/quarter circle on a bounding
+    rect + flip flags). All are box-resizable.
   - Text (`TextItem`) edits inline on double-click.
   - `ImageItem` is a movable bitmap on the vector layer (paste); crop
     it via the right-click menu (`crop.py`).
@@ -125,6 +126,10 @@ Everything lives in one `QGraphicsScene`:
 - **Explode** (`explode_selection`, Ctrl+Shift+E / context menu) breaks a
   polygon/rect into its edge `LineItem`s (in scene coords, inheriting the
   pen), left selected so a side can be deleted and the rest regrouped.
+- **Mirror** (`mirror_selection`, Ctrl+Shift+H / J, context menu, toolbar)
+  flips selected items in place about their centre by flipping geometry
+  (polygon/line/path), the pixmap (image) or the arc flip flags — so the
+  flip persists through save rather than relying on a transform.
 - **Bucket fill** (`fill.py`) renders the scene and flood-fills the
   region enclosed by shape outlines from the click point. Output mode
   (raster paint vs editable vector path) is chosen per-fill via the

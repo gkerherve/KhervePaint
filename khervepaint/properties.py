@@ -300,6 +300,10 @@ def build_context_menu(window, item) -> QMenu:
     menu.addAction(icons.icon("mdi.delete-outline"), "Delete",
                    window.scene.delete_selection)
     menu.addSeparator()
+    menu.addAction(icons.icon("mdi.flip-horizontal"), "Flip horizontal",
+                   lambda: window.scene.mirror_selection(True))
+    menu.addAction(icons.icon("mdi.flip-vertical"), "Flip vertical",
+                   lambda: window.scene.mirror_selection(False))
     menu.addAction(icons.icon("mdi.arrange-bring-to-front"), "Bring to front",
                    lambda: window.reorder_item(item, "front"))
     menu.addAction(icons.icon("mdi.arrange-send-to-back"), "Send to back",

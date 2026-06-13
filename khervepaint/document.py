@@ -23,9 +23,10 @@ from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
                          QPainterPath, QPdfWriter, QPen, QPixmap, QPolygonF)
 from PyQt5.QtSvg import QSvgGenerator
 
-from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
-                     LineItem, PaintScene, PathItem, PolygonItem, RectItem,
-                     RoundedRectItem, TextItem, center_origin)
+from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
+                     ImageItem, LabelMixin, LineItem, PaintScene, PathItem,
+                     PolygonItem, RectItem, RoundedRectItem, TextItem,
+                     center_origin)
 
 FORMAT_VERSION = 2
 
@@ -129,6 +130,14 @@ def item_to_dict(item) -> dict:
                 "brush": _brush_to_dict(item.brush()), "radius": item.radius(),
                 "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(),
                 **_label_to_dict(item), **common}
+    if isinstance(item, ArcShapeItem):
+        r = item.rect()
+        return {"type": "arc", "kind": item.kind,
+                "pen": _pen_to_dict(item.pen()),
+                "brush": _brush_to_dict(item.brush()),
+                "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(),
+                "flipH": item.flip_h, "flipV": item.flip_v,
+                **_label_to_dict(item), **common}
     if isinstance(item, PolygonItem):
         return {"type": "polygon", "pen": _pen_to_dict(item.pen()),
                 "brush": _brush_to_dict(item.brush()), "kind": item.kind,
@@ -178,6 +187,14 @@ def item_from_dict(d: dict):
     elif kind == "roundrect":
         item = RoundedRectItem(QRectF(d["x"], d["y"], d["w"], d["h"]),
                                d.get("radius", 12))
+        item.setPen(_pen_from_dict(d.get("pen", {})))
+        item.setBrush(_brush_from_dict(d.get("brush")))
+    elif kind == "arc":
+        item = ArcShapeItem(QRectF(d["x"], d["y"], d["w"], d["h"]),
+                            kind=d.get("kind", "halfcircle"))
+        item.flip_h = d.get("flipH", False)
+        item.flip_v = d.get("flipV", False)
+        item._rebuild()
         item.setPen(_pen_from_dict(d.get("pen", {})))
         item.setBrush(_brush_from_dict(d.get("brush")))
     elif kind == "polygon":

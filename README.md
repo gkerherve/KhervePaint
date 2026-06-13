@@ -48,9 +48,14 @@ rectangle/ellipse. **Double-click** a shape to **rotate** it about its
 own centre. Right-click for the context menu (edit properties,
 duplicate, order, group).
 
+The **Shapes** dropdown includes rounded rectangle, triangle, diamond,
+pentagon, hexagon, star and **half / quarter circles**.
+
 **Explode** (Ctrl+Shift+E, or the right-click menu) breaks a polygon or
 rectangle into its separate edge lines — so you can delete or edit one
-side, then select the rest and regroup (Ctrl+G).
+side, then select the rest and regroup (Ctrl+G). **Flip horizontal /
+vertical** (Ctrl+Shift+H / J, right-click, or toolbar) mirrors the
+selected shapes in place.
 
 Shapes can hold a **centred text label** (set it in the shape's
 properties), and images can be **cropped** — right-click an image →

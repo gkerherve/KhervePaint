@@ -28,8 +28,8 @@ from PyQt5.QtGui import QBrush, QColor, QPen, QPolygonF
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsLineItem, QGraphicsRectItem)
 
-from .canvas import (EllipseItem, LineItem, PolygonItem, RectItem,
-                     RoundedRectItem, center_origin)
+from .canvas import (ArcShapeItem, EllipseItem, LineItem, PolygonItem,
+                     RectItem, RoundedRectItem, center_origin)
 
 HANDLE_SIZE = 9
 RESIZE, ROTATE = "resize", "rotate"
@@ -120,7 +120,8 @@ def _kind_of(item, mode: str) -> str:
         return "line"
     if isinstance(item, PolygonItem):
         return "polygon"
-    if isinstance(item, (RectItem, EllipseItem, RoundedRectItem)):
+    if isinstance(item, (RectItem, EllipseItem, RoundedRectItem,
+                         ArcShapeItem)):
         return "box"
     return "scale"
 

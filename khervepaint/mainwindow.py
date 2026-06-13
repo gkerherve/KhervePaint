@@ -20,9 +20,10 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
 
 from . import APP_NAME, __version__, document, icons, svgio
 from .undo import SnapshotCommand
-from .canvas import (ARROW, BUCKET, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE,
-                     PENCIL, PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT,
-                     TRIANGLE, ImageItem, PaintScene, PaintView)
+from .canvas import (ARROW, BUCKET, CIRCLE, DIAMOND, ELLIPSE, HALFCIRCLE,
+                     HEXAGON, LINE, PENCIL, PENTAGON, POINTER, QUARTERCIRCLE,
+                     RECT, ROUNDRECT, STAR, TEXT, TRIANGLE, ImageItem,
+                     PaintScene, PaintView)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -55,6 +56,8 @@ SHAPE_TOOLS = [
     (PENTAGON, "mdi.pentagon-outline", "Pentagon"),
     (HEXAGON, "mdi.hexagon-outline", "Hexagon"),
     (STAR, "mdi.star-outline", "Star"),
+    (HALFCIRCLE, "mdi.circle-half-full", "Half circle"),
+    (QUARTERCIRCLE, "mdi.circle-slice-2", "Quarter circle"),
 ]
 
 
@@ -229,6 +232,10 @@ class MainWindow(QMainWindow):
                       self.scene.ungroup_selection)
         bar.addAction(icons.icon("mdi.arrow-expand-all"),
                       "Explode to lines", self.scene.explode_selection)
+        bar.addAction(icons.icon("mdi.flip-horizontal"), "Flip horizontal",
+                      lambda: self.scene.mirror_selection(True))
+        bar.addAction(icons.icon("mdi.flip-vertical"), "Flip vertical",
+                      lambda: self.scene.mirror_selection(False))
         bar.addAction(icons.icon("mdi.delete-outline"), "Delete",
                       self.scene.delete_selection)
 
@@ -273,6 +280,13 @@ class MainWindow(QMainWindow):
                             "Ctrl+Shift+G")
         edit_menu.addAction("E&xplode to lines", self.scene.explode_selection,
                             "Ctrl+Shift+E")
+        edit_menu.addSeparator()
+        edit_menu.addAction("Flip &Horizontal",
+                            lambda: self.scene.mirror_selection(True),
+                            "Ctrl+Shift+H")
+        edit_menu.addAction("Flip &Vertical",
+                            lambda: self.scene.mirror_selection(False),
+                            "Ctrl+Shift+J")
 
         view_menu = m.addMenu("&View")
         view_menu.addAction(self._grid_act)

@@ -33,9 +33,10 @@ from PyQt5.QtCore import QBuffer, QByteArray, QLineF, QPointF, QRectF, Qt
 from PyQt5.QtGui import (QBrush, QColor, QFont, QPainterPath, QPen, QPixmap,
                          QPolygonF, QTransform)
 
-from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
-                     LineItem, PaintScene, PathItem, PolygonItem, RectItem,
-                     RoundedRectItem, TextItem, center_origin)
+from .canvas import (ARC_KINDS, ArcShapeItem, ArrowItem, EllipseItem,
+                     GroupItem, ImageItem, LabelMixin, LineItem, PaintScene,
+                     PathItem, PolygonItem, RectItem, RoundedRectItem,
+                     TextItem, center_origin)
 from .document import cmds_to_painterpath, painterpath_to_cmds
 
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -176,6 +177,18 @@ def _item_to_element(parent, item):
         el.set("points", pts)
         if item.kind and item.kind != "polygon":
             el.set(_kp("kind"), item.kind)
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+    elif isinstance(item, ArcShapeItem):
+        el = ET.SubElement(parent, _svg("path"))
+        el.set("d", painterpath_to_d(item.path()))
+        r = item.rect()
+        el.set(_kp("kind"), item.kind)
+        el.set(_kp("ax"), f"{r.x():g}"); el.set(_kp("ay"), f"{r.y():g}")
+        el.set(_kp("aw"), f"{r.width():g}"); el.set(_kp("ah"), f"{r.height():g}")
+        if item.flip_h:
+            el.set(_kp("flip-h"), "1")
+        if item.flip_v:
+            el.set(_kp("flip-v"), "1")
         _set_stroke(el, item.pen()); _set_fill(el, item.brush())
     elif isinstance(item, PathItem):
         el = ET.SubElement(parent, _svg("path"))
@@ -466,6 +479,15 @@ def _build_leaf(el, total: QTransform, style: dict):
         return _baked_path(path, total, style)
 
     if tag == "path":
+        kind = el.get(_kp("kind"))
+        if kind in ARC_KINDS and simple:
+            r = QRectF(float(el.get(_kp("ax"), 0)), float(el.get(_kp("ay"), 0)),
+                       float(el.get(_kp("aw"), 0)), float(el.get(_kp("ah"), 0)))
+            item = ArcShapeItem(r, kind=kind)
+            item.flip_h = el.get(_kp("flip-h")) == "1"
+            item.flip_v = el.get(_kp("flip-v")) == "1"
+            item._rebuild()
+            return _finalise(_styled(item, style), total, style)
         local = _path_from_d(el.get("d", ""))
         if simple:
             item = PathItem(local)
