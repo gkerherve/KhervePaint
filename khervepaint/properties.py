@@ -311,4 +311,7 @@ def build_context_menu(window, item) -> QMenu:
     else:
         menu.addAction(icons.icon("mdi.group"), "Group selection",
                        window.scene.group_selection)
+    if isinstance(item, (PolygonItem, RectItem, RoundedRectItem)):
+        menu.addAction(icons.icon("mdi.arrow-expand-all"),
+                       "Explode to lines", window.scene.explode_selection)
     return menu

@@ -451,6 +451,56 @@ class PaintScene(QGraphicsScene):
             self.removeItem(item)
         self.changed_by_user.emit()
 
+    def explode_selection(self):
+        """Break selected polygons/rectangles into their individual edge
+        lines, so a single side can be deleted or edited (then the rest
+        regrouped with Ctrl+G). The new lines are left selected."""
+        self.clear_handles()
+        new_lines = []
+        originals = []
+        for item in self.selectedItems():
+            segments = self._explode_item(item)
+            if segments:
+                originals.append(item)
+                new_lines.extend(segments)
+        if not new_lines:
+            return
+        for item in originals:
+            self.removeItem(item)
+        self.clearSelection()
+        for line in new_lines:
+            self.addItem(line)
+            line.setSelected(True)
+        self.changed_by_user.emit()
+
+    @staticmethod
+    def _explode_points(item):
+        """The shape's outline vertices in scene coordinates, or None if
+        the item has no straight edges to explode."""
+        if isinstance(item, PolygonItem):
+            poly = item.polygon()
+            return [item.mapToScene(poly.at(i)) for i in range(poly.count())]
+        if isinstance(item, (RectItem, RoundedRectItem)):
+            r = item.rect()
+            return [item.mapToScene(r.topLeft()),
+                    item.mapToScene(r.topRight()),
+                    item.mapToScene(r.bottomRight()),
+                    item.mapToScene(r.bottomLeft())]
+        return None
+
+    def _explode_item(self, item):
+        points = self._explode_points(item)
+        if not points or len(points) < 2:
+            return None
+        pen = QPen(item.pen())
+        segments = []
+        n = len(points)
+        for i in range(n):                 # closed outline: last -> first
+            line = LineItem(QLineF(points[i], points[(i + 1) % n]))
+            line.setPen(pen)
+            segments.append(line)
+        return segments
+
     # ------------------------------------------------------------ handles
     def clear_handles(self):
         if self._sel_handles is not None:

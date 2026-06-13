@@ -766,6 +766,69 @@ def test_save_marks_history_clean(window, tmp_path):
     assert win._undo_stack.isClean() is True
 
 
+def test_explode_hexagon_to_six_lines(scene):
+    hexa = PolygonItem(kind="hexagon")
+    hexa.set_rect(QRectF(0, 0, 60, 60))
+    hexa.setPos(20, 20)
+    scene.addItem(hexa)
+    hexa.setSelected(True)
+    scene.explode_selection()
+
+    items = scene.vector_items()
+    lines = [i for i in items if isinstance(i, LineItem)]
+    assert len(lines) == 6                       # one per edge
+    assert not any(isinstance(i, PolygonItem) for i in items)
+    assert all(ln.isSelected() for ln in lines)  # ready to regroup
+    # the edges form a closed loop: every endpoint is shared by exactly
+    # two segments (each hexagon vertex is met by its two adjacent edges)
+    from collections import Counter
+    endpoints = Counter()
+    for ln in lines:
+        endpoints[(round(ln.line().x1()), round(ln.line().y1()))] += 1
+        endpoints[(round(ln.line().x2()), round(ln.line().y2()))] += 1
+    assert len(endpoints) == 6                    # six distinct vertices
+    assert all(count == 2 for count in endpoints.values())
+
+
+def test_explode_rect_to_four_lines(scene):
+    rect = RectItem(QRectF(0, 0, 40, 30))
+    rect.setPen(QPen(QColor("#336699"), 3))
+    scene.addItem(rect)
+    rect.setSelected(True)
+    scene.explode_selection()
+    lines = [i for i in scene.vector_items() if isinstance(i, LineItem)]
+    assert len(lines) == 4
+    assert lines[0].pen().color().name() == "#336699"   # pen inherited
+
+
+def test_explode_then_regroup_after_delete(window):
+    s = window.scene
+    tri = PolygonItem(kind="triangle")
+    tri.set_rect(QRectF(0, 0, 30, 30))
+    s.addItem(tri)
+    s.changed_by_user.emit()                     # baseline
+
+    s.vector_items()[0].setSelected(True)
+    s.explode_selection()
+    lines = [i for i in s.vector_items() if isinstance(i, LineItem)]
+    assert len(lines) == 3
+    # remove one edge, regroup the remaining two
+    lines[0].setSelected(False)
+    s.removeItem(lines[0])
+    for ln in lines[1:]:
+        ln.setSelected(True)
+    s.group_selection()
+    assert any(isinstance(i, GroupItem) for i in s.vector_items())
+
+    # explode is undoable: undo regroup, delete, and explode
+    window._undo_stack.undo()                    # undo the explode chain step
+    # after enough undos the triangle returns
+    while window._undo_stack.canUndo() and not any(
+            isinstance(i, PolygonItem) for i in s.vector_items()):
+        window._undo_stack.undo()
+    assert any(isinstance(i, PolygonItem) for i in s.vector_items())
+
+
 def test_recent_files_list(window):
     window._clear_recent()
     window._add_recent("/docs/first.svg")

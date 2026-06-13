@@ -227,6 +227,8 @@ class MainWindow(QMainWindow):
                       self.scene.group_selection)
         bar.addAction(icons.icon("mdi.ungroup"), "Ungroup",
                       self.scene.ungroup_selection)
+        bar.addAction(icons.icon("mdi.arrow-expand-all"),
+                      "Explode to lines", self.scene.explode_selection)
         bar.addAction(icons.icon("mdi.delete-outline"), "Delete",
                       self.scene.delete_selection)
 
@@ -269,6 +271,8 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("&Group", self.scene.group_selection, "Ctrl+G")
         edit_menu.addAction("&Ungroup", self.scene.ungroup_selection,
                             "Ctrl+Shift+G")
+        edit_menu.addAction("E&xplode to lines", self.scene.explode_selection,
+                            "Ctrl+Shift+E")
 
         view_menu = m.addMenu("&View")
         view_menu.addAction(self._grid_act)
