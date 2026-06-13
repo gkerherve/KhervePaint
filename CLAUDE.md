@@ -57,6 +57,10 @@ into a new module and import.
                        property of one item (transform, stroke, fill,
                        geometry, text/font). Double-click a non-text
                        item also opens it.
+  - `fill.py`        — bucket flood-fill: renders the scene, scanline-
+                       floods the enclosed region from the click, and
+                       applies it either as raster paint or an editable
+                       vector `PathItem` (behind the bounding shapes).
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
@@ -89,6 +93,11 @@ Everything lives in one `QGraphicsScene`:
   round-trip through `.kpaint`.
 - **Groups** use `QGraphicsItemGroup` via a snap-aware subclass;
   Ctrl+G / Ctrl+Shift+G.
+- **Bucket fill** (`fill.py`) renders the scene and flood-fills the
+  region enclosed by shape outlines from the click point. Output mode
+  (raster paint vs editable vector path) is chosen per-fill via the
+  toolbar selector; the scene flag is `bucket_vector`. Fills between
+  several shapes work whenever their outlines enclose the area.
 
 ## Document format
 

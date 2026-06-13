@@ -430,6 +430,49 @@ def test_reorder_persists_through_svg(app, tmp_path):
     assert isinstance(items[-1], RectItem)   # bottom is now on top
 
 
+def _enclosed_rect_scene():
+    """A 200x200 scene with a hollow black rectangle outline (50..150)."""
+    scene = PaintScene(200, 200)
+    box = RectItem(QRectF(50, 50, 100, 100))
+    box.setPen(QPen(QColor("#000000"), 4))
+    box.setBrush(QBrush(Qt.NoBrush))
+    scene.addItem(box)
+    return scene
+
+
+def test_bucket_raster_fills_only_enclosed(app):
+    from khervepaint import fill
+    scene = _enclosed_rect_scene()
+    fill.bucket_fill(scene, QPointF(100, 100), QColor("#ff0000"),
+                     vector=False)
+    pm = scene.raster_item.pixmap().toImage()
+    assert pm.pixelColor(100, 100).name() == "#ff0000"   # inside filled
+    assert pm.pixelColor(10, 10).name() == "#ffffff"      # outside untouched
+
+
+def test_bucket_vector_creates_path_behind(app):
+    from khervepaint import fill
+    from khervepaint.canvas import PathItem
+    scene = _enclosed_rect_scene()
+    box = scene.vector_items()[0]
+    item = fill.bucket_fill(scene, QPointF(100, 100), QColor("#00aa00"),
+                            vector=True)
+    assert isinstance(item, PathItem)
+    assert item.brush().color().name() == "#00aa00"
+    assert item.zValue() < box.zValue()                   # sits behind
+    # the traced fill covers the interior click point
+    assert item.path().contains(QPointF(100, 100))
+
+
+def test_bucket_unenclosed_leaks_to_edge(app):
+    from khervepaint import fill
+    scene = _enclosed_rect_scene()
+    # Clicking the surrounding white floods out to the canvas border.
+    runs, edge = fill.flood_runs(
+        fill.render_scene_image(scene), 10, 10, fill.DEFAULT_TOLERANCE)
+    assert edge is True
+
+
 def test_pencil_paints_raster(scene):
     before = scene.raster_item.pixmap().toImage()
     scene.pen = QPen(QColor("#000000"), 5)

@@ -13,15 +13,15 @@ from pathlib import Path
 
 from PyQt5.QtCore import QMimeData, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
-from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication,
+from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
                              QMenu, QMessageBox, QSpinBox, QToolBar,
                              QToolButton)
 
 from . import APP_NAME, __version__, document, icons, svgio
-from .canvas import (ARROW, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE, PENCIL,
-                     PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT, TRIANGLE,
-                     ImageItem, PaintScene, PaintView)
+from .canvas import (ARROW, BUCKET, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE,
+                     PENCIL, PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT,
+                     TRIANGLE, ImageItem, PaintScene, PaintView)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -33,6 +33,7 @@ MIME_ITEMS = "application/x-khervepaint-items"
 TOOLS = [
     (POINTER, "mdi.cursor-default-outline", "Pointer", "V"),
     (PENCIL, "mdi.pencil", "Pencil", "P"),
+    (BUCKET, "mdi.format-color-fill", "Bucket fill", "B"),
     (LINE, "mdi.vector-line", "Line", "L"),
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
     (RECT, "mdi.rectangle-outline", "Rectangle", "R"),
@@ -152,11 +153,21 @@ class MainWindow(QMainWindow):
         self._fill_btn.clicked.connect(self.pick_fill_color)
         bar.addWidget(self._fill_btn)
 
-        self._fill_act = QAction(icons.icon("mdi.format-color-fill"),
-                                 "Fill shapes", self)
+        self._fill_act = QAction(icons.icon("mdi.shape"),
+                                 "Fill new shapes", self)
         self._fill_act.setCheckable(True)
+        self._fill_act.setToolTip("Give newly drawn shapes a fill")
         self._fill_act.toggled.connect(self._set_fill_enabled)
         bar.addAction(self._fill_act)
+
+        self._bucket_mode = QComboBox()
+        self._bucket_mode.addItems(["Bucket: Raster", "Bucket: Vector"])
+        self._bucket_mode.setToolTip(
+            "Bucket fill output — paint into the raster layer, or create "
+            "an editable vector path")
+        self._bucket_mode.currentIndexChanged.connect(
+            lambda i: setattr(self.scene, "bucket_vector", i == 1))
+        bar.addWidget(self._bucket_mode)
 
         bar.addWidget(QLabel(" Width "))
         self._width_spin = QSpinBox()

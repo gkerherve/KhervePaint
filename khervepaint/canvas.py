@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
 # Tool identifiers.
 POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
+BUCKET = "bucket"
 ARROW, ROUNDRECT = "arrow", "roundrect"
 TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR = (
     "triangle", "diamond", "pentagon", "hexagon", "star")
@@ -308,6 +309,7 @@ class PaintScene(QGraphicsScene):
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.fill_color = QColor("#4aa3ff")
         self.fill_enabled = False
+        self.bucket_vector = False        # bucket output: raster vs vector
 
         self.grid_size = 20
         self.snap_enabled = True
@@ -400,6 +402,12 @@ class PaintScene(QGraphicsScene):
         focus = self.focusItem()
         if isinstance(focus, TextItem) and focus.textInteractionFlags():
             super().mousePressEvent(event)
+            return
+
+        if self.tool == BUCKET:
+            from . import fill
+            fill.bucket_fill(self, event.scenePos(), self.fill_color,
+                             vector=self.bucket_vector)
             return
 
         pos = self._tool_pos(event.scenePos())

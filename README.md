@@ -32,11 +32,18 @@ python KhervePaint.py
 | --- | --- |
 | V | Pointer (select / move / rubber-band) |
 | P | Pencil (freehand, paints the raster layer) |
+| B | Bucket (flood-fill an enclosed region) |
 | L | Line |
 | R | Rectangle |
 | C | Circle |
 | E | Ellipse |
 | T | Text (click to place, double-click to edit) |
+
+The **bucket** fills a region enclosed by shape outlines — click inside
+the area walled off by two or more shapes and it fills with the current
+fill colour. The toolbar selector chooses whether each fill is painted
+into the raster layer or becomes an editable vector path behind the
+shapes.
 
 Ctrl+wheel zooms; the grid and snap toggles live in the toolbar and
 the View menu, with selectable themes under View > Theme.
