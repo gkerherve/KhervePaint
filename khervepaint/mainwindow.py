@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication,
                              QMenu, QMessageBox, QSpinBox, QToolBar,
                              QToolButton)
 
-from . import APP_NAME, __version__, document, icons
+from . import APP_NAME, __version__, document, icons, svgio
 from .canvas import (ARROW, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE, PENCIL,
                      PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT, TRIANGLE,
                      ImageItem, PaintScene, PaintView)
@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
                       self.open_file)
         bar.addAction(icons.icon("mdi.content-save-outline"), "Save",
                       self.save_file)
-        bar.addAction(icons.icon("mdi.export"), "Export PNG / SVG / PDF",
+        bar.addAction(icons.icon("mdi.export"), "Export PNG / PDF",
                       self.export_file)
         bar.addSeparator()
 
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction("Save &As...", self.save_file_as,
                             QKeySequence.SaveAs)
         file_menu.addSeparator()
-        file_menu.addAction("&Export PNG / SVG / PDF...",
+        file_menu.addAction("&Export PNG / PDF...",
                             self.export_file, "Ctrl+E")
         file_menu.addSeparator()
         file_menu.addAction("E&xit", self.close, "Ctrl+Q")
@@ -375,23 +375,25 @@ class MainWindow(QMainWindow):
             return
         path, _ = QFileDialog.getOpenFileName(
             self, "Open", "",
-            "All supported (*.kpaint *.png);;"
+            "All supported (*.svg *.kpaint *.png);;SVG image (*.svg);;"
             "KhervePaint document (*.kpaint);;PNG image (*.png)")
         if not path:
             return
+        ext = Path(path).suffix.lower()
         try:
-            if path.lower().endswith(".png"):
+            if ext == ".png":
                 document.open_png(self.scene, path)
                 self._path = None          # PNG opens as a new document
+            elif ext == ".svg":
+                svgio.load_svg(self.scene, path)
+                self._path = path
             else:
                 document.load_kpaint(self.scene, path)
                 self._path = path
-                self._grid_act.setChecked(self.scene.show_grid)
-                self._snap_act.setChecked(self.scene.snap_enabled)
-                self._grid_spin.setValue(self.scene.grid_size)
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not open:\n{exc}")
             return
+        self._sync_grid_controls()
         self._dirty = False
         self.view.zoom_reset()
         self._update_title()
@@ -401,7 +403,10 @@ class MainWindow(QMainWindow):
             self.save_file_as()
             return
         try:
-            document.save_kpaint(self.scene, self._path)
+            if Path(self._path).suffix.lower() == ".kpaint":
+                document.save_kpaint(self.scene, self._path)
+            else:
+                svgio.save_svg(self.scene, self._path)
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not save:\n{exc}")
             return
@@ -409,29 +414,35 @@ class MainWindow(QMainWindow):
         self._update_title()
 
     def save_file_as(self):
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save As", "", "KhervePaint document (*.kpaint)")
+        path, chosen = QFileDialog.getSaveFileName(
+            self, "Save As", "",
+            "SVG image (*.svg);;KhervePaint document (*.kpaint)")
         if not path:
             return
-        if not path.lower().endswith(".kpaint"):
-            path += ".kpaint"
+        if Path(path).suffix.lower() not in (".svg", ".kpaint"):
+            path += ".kpaint" if "kpaint" in chosen else ".svg"
         self._path = path
         self.save_file()
 
+    def _sync_grid_controls(self):
+        self._grid_act.setChecked(self.scene.show_grid)
+        self._snap_act.setChecked(self.scene.snap_enabled)
+        self._grid_spin.setValue(self.scene.grid_size)
+
     def export_file(self):
+        # Flattened raster exports; editable SVG is handled by Save.
         exporters = {".png": document.export_png,
-                     ".svg": document.export_svg,
                      ".pdf": document.export_pdf}
         suggestion = str(Path(self._path).with_suffix(".png")) \
             if self._path else ""
         path, chosen = QFileDialog.getSaveFileName(
             self, "Export", suggestion,
-            "PNG image (*.png);;SVG image (*.svg);;PDF document (*.pdf)")
+            "PNG image (*.png);;PDF document (*.pdf)")
         if not path:
             return
         ext = Path(path).suffix.lower()
         if ext not in exporters:
-            ext = "." + chosen.split("*.")[-1].rstrip(")")
+            ext = ".pdf" if "pdf" in chosen else ".png"
             path += ext
         try:
             exporters[ext](self.scene, path)

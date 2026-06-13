@@ -45,10 +45,13 @@ into a new module and import.
                        group/ungroup, zoom.
   - `document.py`    — `.kpaint` JSON (de)serialisation: vector items
                        (recursively through groups), raster layer as
-                       base64 PNG; flattened export to PNG, SVG
-                       (QSvgGenerator, raster embedded) and
+                       base64 PNG; flattened export to PNG and
                        single-page PDF (QPdfWriter, page sized to the
-                       canvas at 96 dpi).
+                       canvas at 96 dpi). Owns the path<->command-list
+                       helpers used by both .kpaint and svgio.
+  - `svgio.py`       — default format: editable SVG writer + parser
+                       (breaks groups/paths/transforms into native
+                       items). Imports the path helpers from document.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
@@ -84,13 +87,23 @@ Everything lives in one `QGraphicsScene`:
 
 ## Document format
 
-`.kpaint` is JSON: `{"format": "kpaint", "version": 1, "width",
-"height", "grid": {"size", "show", "snap"}, "raster":
+**SVG is the default save/open format** (`svgio.py`): Save writes
+editable, standard SVG (one element per native item, raster embedded
+as `<image>`, grid settings + polygon kind under a private `kp:`
+namespace) and Open parses SVG back into editable items. Opening an
+external SVG breaks it into native items — `<g>` → `GroupItem`
+(ungroupable), primitives → their items, `<path>` / scaled-or-sheared
+elements → `PathItem`. Save also offers `.kpaint`; Export (Ctrl+E)
+writes flattened PNG/PDF.
+
+`.kpaint` is the JSON native format: `{"format": "kpaint", "version":
+1, "width", "height", "grid": {"size", "show", "snap"}, "raster":
 "<base64 PNG>", "items": [...]}`. Each item dict has `"type"`
-(`line|rect|ellipse|text|group`), position, geometry, pen/brush;
-groups nest `"children"`. When an item gains new persisted
-properties, bump `FORMAT_VERSION` in `document.py` and keep loading
-backward compatible.
+(`line|arrow|rect|roundrect|ellipse|polygon|path|text|image|group`),
+position, geometry, pen/brush, opacity, rotation; groups nest
+`"children"`. When an item gains new persisted properties, bump
+`FORMAT_VERSION` in `document.py`, keep loading backward compatible,
+**and** extend `svgio.py` so the property survives SVG round-trips.
 
 ## UI conventions
 

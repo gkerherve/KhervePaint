@@ -12,10 +12,12 @@ One canvas mixes two worlds:
   drawn on top, selected and moved with the pointer tool, groupable
   (Ctrl+G / Ctrl+Shift+G), with a grid overlay and snap-to-grid.
 
-Documents save as `.kpaint` (JSON: vector items + the raster layer
-embedded as base64 PNG) and export as flattened `.png`, `.svg` or
-single-page `.pdf` (Ctrl+E). Selected lines show endpoint handles —
-drag a handle to move just that end of the line.
+Documents **save and open as editable SVG by default** — an opened SVG
+is broken into editable items (groups ungroup; paths and transformed
+elements become editable path items). `.kpaint` (lossless JSON) is also
+offered, and Export (Ctrl+E) writes flattened `.png` or single-page
+`.pdf`. Selected lines show endpoint handles — drag a handle to move
+just that end of the line.
 
 ## Run
 
