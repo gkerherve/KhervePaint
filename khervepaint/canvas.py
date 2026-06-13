@@ -730,6 +730,9 @@ class PaintView(QGraphicsView):
         self.setMouseTracking(True)
         self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        # Repaint the whole viewport on every change: partial updates
+        # leave stale selection dashes / handles behind after deselect.
+        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
 
     def _pick_item(self, view_pos):
         """Top-level editable item under *view_pos*, or None.
