@@ -11,7 +11,7 @@ the Free Software Foundation, either version 3 of the License, or
 import json
 from pathlib import Path
 
-from PyQt5.QtCore import QMimeData, QSize, Qt
+from PyQt5.QtCore import QMimeData, QSettings, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
@@ -29,6 +29,10 @@ ICON_SIZE = QSize(32, 32)
 
 #: Custom clipboard MIME carrying serialised KhervePaint items.
 MIME_ITEMS = "application/x-khervepaint-items"
+
+#: QSettings scope (shared with the theme settings) and recent-files key.
+SETTINGS = ("Kherve", "KhervePaint")
+MAX_RECENT = 10
 
 #: (tool id, mdi icon, label, shortcut)
 TOOLS = [
@@ -234,6 +238,8 @@ class MainWindow(QMainWindow):
         file_menu = m.addMenu("&File")
         file_menu.addAction("&New", self.new_document, QKeySequence.New)
         file_menu.addAction("&Open...", self.open_file, QKeySequence.Open)
+        self._recent_menu = file_menu.addMenu("Open &Recent")
+        self._recent_menu.aboutToShow.connect(self._rebuild_recent_menu)
         file_menu.addAction("&Save", self.save_file, QKeySequence.Save)
         file_menu.addAction("Save &As...", self.save_file_as,
                             QKeySequence.SaveAs)
@@ -443,6 +449,18 @@ class MainWindow(QMainWindow):
             "KhervePaint document (*.kpaint);;PNG image (*.png)")
         if not path:
             return
+        self._load_document(path)
+
+    def open_recent(self, path: str):
+        if not Path(path).exists():
+            self._remove_recent(path)
+            QMessageBox.warning(self, APP_NAME, f"File not found:\n{path}")
+            return
+        if not self._confirm_discard():
+            return
+        self._load_document(path)
+
+    def _load_document(self, path: str) -> bool:
         ext = Path(path).suffix.lower()
         try:
             if ext == ".png":
@@ -456,11 +474,49 @@ class MainWindow(QMainWindow):
                 self._path = path
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not open:\n{exc}")
-            return
+            return False
         self._sync_grid_controls()
         self._reset_history()
         self.view.zoom_reset()
         self._update_title()
+        self._add_recent(path)
+        return True
+
+    # ------------------------------------------------------------ recent
+    def _recent_files(self):
+        value = QSettings(*SETTINGS).value("recentFiles", [])
+        if isinstance(value, str):
+            value = [value]
+        return [p for p in (value or []) if p]
+
+    def _add_recent(self, path: str):
+        path = str(path)
+        files = [p for p in self._recent_files() if p != path]
+        files.insert(0, path)
+        del files[MAX_RECENT:]
+        QSettings(*SETTINGS).setValue("recentFiles", files)
+
+    def _remove_recent(self, path: str):
+        files = [p for p in self._recent_files() if p != str(path)]
+        QSettings(*SETTINGS).setValue("recentFiles", files)
+
+    def _clear_recent(self):
+        QSettings(*SETTINGS).setValue("recentFiles", [])
+
+    def _rebuild_recent_menu(self):
+        self._recent_menu.clear()
+        files = self._recent_files()
+        if not files:
+            empty = self._recent_menu.addAction("No recent files")
+            empty.setEnabled(False)
+            return
+        for i, path in enumerate(files):
+            act = self._recent_menu.addAction(f"&{i + 1}  {Path(path).name}")
+            act.setToolTip(path)
+            act.triggered.connect(
+                lambda _=False, p=path: self.open_recent(p))
+        self._recent_menu.addSeparator()
+        self._recent_menu.addAction("Clear list", self._clear_recent)
 
     def save_file(self):
         if self._path is None:
@@ -475,6 +531,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, APP_NAME, f"Could not save:\n{exc}")
             return
         self._undo_stack.setClean()
+        self._add_recent(self._path)
         self._update_title()
 
     def change_canvas_size(self):

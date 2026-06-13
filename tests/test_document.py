@@ -766,6 +766,34 @@ def test_save_marks_history_clean(window, tmp_path):
     assert win._undo_stack.isClean() is True
 
 
+def test_recent_files_list(window):
+    window._clear_recent()
+    window._add_recent("/docs/first.svg")
+    window._add_recent("/docs/second.kpaint")
+    assert window._recent_files()[0] == "/docs/second.kpaint"  # newest first
+    # re-adding moves to front and dedupes
+    window._add_recent("/docs/first.svg")
+    files = window._recent_files()
+    assert files[0] == "/docs/first.svg"
+    assert len(files) == 2
+    window._remove_recent("/docs/first.svg")
+    assert "/docs/first.svg" not in window._recent_files()
+    window._clear_recent()
+    assert window._recent_files() == []
+
+
+def test_save_adds_to_recent(window, tmp_path):
+    window._clear_recent()
+    s = window.scene
+    s.addItem(RectItem(QRectF(0, 0, 10, 10)))
+    s.changed_by_user.emit()
+    path = str(tmp_path / "doc.svg")
+    window._path = path
+    window.save_file()
+    assert path in window._recent_files()
+    window._clear_recent()
+
+
 def test_resize_canvas_keeps_items(scene):
     rect = RectItem(QRectF(0, 0, 30, 20))
     rect.setPos(15, 15)

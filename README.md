@@ -27,6 +27,8 @@ pip install -r requirements.txt
 python KhervePaint.py
 ```
 
+Recently opened/saved files are listed under **File ▸ Open Recent**.
+
 ## Tools
 
 | Key | Tool |

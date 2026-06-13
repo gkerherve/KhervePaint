@@ -107,6 +107,7 @@ class CropSession:
         if ir.width() < 1 or ir.height() < 1:
             self.cancel()
             return
+        old_rect = self.image.sceneBoundingRect()
         cropped = self.image.pixmap().copy(ir)
         self.remove()
         # Shift the item so the kept region stays where it was (assumes
@@ -117,6 +118,9 @@ class CropSession:
         self.image.setPos(self.image.x() + ir.x(), self.image.y() + ir.y())
         self.scene.snap_enabled = prev_snap
         self.image.setPixmap(cropped)
+        # The pixmap shrank: repaint the old (larger) area too, or the
+        # cropped-off strip leaves stale pixels on screen.
+        self.scene.update(old_rect.united(self.image.sceneBoundingRect()))
         self.scene.changed_by_user.emit()
 
     def cancel(self):
