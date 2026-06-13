@@ -8,3 +8,5 @@ venv/
 build/
 dist/
 *.kpaint.bak
+Test/
+scratch/
