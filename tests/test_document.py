@@ -820,6 +820,22 @@ def test_mirror_polygon_flips_geometry(scene):
     assert again == [(round(x, 3), round(y, 3)) for x, y in before]
 
 
+def test_no_default_selection_rectangle(app):
+    from PyQt5.QtWidgets import QStyle, QStyleOptionGraphicsItem
+    from PyQt5.QtGui import QImage, QPainter
+    s = PaintScene(100, 100)
+    rect = RectItem(QRectF(0, 0, 40, 30))
+    s.addItem(rect)
+    image = QImage(100, 100, QImage.Format_ARGB32)
+    painter = QPainter(image)
+    option = QStyleOptionGraphicsItem()
+    option.state = QStyle.State_Selected           # pretend it's selected
+    rect.paint(painter, option)
+    painter.end()
+    # NoSelMixin strips the selected state, so Qt draws no dashed box
+    assert not (option.state & QStyle.State_Selected)
+
+
 def test_mirror_group_swaps_sides(scene):
     left = RectItem(QRectF(0, 0, 20, 20))
     left.setPos(20, 40)

@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsPathItem, QGraphicsPixmapItem,
                              QGraphicsPolygonItem, QGraphicsRectItem,
                              QGraphicsScene, QGraphicsTextItem,
-                             QGraphicsView)
+                             QGraphicsView, QStyle)
 
 # Tool identifiers.
 POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
@@ -50,6 +50,16 @@ _SHAPE_TOOLS = _TWO_POINT_TOOLS + _RECT_TOOLS
 _ITEM_FLAGS = (QGraphicsItem.ItemIsSelectable
                | QGraphicsItem.ItemIsMovable
                | QGraphicsItem.ItemSendsGeometryChanges)
+
+
+class NoSelMixin:
+    """Suppress Qt's built-in dashed selection rectangle. Selection is
+    shown by our own handles, and the default dashes were lingering on
+    screen after deselect (especially for grouped items)."""
+
+    def paint(self, painter, option, widget=None):
+        option.state = option.state & ~QStyle.State_Selected
+        super().paint(painter, option, widget)
 
 
 class SnapMixin:
@@ -124,19 +134,19 @@ class LabelMixin:
         self._paint_label(painter)
 
 
-class LineItem(SnapMixin, QGraphicsLineItem):
+class LineItem(NoSelMixin, SnapMixin, QGraphicsLineItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
 
 
-class RectItem(LabelMixin, SnapMixin, QGraphicsRectItem):
+class RectItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsRectItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
 
 
-class EllipseItem(LabelMixin, SnapMixin, QGraphicsEllipseItem):
+class EllipseItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsEllipseItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
@@ -196,7 +206,7 @@ def polygon_for_kind(kind: str, rect: QRectF) -> QPolygonF:
     return QPolygonF([QPointF(x, y) for x, y in pts])
 
 
-class PolygonItem(LabelMixin, SnapMixin, QGraphicsPolygonItem):
+class PolygonItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPolygonItem):
     """Free or parametric polygon. *kind* is kept for display only;
     geometry is always the vertex list, so SVG-imported polygons and
     triangle/star/etc. behave identically."""
@@ -210,7 +220,7 @@ class PolygonItem(LabelMixin, SnapMixin, QGraphicsPolygonItem):
         self.setPolygon(polygon_for_kind(self.kind, rect))
 
 
-class RoundedRectItem(LabelMixin, SnapMixin, QGraphicsPathItem):
+class RoundedRectItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPathItem):
     """A rectangle with rounded corners (radius is a real property)."""
 
     def __init__(self, rect=None, radius: float = 12.0):
@@ -270,7 +280,7 @@ def arc_path(kind: str, rect: QRectF, flip_h=False, flip_v=False
     return path
 
 
-class ArcShapeItem(LabelMixin, SnapMixin, QGraphicsPathItem):
+class ArcShapeItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPathItem):
     """Half- or quarter-circle, parametric on a bounding rect plus
     horizontal/vertical flip flags (so it can be mirrored and still
     round-trip)."""
@@ -302,7 +312,7 @@ class ArcShapeItem(LabelMixin, SnapMixin, QGraphicsPathItem):
         self.setPath(arc_path(self.kind, self._rect, self.flip_h, self.flip_v))
 
 
-class PathItem(SnapMixin, QGraphicsPathItem):
+class PathItem(NoSelMixin, SnapMixin, QGraphicsPathItem):
     """An arbitrary vector path — the import target for SVG <path> and
     for elements carrying a non-trivial (scaled/sheared) transform."""
 
@@ -311,7 +321,7 @@ class PathItem(SnapMixin, QGraphicsPathItem):
         self.setFlags(_ITEM_FLAGS)
 
 
-class ImageItem(SnapMixin, QGraphicsPixmapItem):
+class ImageItem(NoSelMixin, SnapMixin, QGraphicsPixmapItem):
     """A pasted/placed bitmap living on the vector layer (movable)."""
 
     def __init__(self, pixmap=None):
@@ -320,13 +330,13 @@ class ImageItem(SnapMixin, QGraphicsPixmapItem):
         self.setTransformationMode(Qt.SmoothTransformation)
 
 
-class GroupItem(SnapMixin, QGraphicsItemGroup):
+class GroupItem(NoSelMixin, SnapMixin, QGraphicsItemGroup):
     def __init__(self):
         super().__init__()
         self.setFlags(_ITEM_FLAGS)
 
 
-class TextItem(SnapMixin, QGraphicsTextItem):
+class TextItem(NoSelMixin, SnapMixin, QGraphicsTextItem):
     """Vector text — double-click to edit inline."""
 
     def __init__(self, text: str = "Text"):

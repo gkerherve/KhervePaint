@@ -110,6 +110,10 @@ Everything lives in one `QGraphicsScene`:
   its own centre via `center_origin()` (transform origin = bounding-
   rect centre) — never the scene origin, or far-from-origin shapes
   swing off-screen.
+- **No default selection rectangle**: every item mixes in `NoSelMixin`,
+  whose `paint` strips `State_Selected` before the base paint, so Qt's
+  dashed selection box is never drawn (it lingered after deselect,
+  especially for grouped items). Selection feedback is the handles.
 - **Selection handles** (`handles.py`) — selecting one item shows
   resize handles (line/arrow endpoints, polygon vertices, rect/ellipse
   bounding box, or uniform-scale corners for path/image/text/group);
