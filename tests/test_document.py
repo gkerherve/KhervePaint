@@ -766,6 +766,40 @@ def test_save_marks_history_clean(window, tmp_path):
     assert win._undo_stack.isClean() is True
 
 
+def test_resize_canvas_keeps_items(scene):
+    rect = RectItem(QRectF(0, 0, 30, 20))
+    rect.setPos(15, 15)
+    scene.addItem(rect)
+    scene.resize_canvas(1000, 700)
+    assert scene.sceneRect().width() == 1000
+    assert scene.sceneRect().height() == 700
+    assert scene.raster_item.pixmap().width() == 1000
+    assert scene.vector_items()[0].pos() == QPointF(15, 15)   # unmoved
+
+
+def test_fit_to_content_shrinks_and_shifts(scene):
+    rect = RectItem(QRectF(0, 0, 40, 30))
+    rect.setPos(200, 150)                       # far from the origin
+    scene.addItem(rect)
+    scene.fit_to_content(selection_only=False, margin=10)
+    # canvas now snug around the drawing plus the margin
+    assert abs(scene.sceneRect().width() - (40 + 20)) <= 1
+    assert abs(scene.sceneRect().height() - (30 + 20)) <= 1
+    # the rect sits at the margin (within the pen half-width)
+    assert abs(scene.vector_items()[0].sceneBoundingRect().left() - 10) <= 1
+    assert abs(scene.vector_items()[0].sceneBoundingRect().top() - 10) <= 1
+
+
+def test_resize_canvas_is_undoable(window):
+    s = window.scene
+    s.addItem(RectItem(QRectF(0, 0, 10, 10)))
+    s.changed_by_user.emit()                    # baseline (the add)
+    s.resize_canvas(1234, 567)
+    assert s.sceneRect().width() == 1234
+    window._undo_stack.undo()                   # undo the resize
+    assert s.sceneRect().width() == 800         # back to the default
+
+
 def test_pencil_creates_vector_stroke(scene):
     from khervepaint.canvas import PathItem
     scene.pen = QPen(QColor("#000000"), 4)

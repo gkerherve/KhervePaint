@@ -238,6 +238,9 @@ class MainWindow(QMainWindow):
         file_menu.addAction("Save &As...", self.save_file_as,
                             QKeySequence.SaveAs)
         file_menu.addSeparator()
+        file_menu.addAction("&Drawing Size...", self.change_canvas_size,
+                            "Ctrl+Shift+P")
+        file_menu.addSeparator()
         file_menu.addAction("&Export PNG / PDF...",
                             self.export_file, "Ctrl+E")
         file_menu.addSeparator()
@@ -473,6 +476,22 @@ class MainWindow(QMainWindow):
             return
         self._undo_stack.setClean()
         self._update_title()
+
+    def change_canvas_size(self):
+        from .canvassize import CanvasSizeDialog
+        rect = self.scene.sceneRect()
+        has_sel = any(i.parentItem() is None
+                      for i in self.scene.selectedItems())
+        dlg = CanvasSizeDialog(
+            self, current=(rect.width(), rect.height()), has_selection=has_sel)
+        if not dlg.exec_():
+            return
+        choice = dlg.result_value()
+        if choice[0] == "fit":
+            self.scene.fit_to_content(selection_only=choice[1])
+        else:
+            self.scene.resize_canvas(choice[1], choice[2])
+        self.view.zoom_reset()
 
     def save_file_as(self):
         path, chosen = QFileDialog.getSaveFileName(

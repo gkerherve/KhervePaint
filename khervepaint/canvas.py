@@ -344,6 +344,53 @@ class PaintScene(QGraphicsScene):
         self.raster_item.setPixmap(pixmap)
         self.setSceneRect(0, 0, pixmap.width(), pixmap.height())
 
+    def resize_canvas(self, width: int, height: int):
+        """Change the canvas size, keeping all content where it is
+        (raster content is preserved at the top-left, padded white)."""
+        width, height = max(1, int(width)), max(1, int(height))
+        old = self.raster_item.pixmap()
+        new = QPixmap(width, height)
+        new.fill(Qt.white)
+        painter = QPainter(new)
+        painter.drawPixmap(0, 0, old)
+        painter.end()
+        self.raster_item.setPixmap(new)
+        self.setSceneRect(0, 0, width, height)
+        self.changed_by_user.emit()
+
+    def fit_to_content(self, selection_only: bool = False, margin: int = 10):
+        """Resize the canvas to the bounding box of the drawing (or the
+        selection), shifting all content so it sits at *margin* from the
+        top-left. Both layers move together, so nothing is lost."""
+        chosen = [i for i in self.selectedItems() if i.parentItem() is None] \
+            if selection_only else []
+        items = chosen or self.vector_items()
+        rect = QRectF()
+        for item in items:
+            rect = rect.united(item.sceneBoundingRect())
+        if rect.isEmpty():
+            return
+        dx = int(round(margin - rect.left()))
+        dy = int(round(margin - rect.top()))
+        width = int(math.ceil(rect.width())) + 2 * margin
+        height = int(math.ceil(rect.height())) + 2 * margin
+
+        was_snap = self.snap_enabled
+        self.snap_enabled = False
+        for item in self.vector_items():
+            item.moveBy(dx, dy)
+        self.snap_enabled = was_snap
+
+        old = self.raster_item.pixmap()
+        new = QPixmap(width, height)
+        new.fill(Qt.white)
+        painter = QPainter(new)
+        painter.drawPixmap(dx, dy, old)
+        painter.end()
+        self.raster_item.setPixmap(new)
+        self.setSceneRect(0, 0, width, height)
+        self.changed_by_user.emit()
+
     def vector_items(self):
         """Top-level vector items, bottom to top (excludes the raster)."""
         return [i for i in sorted(self.items(), key=lambda i: i.zValue())
