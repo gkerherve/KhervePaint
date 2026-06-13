@@ -251,6 +251,28 @@ def test_line_endpoint_handles(scene):
     assert document.item_to_dict(line)["x2"] == 200
 
 
+def test_copy_paste_and_duplicate(app):
+    from khervepaint.mainwindow import MainWindow
+    win = MainWindow()
+    rect = RectItem(QRectF(0, 0, 30, 20))
+    rect.setPos(5, 5)
+    win.scene.addItem(rect)
+    rect.setSelected(True)
+
+    win.copy_selection()
+    before = len(win.scene.vector_items())
+    win.paste()
+    items = win.scene.vector_items()
+    assert len(items) == before + 1
+    pasted = [i for i in items if i is not rect][0]
+    assert pasted.pos() == QPointF(25, 25)        # offset by 20
+
+    win.scene.clearSelection()
+    rect.setSelected(True)
+    win.duplicate_selection()
+    assert len(win.scene.vector_items()) == before + 2
+
+
 def test_pencil_paints_raster(scene):
     before = scene.raster_item.pixmap().toImage()
     scene.pen = QPen(QColor("#000000"), 5)

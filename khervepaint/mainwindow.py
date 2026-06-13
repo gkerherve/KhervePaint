@@ -8,9 +8,10 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 """
 
+import json
 from pathlib import Path
 
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QMimeData, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
@@ -20,10 +21,13 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication,
 from . import APP_NAME, __version__, document, icons
 from .canvas import (ARROW, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE, PENCIL,
                      PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT, TRIANGLE,
-                     PaintScene, PaintView)
+                     ImageItem, PaintScene, PaintView)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
+
+#: Custom clipboard MIME carrying serialised KhervePaint items.
+MIME_ITEMS = "application/x-khervepaint-items"
 
 #: (tool id, mdi icon, label, shortcut)
 TOOLS = [
@@ -209,6 +213,11 @@ class MainWindow(QMainWindow):
         file_menu.addAction("E&xit", self.close, "Ctrl+Q")
 
         edit_menu = m.addMenu("&Edit")
+        edit_menu.addAction("Cu&t", self.cut_selection, QKeySequence.Cut)
+        edit_menu.addAction("&Copy", self.copy_selection, QKeySequence.Copy)
+        edit_menu.addAction("&Paste", self.paste, QKeySequence.Paste)
+        edit_menu.addAction("D&uplicate", self.duplicate_selection, "Ctrl+D")
+        edit_menu.addSeparator()
         edit_menu.addAction("Select &All", self._select_all,
                             QKeySequence.SelectAll)
         edit_menu.addAction("&Delete", self.scene.delete_selection,
@@ -266,6 +275,69 @@ class MainWindow(QMainWindow):
     def _select_all(self):
         for item in self.scene.vector_items():
             item.setSelected(True)
+
+    # ------------------------------------------------------------ clipboard
+    def _selected_top_items(self):
+        return [i for i in self.scene.selectedItems()
+                if i.parentItem() is None]
+
+    def copy_selection(self):
+        items = self._selected_top_items()
+        if not items:
+            return
+        payload = json.dumps([document.item_to_dict(i) for i in items])
+        mime = QMimeData()
+        mime.setData(MIME_ITEMS, payload.encode("utf-8"))
+        QApplication.clipboard().setMimeData(mime)
+
+    def cut_selection(self):
+        self.copy_selection()
+        if self._selected_top_items():
+            self.scene.delete_selection()
+
+    def duplicate_selection(self):
+        items = self._selected_top_items()
+        if not items:
+            return
+        dicts = [document.item_to_dict(i) for i in items]
+        self._spawn_items(dicts, offset=20)
+
+    def paste(self):
+        mime = QApplication.clipboard().mimeData()
+        if mime.hasFormat(MIME_ITEMS):
+            dicts = json.loads(bytes(mime.data(MIME_ITEMS)).decode("utf-8"))
+            self._spawn_items(dicts, offset=20)
+        elif mime.hasImage():
+            image = QApplication.clipboard().image()
+            pixmap = QPixmap.fromImage(image)
+            if pixmap.isNull():
+                return
+            item = ImageItem(pixmap)
+            item.setPos(self._view_centre())
+            self._place_new(item)
+
+    def _spawn_items(self, dicts, offset: float):
+        """Recreate serialised *dicts*, offset, select them as the paste."""
+        self.scene.clearSelection()
+        new_items = []
+        for d in dicts:
+            item = document.item_from_dict(d)
+            item.moveBy(offset, offset)
+            self.scene.addItem(item)
+            item.setSelected(True)
+            new_items.append(item)
+        if new_items:
+            self.scene.changed_by_user.emit()
+        return new_items
+
+    def _place_new(self, item):
+        self.scene.clearSelection()
+        self.scene.addItem(item)
+        item.setSelected(True)
+        self.scene.changed_by_user.emit()
+
+    def _view_centre(self):
+        return self.view.mapToScene(self.view.viewport().rect().center())
 
     def pick_stroke_color(self):
         color = QColorDialog.getColor(self.scene.pen.color(), self,
