@@ -45,6 +45,12 @@ rectangle/ellipse. **Double-click** a shape to **rotate** it about its
 own centre. Right-click for the context menu (edit properties,
 duplicate, order, group).
 
+Shapes can hold a **centred text label** (set it in the shape's
+properties), and images can be **cropped** — right-click an image →
+*Crop image*, drag the handles, then Enter to apply (Esc cancels). The
+grid control sets the number of **divisions** across the canvas, so a
+higher number means a finer grid.
+
 The **bucket** fills a region enclosed by shape outlines — click inside
 the area walled off by two or more shapes and it fills with the current
 fill colour. The toolbar selector chooses whether each fill is painted

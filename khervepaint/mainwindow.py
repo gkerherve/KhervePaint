@@ -366,6 +366,12 @@ class MainWindow(QMainWindow):
         if PropertiesDialog(item, self).exec_():
             self.scene.changed_by_user.emit()
 
+    def crop_image(self, item):
+        self.scene.begin_crop(item)
+        self.view.setFocus()
+        self.statusBar().showMessage(
+            "Crop: drag the handles, then Enter to apply or Esc to cancel")
+
     def reorder_item(self, item, where: str):
         """Move *item* in front of / behind every other vector item."""
         others = [i for i in self.scene.vector_items() if i is not item]

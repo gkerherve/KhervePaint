@@ -322,6 +322,7 @@ class PaintScene(QGraphicsScene):
 
         self._sel_handles = None        # SelectionHandles for active item
         self._rotate_target = None      # item currently in rotate mode
+        self._crop = None               # active CropSession, if any
         self.selectionChanged.connect(self._on_selection_changed)
 
         self.new_document(width, height)
@@ -438,6 +439,27 @@ class PaintScene(QGraphicsScene):
         self.clearSelection()
         item.setSelected(True)
         self.refresh_handles(mode=ROTATE, item=item)
+
+    # ------------------------------------------------------------ cropping
+    def crop_active(self) -> bool:
+        return self._crop is not None
+
+    def begin_crop(self, image):
+        from .crop import CropSession
+        self.cancel_crop()
+        self.clear_handles()
+        self.clearSelection()
+        self._crop = CropSession(self, image)
+
+    def apply_crop(self):
+        if self._crop is not None:
+            self._crop.apply()
+            self._crop = None
+
+    def cancel_crop(self):
+        if self._crop is not None:
+            self._crop.cancel()
+            self._crop = None
 
     # ------------------------------------------------------------ tools
     def mousePressEvent(self, event):
@@ -662,3 +684,13 @@ class PaintView(QGraphicsView):
     def mouseMoveEvent(self, event):
         self.cursor_moved.emit(self.mapToScene(event.pos()))
         super().mouseMoveEvent(event)
+
+    def keyPressEvent(self, event):
+        if self.scene().crop_active():
+            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+                self.scene().apply_crop()
+                return
+            if event.key() == Qt.Key_Escape:
+                self.scene().cancel_crop()
+                return
+        super().keyPressEvent(event)

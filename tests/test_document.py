@@ -592,6 +592,43 @@ def test_properties_dialog_label(app):
     assert poly.label_font().pointSize() == 22
 
 
+def test_crop_session_applies(app):
+    from PyQt5.QtGui import QPixmap
+    from khervepaint.crop import CropSession
+    scene = PaintScene(200, 200)
+    pm = QPixmap(40, 30)
+    pm.fill(QColor("#00ff00"))
+    img = ImageItem(pm)
+    img.setPos(10, 10)
+    scene.addItem(img)
+
+    session = CropSession(scene, img)
+    session.rect = QRectF(5, 4, 20, 15)
+    session.apply()
+    assert img.pixmap().width() == 20
+    assert img.pixmap().height() == 15
+    # the kept region stays in place: pos shifts by the crop offset
+    assert img.pos() == QPointF(15, 14)
+
+
+def test_scene_crop_flow(app):
+    from PyQt5.QtGui import QPixmap
+    scene = PaintScene(200, 200)
+    pm = QPixmap(50, 50)
+    pm.fill(QColor("#3366cc"))
+    img = ImageItem(pm)
+    scene.addItem(img)
+
+    scene.begin_crop(img)
+    assert scene.crop_active() is True
+    scene._crop.rect = QRectF(0, 0, 10, 10)
+    scene.apply_crop()
+    assert scene.crop_active() is False
+    assert img.pixmap().width() == 10
+    # crop overlay items are gone (only the image remains as a vector item)
+    assert scene.vector_items() == [img]
+
+
 def test_pencil_paints_raster(scene):
     before = scene.raster_item.pixmap().toImage()
     scene.pen = QPen(QColor("#000000"), 5)

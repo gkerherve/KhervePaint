@@ -64,6 +64,9 @@ into a new module and import.
   - `handles.py`     — `SelectionHandles`: resize handles per item type
                        and a rotate knob (double-click). `Handle`-marked
                        items, excluded from serialisation/picking.
+  - `crop.py`        — `CropSession`: interactive image crop overlay
+                       (dim mask + frame + handles); Enter applies,
+                       Esc cancels. Right-click an image → Crop image.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
@@ -86,7 +89,10 @@ Everything lives in one `QGraphicsScene`:
     one `PolygonItem` whose geometry is always a vertex list — so an
     SVG-imported `<polygon>` and a star behave identically.
   - Text (`TextItem`) edits inline on double-click.
-  - `ImageItem` is a movable bitmap on the vector layer (paste).
+  - `ImageItem` is a movable bitmap on the vector layer (paste); crop
+    it via the right-click menu (`crop.py`).
+  - Rect/ellipse/rounded-rect/polygon also carry an optional centred
+    text **label** (`LabelMixin`) edited from their properties dialog.
   Every item also round-trips opacity and rotation, and rotates about
   its own centre via `center_origin()` (transform origin = bounding-
   rect centre) — never the scene origin, or far-from-origin shapes
