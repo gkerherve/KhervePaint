@@ -820,6 +820,32 @@ def test_mirror_polygon_flips_geometry(scene):
     assert again == [(round(x, 3), round(y, 3)) for x, y in before]
 
 
+def test_mirror_group_swaps_sides(scene):
+    left = RectItem(QRectF(0, 0, 20, 20))
+    left.setPos(20, 40)
+    right = RectItem(QRectF(0, 0, 20, 20))
+    right.setPos(120, 40)
+    scene.addItem(left)
+    scene.addItem(right)
+    left.setSelected(True)
+    right.setSelected(True)
+    scene.group_selection()
+    group = scene.vector_items()[0]
+
+    lc0 = left.sceneBoundingRect().center().x()
+    rc0 = right.sceneBoundingRect().center().x()
+    assert lc0 < rc0                              # left starts on the left
+
+    scene.clearSelection()
+    group.setSelected(True)
+    scene.mirror_selection(horizontal=True)
+    assert left.sceneBoundingRect().center().x() > \
+        right.sceneBoundingRect().center().x()    # sides swapped
+
+    scene.mirror_selection(horizontal=True)       # flip back
+    assert abs(left.sceneBoundingRect().center().x() - lc0) < 1
+
+
 def test_mirror_arc_flips_flag(scene):
     from khervepaint.canvas import ArcShapeItem
     arc = ArcShapeItem(QRectF(0, 0, 40, 40), kind="quartercircle")

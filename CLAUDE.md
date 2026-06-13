@@ -132,7 +132,11 @@ Everything lives in one `QGraphicsScene`:
 - **Mirror** (`mirror_selection`, Ctrl+Shift+H / J, context menu, toolbar)
   flips selected items in place about their centre by flipping geometry
   (polygon/line/path), the pixmap (image) or the arc flip flags — so the
-  flip persists through save rather than relying on a transform.
+  flip persists through save rather than relying on a transform. A
+  **group** flips by `_mirror_group`: flip each child in place and
+  reflect its position about the group centre (the two together equal
+  reflecting the whole group), keeping children native. Groups also
+  **rotate** (double-click) and **resize** (scale handles) like any item.
 - **Bucket fill** (`fill.py`) renders the scene and flood-fills the
   region enclosed by shape outlines from the click point. Output mode
   (raster paint vs editable vector path) is chosen per-fill via the

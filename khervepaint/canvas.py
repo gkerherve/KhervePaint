@@ -811,6 +811,9 @@ class PaintScene(QGraphicsScene):
             self.changed_by_user.emit()
 
     def _mirror_item(self, item, horizontal: bool):
+        if isinstance(item, GroupItem):
+            self._mirror_group(item, horizontal)
+            return
         if isinstance(item, ArcShapeItem):
             item.mirror(horizontal)
             return
@@ -832,6 +835,26 @@ class PaintScene(QGraphicsScene):
         elif isinstance(item, PathItem):
             item.setPath(t.map(item.path()))
         # rect/ellipse/rounded-rect/text are symmetric: nothing to do
+
+    def _mirror_group(self, group, horizontal: bool):
+        """Flip a group about its centre: flip each child in place and
+        reflect its position about the group centre (the two together
+        equal reflecting the whole group). Keeps every child native, so
+        the flip round-trips through save."""
+        from .handles import Handle
+        centre = group.boundingRect().center()
+        was_snap = self.snap_enabled
+        self.snap_enabled = False
+        for child in group.childItems():
+            if isinstance(child, Handle):
+                continue
+            self._mirror_item(child, horizontal)
+            cc = child.mapToParent(child.boundingRect().center())
+            if horizontal:
+                child.moveBy(2 * (centre.x() - cc.x()), 0)
+            else:
+                child.moveBy(0, 2 * (centre.y() - cc.y()))
+        self.snap_enabled = was_snap
 
     def _shape_rect(self, pos: QPointF) -> QRectF:
         """Rect from drag start to *pos*; the circle tool stays square."""
