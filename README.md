@@ -6,10 +6,11 @@ Python + PyQt5.
 
 One canvas mixes two worlds:
 
-- **Raster layer** — open a PNG and paint on it freehand with the
-  pencil tool; export the flattened result back to PNG.
-- **Vector layer** — lines, rectangles, circles, ellipses and text
-  drawn on top, selected and moved with the pointer tool, groupable
+- **Raster layer** — open a PNG, fill regions into it with the bucket
+  tool, and export the flattened result back to PNG.
+- **Vector layer** — freehand pencil strokes, lines, arrows,
+  rectangles, circles, ellipses, polygons and text drawn on top,
+  selected/moved/resized/rotated with the pointer tool, groupable
   (Ctrl+G / Ctrl+Shift+G), with a grid overlay and snap-to-grid.
 
 Documents **save and open as editable SVG by default** — an opened SVG
@@ -31,7 +32,7 @@ python KhervePaint.py
 | Key | Tool |
 | --- | --- |
 | V | Pointer (select / move / rubber-band) |
-| P | Pencil (freehand, paints the raster layer) |
+| P | Pencil (freehand vector stroke — selectable & editable) |
 | B | Bucket (flood-fill an enclosed region) |
 | L | Line |
 | R | Rectangle |

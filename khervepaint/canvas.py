@@ -318,7 +318,7 @@ class PaintScene(QGraphicsScene):
         self._drawing = False
         self._start = QPointF()
         self._temp_item = None
-        self._last_raster_pos = None
+        self._stroke_path = None        # freehand pencil path while drawing
 
         self._sel_handles = None        # SelectionHandles for active item
         self._rotate_target = None      # item currently in rotate mode
@@ -483,8 +483,7 @@ class PaintScene(QGraphicsScene):
         self._start = pos
 
         if self.tool == PENCIL:
-            self._last_raster_pos = event.scenePos()
-            self._paint_raster(event.scenePos(), event.scenePos())
+            self.pencil_begin(event.scenePos())
         elif self.tool in _TWO_POINT_TOOLS:
             cls = ArrowItem if self.tool == ARROW else LineItem
             self._temp_item = cls(QLineF(pos, pos))
@@ -510,8 +509,7 @@ class PaintScene(QGraphicsScene):
             super().mouseMoveEvent(event)
             return
         if self.tool == PENCIL:
-            self._paint_raster(self._last_raster_pos, event.scenePos())
-            self._last_raster_pos = event.scenePos()
+            self.pencil_extend(event.scenePos())
             return
         if self._temp_item is None:
             return
@@ -529,8 +527,7 @@ class PaintScene(QGraphicsScene):
             return
         self._drawing = False
         if self.tool == PENCIL:
-            self._last_raster_pos = None
-            self.changed_by_user.emit()
+            self.pencil_end()
             return
         item = self._temp_item
         self._temp_item = None
@@ -545,6 +542,37 @@ class PaintScene(QGraphicsScene):
             self.removeItem(item)
         else:
             center_origin(item)
+            self.changed_by_user.emit()
+
+    # ------------------------------------------------------------ pencil
+    def pencil_begin(self, point: QPointF):
+        """Start a freehand vector stroke at *point* (scene coords)."""
+        self._stroke_path = QPainterPath(point)
+        stroke = PathItem(self._stroke_path)
+        stroke.setPen(QPen(self.pen))          # copy, not shared
+        stroke.setBrush(QBrush(Qt.NoBrush))
+        self.addItem(stroke)
+        self._temp_item = stroke
+
+    def pencil_extend(self, point: QPointF):
+        if self._stroke_path is None or self._temp_item is None:
+            return
+        if (point - self._stroke_path.currentPosition()
+                ).manhattanLength() >= 2:
+            self._stroke_path.lineTo(point)
+            self._temp_item.setPath(self._stroke_path)
+
+    def pencil_end(self):
+        stroke = self._temp_item
+        path = self._stroke_path
+        self._temp_item = None
+        self._stroke_path = None
+        if stroke is None:
+            return
+        if path is None or path.elementCount() <= 1:
+            self.removeItem(stroke)            # a click with no drag
+        else:
+            center_origin(stroke)
             self.changed_by_user.emit()
 
     def _new_rect_item(self, tool: str):
@@ -575,15 +603,6 @@ class PaintScene(QGraphicsScene):
             dy = side if dy >= 0 else -side
         return QRectF(self._start,
                       self._start + QPointF(dx, dy)).normalized()
-
-    def _paint_raster(self, p1: QPointF, p2: QPointF):
-        pixmap = self.raster_item.pixmap()
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.setPen(self.pen)
-        painter.drawLine(p1, p2)
-        painter.end()
-        self.raster_item.setPixmap(pixmap)
 
 
 class PaintView(QGraphicsView):

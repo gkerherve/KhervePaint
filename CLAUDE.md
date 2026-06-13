@@ -75,9 +75,12 @@ into a new module and import.
 Everything lives in one `QGraphicsScene`:
 
 - The **raster layer** is a `QGraphicsPixmapItem` at z = -10, never
-  selectable. "Open PNG" loads into it; the **pencil** tool paints
-  directly into its pixmap with a `QPainter` (freehand — pencil does
-  NOT snap to grid).
+  selectable. "Open PNG" loads into it; the bucket tool can paint into
+  it (raster mode). The **pencil** is a *vector* freehand tool: it
+  builds a `QPainterPath` as you drag (`pencil_begin/extend/end`) and
+  drops a `PathItem` stroke — selectable, movable, resizable (scale
+  handles), rotatable, and saved to .kpaint/SVG like any path. It does
+  NOT snap to grid while drawing.
 - **Vector tools** create `QGraphicsItem` subclasses defined in
   `canvas.py` that mix in `SnapMixin`, so items snap to the grid both
   on creation and while being moved with the pointer:

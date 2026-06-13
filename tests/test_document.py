@@ -696,10 +696,45 @@ def test_scene_crop_flow(app):
     assert scene.vector_items() == [img]
 
 
-def test_pencil_paints_raster(scene):
-    before = scene.raster_item.pixmap().toImage()
-    scene.pen = QPen(QColor("#000000"), 5)
-    scene._paint_raster(QPointF(10, 10), QPointF(100, 100))
-    after = scene.raster_item.pixmap().toImage()
-    assert before != after
-    assert after.pixelColor(55, 55).name() == "#000000"
+def test_pencil_creates_vector_stroke(scene):
+    from khervepaint.canvas import PathItem
+    scene.pen = QPen(QColor("#000000"), 4)
+    scene.pencil_begin(QPointF(0, 0))
+    for x in range(5, 65, 5):
+        scene.pencil_extend(QPointF(x, x))
+    scene.pencil_end()
+
+    strokes = [i for i in scene.vector_items() if isinstance(i, PathItem)]
+    assert len(strokes) == 1
+    stroke = strokes[0]
+    # selectable, movable and a real vector path
+    assert bool(stroke.flags() & stroke.ItemIsSelectable)
+    assert bool(stroke.flags() & stroke.ItemIsMovable)
+    assert stroke.path().elementCount() > 1
+    assert stroke.pen().color().name() == "#000000"
+    # round-trips as a vector path
+    assert document.item_to_dict(stroke)["type"] == "path"
+
+
+def test_pencil_single_click_makes_no_stroke(scene):
+    scene.pencil_begin(QPointF(20, 20))
+    scene.pencil_end()                         # no drag in between
+    assert scene.vector_items() == []          # no degenerate stroke left
+
+
+def test_pencil_stroke_resizes_with_handles(scene):
+    from khervepaint.canvas import PathItem
+    scene.pencil_begin(QPointF(0, 0))
+    for x in range(5, 45, 5):
+        scene.pencil_extend(QPointF(x, x / 2))
+    scene.pencil_end()
+    stroke = next(i for i in scene.vector_items()
+                  if isinstance(i, PathItem))
+    stroke.setSelected(True)
+    scene.refresh_handles()
+    handles = scene._sel_handles
+    assert handles is not None and handles.kind == "scale"
+    before = stroke.scale()
+    handles.begin("se", QPointF(40, 20))
+    handles.drag("se", QPointF(80, 40))        # drag a corner outward
+    assert stroke.scale() > before             # the stroke grew
