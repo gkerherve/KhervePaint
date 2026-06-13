@@ -244,6 +244,15 @@ class RoundedRectItem(SnapMixin, QGraphicsPathItem):
         self.setPath(path)
 
 
+class PathItem(SnapMixin, QGraphicsPathItem):
+    """An arbitrary vector path — the import target for SVG <path> and
+    for elements carrying a non-trivial (scaled/sheared) transform."""
+
+    def __init__(self, path=None):
+        super().__init__(path if path else QPainterPath())
+        self.setFlags(_ITEM_FLAGS)
+
+
 class ImageItem(SnapMixin, QGraphicsPixmapItem):
     """A pasted/placed bitmap living on the vector layer (movable)."""
 

@@ -20,12 +20,12 @@ import json
 from PyQt5.QtCore import (QBuffer, QByteArray, QLineF, QMarginsF, QPointF,
                           QRectF, QSize, QSizeF, Qt)
 from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
-                         QPdfWriter, QPen, QPixmap, QPolygonF)
+                         QPainterPath, QPdfWriter, QPen, QPixmap, QPolygonF)
 from PyQt5.QtSvg import QSvgGenerator
 
 from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
-                     PaintScene, PolygonItem, RectItem, RoundedRectItem,
-                     TextItem)
+                     PaintScene, PathItem, PolygonItem, RectItem,
+                     RoundedRectItem, TextItem)
 
 FORMAT_VERSION = 1
 
@@ -55,6 +55,37 @@ def _brush_from_dict(d) -> QBrush:
     return QBrush(QColor(d.get("color", "#ff4aa3ff")))
 
 
+# ---------------------------------------------------------------- paths
+def painterpath_to_cmds(path: QPainterPath) -> list:
+    """A QPainterPath as a JSON-friendly command list (M/L/C)."""
+    cmds, i = [], 0
+    while i < path.elementCount():
+        e = path.elementAt(i)
+        if e.isMoveTo():
+            cmds.append(["M", e.x, e.y])
+            i += 1
+        elif e.isLineTo():
+            cmds.append(["L", e.x, e.y])
+            i += 1
+        else:                                   # curve: e + 2 data points
+            c2, ep = path.elementAt(i + 1), path.elementAt(i + 2)
+            cmds.append(["C", e.x, e.y, c2.x, c2.y, ep.x, ep.y])
+            i += 3
+    return cmds
+
+
+def cmds_to_painterpath(cmds: list) -> QPainterPath:
+    path = QPainterPath()
+    for c in cmds:
+        if c[0] == "M":
+            path.moveTo(c[1], c[2])
+        elif c[0] == "L":
+            path.lineTo(c[1], c[2])
+        elif c[0] == "C":
+            path.cubicTo(c[1], c[2], c[3], c[4], c[5], c[6])
+    return path
+
+
 # ---------------------------------------------------------------- items
 def item_to_dict(item) -> dict:
     pos = {"x": item.pos().x(), "y": item.pos().y()}
@@ -81,6 +112,10 @@ def item_to_dict(item) -> dict:
                 "brush": _brush_to_dict(item.brush()), "kind": item.kind,
                 "points": [[p.x(), p.y()] for p in item.polygon()],
                 **common}
+    if isinstance(item, PathItem):
+        return {"type": "path", "pen": _pen_to_dict(item.pen()),
+                "brush": _brush_to_dict(item.brush()),
+                "cmds": painterpath_to_cmds(item.path()), **common}
     if isinstance(item, ImageItem):
         return {"type": "image", "image": _pixmap_to_b64(item.pixmap()),
                 **common}
@@ -124,6 +159,10 @@ def item_from_dict(d: dict):
     elif kind == "polygon":
         poly = QPolygonF([QPointF(x, y) for x, y in d.get("points", [])])
         item = PolygonItem(poly, kind=d.get("kind", "polygon"))
+        item.setPen(_pen_from_dict(d.get("pen", {})))
+        item.setBrush(_brush_from_dict(d.get("brush")))
+    elif kind == "path":
+        item = PathItem(cmds_to_painterpath(d.get("cmds", [])))
         item.setPen(_pen_from_dict(d.get("pen", {})))
         item.setBrush(_brush_from_dict(d.get("brush")))
     elif kind == "image":

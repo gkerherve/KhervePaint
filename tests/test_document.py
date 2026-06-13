@@ -24,8 +24,8 @@ from PyQt5.QtWidgets import QApplication
 
 from khervepaint import document
 from khervepaint.canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem,
-                                LineItem, PaintScene, PolygonItem, RectItem,
-                                RoundedRectItem, TextItem)
+                                LineItem, PaintScene, PathItem, PolygonItem,
+                                RectItem, RoundedRectItem, TextItem)
 
 
 @pytest.fixture(scope="session")
@@ -223,6 +223,90 @@ def test_svg_export(scene, tmp_path):
     text = out.read_text(encoding="utf-8")
     assert "<svg" in text
     assert "hello" in text          # text item survives as SVG text
+
+
+def test_svg_native_roundtrip(scene, tmp_path):
+    from khervepaint import svgio
+    from PyQt5.QtGui import QPolygonF
+    _populated(scene)
+    poly = PolygonItem(kind="star")
+    poly.set_rect(QRectF(0, 0, 60, 60))
+    poly.setPos(100, 100)
+    scene.addItem(poly)
+
+    path = tmp_path / "doc.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+
+    items = other.vector_items()
+    assert any(isinstance(i, LineItem) for i in items)
+    assert any(isinstance(i, RectItem) for i in items)
+    assert any(isinstance(i, EllipseItem) for i in items)
+    assert any(isinstance(i, TextItem) for i in items)
+    star = next(i for i in items if isinstance(i, PolygonItem))
+    assert star.kind == "star"
+    assert star.polygon().count() == 10
+    assert star.pos() == QPointF(100, 100)
+    assert other.sceneRect().width() == 400
+
+
+def test_svg_grid_metadata_roundtrip(scene, tmp_path):
+    from khervepaint import svgio
+    scene.grid_size = 25
+    scene.show_grid = False
+    scene.snap_enabled = False
+    path = tmp_path / "grid.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    assert other.grid_size == 25
+    assert other.show_grid is False
+    assert other.snap_enabled is False
+
+
+def test_svg_import_external_group_and_path(scene, tmp_path):
+    from khervepaint import svgio
+    svg = '''<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"
+     viewBox="0 0 100 100">
+  <g fill="#ff0000" transform="translate(10,10)">
+    <rect x="0" y="0" width="20" height="20"/>
+    <circle cx="50" cy="50" r="8"/>
+    <path d="M0 0 L10 0 L10 10 Z"/>
+  </g>
+  <rect x="5" y="5" width="10" height="10"
+        transform="matrix(2 0 0 1 0 0)"/>
+</svg>'''
+    p = tmp_path / "ext.svg"
+    p.write_text(svg, encoding="utf-8")
+    svgio.load_svg(scene, str(p))
+
+    items = scene.vector_items()
+    group = next(i for i in items if isinstance(i, GroupItem))
+    assert len(group.childItems()) == 3
+    # group fill is inherited by the children
+    rect = next(c for c in group.childItems() if isinstance(c, RectItem))
+    assert rect.brush().color().name() == "#ff0000"
+    # the sheared rect is baked into a PathItem (non-simple transform)
+    assert any(isinstance(i, PathItem) for i in items)
+
+
+def test_svg_import_ungroup(scene, tmp_path):
+    from khervepaint import svgio
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+  <g><rect x="0" y="0" width="10" height="10"/>
+     <rect x="20" y="20" width="10" height="10"/></g>
+</svg>'''
+    p = tmp_path / "grp.svg"
+    p.write_text(svg, encoding="utf-8")
+    svgio.load_svg(scene, str(p))
+    group = scene.vector_items()[0]
+    assert isinstance(group, GroupItem)
+    group.setSelected(True)
+    scene.ungroup_selection()
+    assert len([i for i in scene.vector_items()
+                if isinstance(i, RectItem)]) == 2
 
 
 def test_pdf_export(scene, tmp_path):
