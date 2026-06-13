@@ -67,19 +67,73 @@ def center_origin(item):
     item.setTransformOriginPoint(item.boundingRect().center())
 
 
+class LabelMixin:
+    """An optional text label drawn centred inside a shape. Defaults
+    live at class level (immutable), so an unlabelled shape carries no
+    per-instance state until set_label() is called."""
+
+    _label = ""
+    _label_family = "Segoe UI"
+    _label_size = 14
+    _label_bold = False
+    _label_italic = False
+    _label_color_name = "#1a1a1a"
+
+    def label(self) -> str:
+        return self._label
+
+    def set_label(self, text: str):
+        self._label = text or ""
+        self.update()
+
+    def label_font(self) -> QFont:
+        font = QFont(self._label_family, self._label_size)
+        font.setBold(self._label_bold)
+        font.setItalic(self._label_italic)
+        return font
+
+    def set_label_font(self, font: QFont):
+        self._label_family = font.family()
+        self._label_size = font.pointSize()
+        self._label_bold = font.bold()
+        self._label_italic = font.italic()
+        self.update()
+
+    def label_color(self) -> QColor:
+        return QColor(self._label_color_name)
+
+    def set_label_color(self, color):
+        self._label_color_name = QColor(color).name()
+        self.update()
+
+    def _paint_label(self, painter):
+        if not self._label:
+            return
+        painter.save()
+        painter.setFont(self.label_font())
+        painter.setPen(self.label_color())
+        painter.drawText(self.boundingRect(),
+                         Qt.AlignCenter | Qt.TextWordWrap, self._label)
+        painter.restore()
+
+    def paint(self, painter, option, widget=None):
+        super().paint(painter, option, widget)
+        self._paint_label(painter)
+
+
 class LineItem(SnapMixin, QGraphicsLineItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
 
 
-class RectItem(SnapMixin, QGraphicsRectItem):
+class RectItem(LabelMixin, SnapMixin, QGraphicsRectItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
 
 
-class EllipseItem(SnapMixin, QGraphicsEllipseItem):
+class EllipseItem(LabelMixin, SnapMixin, QGraphicsEllipseItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
@@ -139,7 +193,7 @@ def polygon_for_kind(kind: str, rect: QRectF) -> QPolygonF:
     return QPolygonF([QPointF(x, y) for x, y in pts])
 
 
-class PolygonItem(SnapMixin, QGraphicsPolygonItem):
+class PolygonItem(LabelMixin, SnapMixin, QGraphicsPolygonItem):
     """Free or parametric polygon. *kind* is kept for display only;
     geometry is always the vertex list, so SVG-imported polygons and
     triangle/star/etc. behave identically."""
@@ -153,7 +207,7 @@ class PolygonItem(SnapMixin, QGraphicsPolygonItem):
         self.setPolygon(polygon_for_kind(self.kind, rect))
 
 
-class RoundedRectItem(SnapMixin, QGraphicsPathItem):
+class RoundedRectItem(LabelMixin, SnapMixin, QGraphicsPathItem):
     """A rectangle with rounded corners (radius is a real property)."""
 
     def __init__(self, rect=None, radius: float = 12.0):

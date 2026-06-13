@@ -33,8 +33,8 @@ from PyQt5.QtCore import QBuffer, QByteArray, QLineF, QPointF, QRectF, Qt
 from PyQt5.QtGui import (QBrush, QColor, QFont, QPainterPath, QPen, QPixmap,
                          QPolygonF, QTransform)
 
-from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
-                     PaintScene, PathItem, PolygonItem, RectItem,
+from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
+                     LineItem, PaintScene, PathItem, PolygonItem, RectItem,
                      RoundedRectItem, TextItem, center_origin)
 from .document import cmds_to_painterpath, painterpath_to_cmds
 
@@ -201,7 +201,40 @@ def _item_to_element(parent, item):
     else:
         return None
     _set_common(el, item)
+    if isinstance(item, LabelMixin) and item.label():
+        _emit_label(parent, el, item)
     return el
+
+
+def _emit_label(parent, el, item):
+    """Store the shape's label under kp: attributes (lossless) and also
+    emit a visible <text> sibling so other SVG viewers show it."""
+    el.set(_kp("label"), item.label())
+    el.set(_kp("label-color"), item.label_color().name())
+    el.set(_kp("label-family"), item._label_family)
+    el.set(_kp("label-size"), str(item._label_size))
+    if item._label_bold:
+        el.set(_kp("label-bold"), "1")
+    if item._label_italic:
+        el.set(_kp("label-italic"), "1")
+
+    c = item.boundingRect().center()
+    t = ET.SubElement(parent, _svg("text"))
+    t.set("x", f"{c.x():g}"); t.set("y", f"{c.y():g}")
+    t.set("text-anchor", "middle")
+    t.set("dominant-baseline", "central")
+    tf = _transform_attr(item)
+    if tf:
+        t.set("transform", tf)
+    t.set("font-family", item._label_family)
+    t.set("font-size", str(item._label_size))
+    if item._label_bold:
+        t.set("font-weight", "bold")
+    if item._label_italic:
+        t.set("font-style", "italic")
+    t.set("fill", item.label_color().name())
+    t.set(_kp("role"), "label")
+    t.text = item.label()
 
 
 def save_svg(scene: PaintScene, path: str):
@@ -506,10 +539,29 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene):
             scene.set_raster_pixmap(pm)
         return None
 
+    if tag == "text" and el.get(_kp("role")) == "label":
+        return None          # the shape carries its own label via kp attrs
+
     if tag in ("defs", "title", "desc", "metadata", "style"):
         return None
 
-    return _build_leaf(el, total, style)
+    item = _build_leaf(el, total, style)
+    if isinstance(item, LabelMixin):
+        _read_label(el, item)
+    return item
+
+
+def _read_label(el, item):
+    label = el.get(_kp("label"))
+    if not label:
+        return
+    item.set_label(label)
+    size = int(float(el.get(_kp("label-size"), "14")))
+    font = QFont(el.get(_kp("label-family"), "Segoe UI"), size)
+    font.setBold(el.get(_kp("label-bold")) == "1")
+    font.setItalic(el.get(_kp("label-italic")) == "1")
+    item.set_label_font(font)
+    item.set_label_color(_color(el.get(_kp("label-color"), "#1a1a1a")))
 
 
 def load_svg(scene: PaintScene, path: str):

@@ -538,6 +538,60 @@ def test_bucket_unenclosed_leaks_to_edge(app):
     assert edge is True
 
 
+def test_shape_label_roundtrip_kpaint(scene, tmp_path):
+    rect = RectItem(QRectF(0, 0, 80, 40))
+    rect.set_label("Start")
+    from PyQt5.QtGui import QFont
+    f = QFont("Arial", 18)
+    f.setBold(True)
+    rect.set_label_font(f)
+    rect.set_label_color(QColor("#cc0000"))
+    scene.addItem(rect)
+
+    path = tmp_path / "label.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    loaded = other.vector_items()[0]
+    assert loaded.label() == "Start"
+    assert loaded.label_font().pointSize() == 18
+    assert loaded.label_font().bold() is True
+    assert loaded.label_color().name() == "#cc0000"
+
+
+def test_shape_label_roundtrip_svg(scene, tmp_path):
+    from khervepaint import svgio
+    ell = EllipseItem(QRectF(0, 0, 60, 60))
+    ell.set_label("Node")
+    ell.setPos(40, 40)
+    scene.addItem(ell)
+
+    path = tmp_path / "label.svg"
+    svgio.save_svg(scene, str(path))
+    text = path.read_text(encoding="utf-8")
+    assert "Node" in text                     # visible to other viewers
+
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    items = [i for i in other.vector_items() if isinstance(i, EllipseItem)]
+    assert len(items) == 1                     # label text not a 2nd item
+    assert items[0].label() == "Node"
+
+
+def test_properties_dialog_label(app):
+    from khervepaint.properties import PropertiesDialog
+    scene = PaintScene(200, 200)
+    poly = PolygonItem(kind="triangle")
+    poly.set_rect(QRectF(0, 0, 60, 60))
+    scene.addItem(poly)
+    dlg = PropertiesDialog(poly)
+    dlg.label_text.setPlainText("Hi")
+    dlg.label_size.setValue(22)
+    dlg._apply_and_accept()
+    assert poly.label() == "Hi"
+    assert poly.label_font().pointSize() == 22
+
+
 def test_pencil_paints_raster(scene):
     before = scene.raster_item.pixmap().toImage()
     scene.pen = QPen(QColor("#000000"), 5)

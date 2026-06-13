@@ -23,9 +23,9 @@ from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QDialog,
                              QVBoxLayout)
 
 from . import icons
-from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
-                     PathItem, PolygonItem, RectItem, RoundedRectItem,
-                     TextItem, center_origin)
+from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
+                     LineItem, PathItem, PolygonItem, RectItem,
+                     RoundedRectItem, TextItem, center_origin)
 
 _HAS_FILL = (RectItem, EllipseItem, RoundedRectItem, PolygonItem, PathItem)
 
@@ -89,6 +89,8 @@ class PropertiesDialog(QDialog):
         self._build_geometry(layout)
         if isinstance(item, TextItem):
             self._build_text(layout)
+        if isinstance(item, LabelMixin):
+            self._build_label(layout)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok
                                    | QDialogButtonBox.Cancel)
@@ -186,6 +188,28 @@ class PropertiesDialog(QDialog):
         form.addRow(self.italic)
         form.addRow("Colour", self.text_color)
 
+    def _build_label(self, layout):
+        form = self._section(layout, "Label (text inside shape)")
+        self.label_text = QPlainTextEdit(self.item.label())
+        self.label_text.setFixedHeight(50)
+        self.label_text.setPlaceholderText("Text shown centred in the shape")
+        self.label_family = QFontComboBox()
+        self.label_family.setCurrentFont(QFont(self.item._label_family))
+        self.label_size = QSpinBox()
+        self.label_size.setRange(4, 400)
+        self.label_size.setValue(self.item._label_size)
+        self.label_bold = QCheckBox("Bold")
+        self.label_bold.setChecked(self.item._label_bold)
+        self.label_italic = QCheckBox("Italic")
+        self.label_italic.setChecked(self.item._label_italic)
+        self.label_color = ColorButton(self.item.label_color())
+        form.addRow("Text", self.label_text)
+        form.addRow("Font", self.label_family)
+        form.addRow("Size", self.label_size)
+        form.addRow(self.label_bold)
+        form.addRow(self.label_italic)
+        form.addRow("Colour", self.label_color)
+
     # -------------------------------------------------------- apply
     def _apply_and_accept(self):
         item = self.item
@@ -215,6 +239,8 @@ class PropertiesDialog(QDialog):
         self._apply_geometry()
         if isinstance(item, TextItem):
             self._apply_text()
+        if isinstance(item, LabelMixin):
+            self._apply_label_fields()
         # Re-centre the rotation origin against the (possibly new)
         # geometry, then rotate — so it spins about its own centre.
         center_origin(item)
@@ -248,6 +274,16 @@ class PropertiesDialog(QDialog):
         font.setItalic(self.italic.isChecked())
         item.setFont(font)
         item.setDefaultTextColor(self.text_color.color())
+
+    def _apply_label_fields(self):
+        item = self.item
+        item.set_label(self.label_text.toPlainText())
+        font = QFont(self.label_family.currentFont().family(),
+                     self.label_size.value())
+        font.setBold(self.label_bold.isChecked())
+        font.setItalic(self.label_italic.isChecked())
+        item.set_label_font(font)
+        item.set_label_color(self.label_color.color())
 
 
 def build_context_menu(window, item) -> QMenu:

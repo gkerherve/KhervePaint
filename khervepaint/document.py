@@ -23,8 +23,8 @@ from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
                          QPainterPath, QPdfWriter, QPen, QPixmap, QPolygonF)
 from PyQt5.QtSvg import QSvgGenerator
 
-from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
-                     PaintScene, PathItem, PolygonItem, RectItem,
+from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
+                     LineItem, PaintScene, PathItem, PolygonItem, RectItem,
                      RoundedRectItem, TextItem, center_origin)
 
 FORMAT_VERSION = 1
@@ -53,6 +53,27 @@ def _brush_from_dict(d) -> QBrush:
     if not d:
         return QBrush(Qt.NoBrush)
     return QBrush(QColor(d.get("color", "#ff4aa3ff")))
+
+
+# ---------------------------------------------------------------- labels
+def _label_to_dict(item) -> dict:
+    if not isinstance(item, LabelMixin) or not item.label():
+        return {}
+    return {"label": item.label(),
+            "labelColor": item.label_color().name(QColor.HexArgb),
+            "labelFamily": item._label_family, "labelSize": item._label_size,
+            "labelBold": item._label_bold, "labelItalic": item._label_italic}
+
+
+def _apply_label(item, d: dict):
+    if not isinstance(item, LabelMixin) or not d.get("label"):
+        return
+    item.set_label(d["label"])
+    font = QFont(d.get("labelFamily", "Segoe UI"), d.get("labelSize", 14))
+    font.setBold(d.get("labelBold", False))
+    font.setItalic(d.get("labelItalic", False))
+    item.set_label_font(font)
+    item.set_label_color(QColor(d.get("labelColor", "#ff1a1a1a")))
 
 
 # ---------------------------------------------------------------- paths
@@ -106,12 +127,12 @@ def item_to_dict(item) -> dict:
         return {"type": "roundrect", "pen": _pen_to_dict(item.pen()),
                 "brush": _brush_to_dict(item.brush()), "radius": item.radius(),
                 "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(),
-                **common}
+                **_label_to_dict(item), **common}
     if isinstance(item, PolygonItem):
         return {"type": "polygon", "pen": _pen_to_dict(item.pen()),
                 "brush": _brush_to_dict(item.brush()), "kind": item.kind,
                 "points": [[p.x(), p.y()] for p in item.polygon()],
-                **common}
+                **_label_to_dict(item), **common}
     if isinstance(item, PathItem):
         return {"type": "path", "pen": _pen_to_dict(item.pen()),
                 "brush": _brush_to_dict(item.brush()),
@@ -125,7 +146,7 @@ def item_to_dict(item) -> dict:
                 "pen": _pen_to_dict(item.pen()),
                 "brush": _brush_to_dict(item.brush()),
                 "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(),
-                **common}
+                **_label_to_dict(item), **common}
     if isinstance(item, TextItem):
         return {"type": "text", "text": item.toPlainText(),
                 "color": item.defaultTextColor().name(QColor.HexArgb),
@@ -183,6 +204,7 @@ def item_from_dict(d: dict):
             child.setParentItem(item)
     else:
         raise ValueError(f"unknown item type: {kind!r}")
+    _apply_label(item, d)
     pos = d.get("pos", {})
     item.setPos(pos.get("x", 0), pos.get("y", 0))
     item.setOpacity(d.get("opacity", 1.0))
