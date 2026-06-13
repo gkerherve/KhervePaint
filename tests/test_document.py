@@ -23,8 +23,9 @@ from PyQt5.QtGui import QBrush, QColor, QPen
 from PyQt5.QtWidgets import QApplication
 
 from khervepaint import document
-from khervepaint.canvas import (EllipseItem, GroupItem, LineItem, PaintScene,
-                                RectItem, TextItem)
+from khervepaint.canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem,
+                                LineItem, PaintScene, PolygonItem, RectItem,
+                                RoundedRectItem, TextItem)
 
 
 @pytest.fixture(scope="session")
@@ -146,6 +147,73 @@ def test_png_roundtrip(scene, tmp_path):
     assert other.sceneRect().width() == 400
     assert other.sceneRect().height() == 300
     assert other.vector_items() == []
+
+
+def test_roundtrip_new_shapes(scene, tmp_path):
+    from PyQt5.QtGui import QPolygonF
+
+    arrow = ArrowItem(QLineF(0, 0, 40, 40))
+    arrow.setPen(QPen(QColor("#123456"), 4))
+    arrow.setOpacity(0.5)
+    scene.addItem(arrow)
+
+    rrect = RoundedRectItem(QRectF(0, 0, 50, 30), radius=8)
+    rrect.setPos(10, 10)
+    rrect.setBrush(QBrush(QColor("#abcdef")))
+    scene.addItem(rrect)
+
+    tri = PolygonItem(
+        QPolygonF([QPointF(0, 0), QPointF(20, 0), QPointF(10, 20)]),
+        kind="triangle")
+    tri.setRotation(30)
+    scene.addItem(tri)
+
+    path = tmp_path / "shapes.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+
+    items = other.vector_items()
+    a = next(i for i in items if isinstance(i, ArrowItem))
+    assert a.line() == QLineF(0, 0, 40, 40)
+    assert a.pen().color().name() == "#123456"
+    assert abs(a.opacity() - 0.5) < 1e-6
+
+    rr = next(i for i in items if isinstance(i, RoundedRectItem))
+    assert rr.rect() == QRectF(0, 0, 50, 30)
+    assert rr.radius() == 8
+    assert rr.pos() == QPointF(10, 10)
+
+    pg = next(i for i in items if isinstance(i, PolygonItem))
+    assert pg.kind == "triangle"
+    assert pg.polygon().count() == 3
+    assert abs(pg.rotation() - 30) < 1e-6
+
+
+def test_polygon_set_rect_shapes():
+    for kind, vertices in (("triangle", 3), ("diamond", 4),
+                           ("pentagon", 5), ("hexagon", 6), ("star", 10)):
+        item = PolygonItem(kind=kind)
+        item.set_rect(QRectF(0, 0, 100, 100))
+        assert item.polygon().count() == vertices
+
+
+def test_roundtrip_image(scene, tmp_path):
+    from PyQt5.QtGui import QPixmap
+    pm = QPixmap(20, 12)
+    pm.fill(QColor("#ff8800"))
+    img = ImageItem(pm)
+    img.setPos(5, 6)
+    scene.addItem(img)
+
+    path = tmp_path / "img.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    loaded = next(i for i in other.vector_items() if isinstance(i, ImageItem))
+    assert loaded.pixmap().width() == 20
+    assert loaded.pixmap().height() == 12
+    assert loaded.pos() == QPointF(5, 6)
 
 
 def test_svg_export(scene, tmp_path):

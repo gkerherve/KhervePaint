@@ -18,20 +18,30 @@ the Free Software Foundation, either version 3 of the License, or
 import math
 
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, pyqtSignal
-from PyQt5.QtGui import (QBrush, QColor, QFont, QPainter, QPen, QPixmap,
-                         QTextCursor)
+from PyQt5.QtGui import (QBrush, QColor, QFont, QPainter, QPainterPath,
+                         QPen, QPixmap, QPolygonF, QTextCursor)
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsItemGroup, QGraphicsLineItem,
-                             QGraphicsPixmapItem, QGraphicsRectItem,
+                             QGraphicsPathItem, QGraphicsPixmapItem,
+                             QGraphicsPolygonItem, QGraphicsRectItem,
                              QGraphicsScene, QGraphicsTextItem,
                              QGraphicsView)
 
 # Tool identifiers.
 POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
+ARROW, ROUNDRECT = "arrow", "roundrect"
+TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR = (
+    "triangle", "diamond", "pentagon", "hexagon", "star")
 
+#: Parametric polygons created by dragging a bounding rect.
+POLYGON_KINDS = (TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR)
+#: Tools defined by two points (drag start -> end).
+_TWO_POINT_TOOLS = (LINE, ARROW)
+#: Tools defined by a dragged bounding rect.
+_RECT_TOOLS = (RECT, CIRCLE, ELLIPSE, ROUNDRECT) + POLYGON_KINDS
 #: Tools that rubber-band a new vector item between press and release.
-_SHAPE_TOOLS = (LINE, RECT, CIRCLE, ELLIPSE)
+_SHAPE_TOOLS = _TWO_POINT_TOOLS + _RECT_TOOLS
 
 _ITEM_FLAGS = (QGraphicsItem.ItemIsSelectable
                | QGraphicsItem.ItemIsMovable
@@ -133,6 +143,114 @@ class EllipseItem(SnapMixin, QGraphicsEllipseItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
+
+
+class ArrowItem(LineItem):
+    """A line with a filled arrowhead at the second endpoint."""
+
+    HEAD = 14
+
+    def boundingRect(self):
+        h = self.HEAD + self.pen().widthF()
+        return super().boundingRect().adjusted(-h, -h, h, h)
+
+    def _head_polygon(self) -> QPolygonF:
+        ln = self.line()
+        angle = math.atan2(ln.dy(), ln.dx())
+        tip = ln.p2()
+        left = tip - QPointF(math.cos(angle - math.pi / 7) * self.HEAD,
+                             math.sin(angle - math.pi / 7) * self.HEAD)
+        right = tip - QPointF(math.cos(angle + math.pi / 7) * self.HEAD,
+                              math.sin(angle + math.pi / 7) * self.HEAD)
+        return QPolygonF([tip, left, right])
+
+    def paint(self, painter, option, widget=None):
+        super().paint(painter, option, widget)
+        if self.line().length() < 1:
+            return
+        painter.setPen(QPen(self.pen().color(), self.pen().widthF()))
+        painter.setBrush(QBrush(self.pen().color()))
+        painter.drawPolygon(self._head_polygon())
+
+
+def polygon_for_kind(kind: str, rect: QRectF) -> QPolygonF:
+    """Vertices of a parametric polygon *kind* inscribed in *rect*."""
+    cx, cy = rect.center().x(), rect.center().y()
+    rx, ry = rect.width() / 2, rect.height() / 2
+    if kind == TRIANGLE:
+        pts = [(cx, rect.top()), (rect.right(), rect.bottom()),
+               (rect.left(), rect.bottom())]
+    elif kind == DIAMOND:
+        pts = [(cx, rect.top()), (rect.right(), cy),
+               (cx, rect.bottom()), (rect.left(), cy)]
+    elif kind == STAR:
+        pts = []
+        for i in range(10):
+            ang = -math.pi / 2 + i * math.pi / 5
+            scale = 1.0 if i % 2 == 0 else 0.4
+            pts.append((cx + rx * scale * math.cos(ang),
+                        cy + ry * scale * math.sin(ang)))
+    else:
+        sides = 5 if kind == PENTAGON else 6
+        pts = []
+        for i in range(sides):
+            ang = -math.pi / 2 + i * 2 * math.pi / sides
+            pts.append((cx + rx * math.cos(ang), cy + ry * math.sin(ang)))
+    return QPolygonF([QPointF(x, y) for x, y in pts])
+
+
+class PolygonItem(SnapMixin, QGraphicsPolygonItem):
+    """Free or parametric polygon. *kind* is kept for display only;
+    geometry is always the vertex list, so SVG-imported polygons and
+    triangle/star/etc. behave identically."""
+
+    def __init__(self, polygon=None, kind="polygon"):
+        super().__init__(QPolygonF(polygon) if polygon else QPolygonF())
+        self.setFlags(_ITEM_FLAGS)
+        self.kind = kind
+
+    def set_rect(self, rect: QRectF):
+        self.setPolygon(polygon_for_kind(self.kind, rect))
+
+
+class RoundedRectItem(SnapMixin, QGraphicsPathItem):
+    """A rectangle with rounded corners (radius is a real property)."""
+
+    def __init__(self, rect=None, radius: float = 12.0):
+        super().__init__()
+        self.setFlags(_ITEM_FLAGS)
+        self._rect = QRectF(rect) if rect else QRectF()
+        self._radius = radius
+        self._rebuild()
+
+    def rect(self) -> QRectF:
+        return QRectF(self._rect)
+
+    def set_rect(self, rect: QRectF):
+        self._rect = QRectF(rect)
+        self._rebuild()
+
+    def radius(self) -> float:
+        return self._radius
+
+    def set_radius(self, radius: float):
+        self._radius = radius
+        self._rebuild()
+
+    def _rebuild(self):
+        path = QPainterPath()
+        r = min(self._radius, self._rect.width() / 2, self._rect.height() / 2)
+        path.addRoundedRect(self._rect, r, r)
+        self.setPath(path)
+
+
+class ImageItem(SnapMixin, QGraphicsPixmapItem):
+    """A pasted/placed bitmap living on the vector layer (movable)."""
+
+    def __init__(self, pixmap=None):
+        super().__init__(pixmap if pixmap else QPixmap())
+        self.setFlags(_ITEM_FLAGS)
+        self.setTransformationMode(Qt.SmoothTransformation)
 
 
 class GroupItem(SnapMixin, QGraphicsItemGroup):
@@ -282,16 +400,17 @@ class PaintScene(QGraphicsScene):
         if self.tool == PENCIL:
             self._last_raster_pos = event.scenePos()
             self._paint_raster(event.scenePos(), event.scenePos())
-        elif self.tool == LINE:
-            self._temp_item = LineItem(QLineF(pos, pos))
+        elif self.tool in _TWO_POINT_TOOLS:
+            cls = ArrowItem if self.tool == ARROW else LineItem
+            self._temp_item = cls(QLineF(pos, pos))
             self._temp_item.setPen(self.pen)
             self.addItem(self._temp_item)
-        elif self.tool in (RECT, CIRCLE, ELLIPSE):
-            cls = RectItem if self.tool == RECT else EllipseItem
-            self._temp_item = cls(QRectF(pos, pos))
-            self._temp_item.setPen(self.pen)
-            self._temp_item.setBrush(self.current_brush())
-            self.addItem(self._temp_item)
+        elif self.tool in _RECT_TOOLS:
+            item = self._new_rect_item(self.tool)
+            item.setPen(self.pen)
+            item.setBrush(self.current_brush())
+            self.addItem(item)
+            self._temp_item = item
         elif self.tool == TEXT:
             item = TextItem()
             item.setDefaultTextColor(self.pen.color())
@@ -312,10 +431,10 @@ class PaintScene(QGraphicsScene):
         if self._temp_item is None:
             return
         pos = self._tool_pos(event.scenePos())
-        if self.tool == LINE:
+        if self.tool in _TWO_POINT_TOOLS:
             self._temp_item.setLine(QLineF(self._start, pos))
         else:
-            self._temp_item.setRect(self._shape_rect(pos))
+            self._apply_rect(self._temp_item, self._shape_rect(pos))
 
     def mouseReleaseEvent(self, event):
         if not self._drawing:
@@ -330,15 +449,33 @@ class PaintScene(QGraphicsScene):
         self._temp_item = None
         if item is None:
             return
-        degenerate = (isinstance(item, LineItem)
-                      and item.line().length() < 1) or \
-                     (not isinstance(item, LineItem)
-                      and item.rect().width() < 1
-                      and item.rect().height() < 1)
+        if isinstance(item, LineItem):
+            degenerate = item.line().length() < 1
+        else:
+            br = item.boundingRect()
+            degenerate = br.width() < 1 and br.height() < 1
         if degenerate:
             self.removeItem(item)
         else:
             self.changed_by_user.emit()
+
+    def _new_rect_item(self, tool: str):
+        """A fresh, empty rect-defined item for *tool*."""
+        if tool == RECT:
+            return RectItem(QRectF())
+        if tool == ROUNDRECT:
+            return RoundedRectItem(QRectF())
+        if tool in POLYGON_KINDS:
+            return PolygonItem(kind=tool)
+        return EllipseItem(QRectF())          # RECT/CIRCLE/ELLIPSE ellipses
+
+    @staticmethod
+    def _apply_rect(item, rect: QRectF):
+        """Resize a rect-defined item during the creation drag."""
+        if isinstance(item, (PolygonItem, RoundedRectItem)):
+            item.set_rect(rect)
+        else:
+            item.setRect(rect)
 
     def _shape_rect(self, pos: QPointF) -> QRectF:
         """Rect from drag start to *pos*; the circle tool stays square."""

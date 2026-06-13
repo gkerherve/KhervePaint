@@ -17,13 +17,14 @@ the Free Software Foundation, either version 3 of the License, or
 import base64
 import json
 
-from PyQt5.QtCore import (QBuffer, QByteArray, QLineF, QMarginsF, QRectF,
-                          QSize, QSizeF, Qt)
+from PyQt5.QtCore import (QBuffer, QByteArray, QLineF, QMarginsF, QPointF,
+                          QRectF, QSize, QSizeF, Qt)
 from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
-                         QPdfWriter, QPen, QPixmap)
+                         QPdfWriter, QPen, QPixmap, QPolygonF)
 from PyQt5.QtSvg import QSvgGenerator
 
-from .canvas import (EllipseItem, GroupItem, LineItem, PaintScene, RectItem,
+from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
+                     PaintScene, PolygonItem, RectItem, RoundedRectItem,
                      TextItem)
 
 FORMAT_VERSION = 1
@@ -57,42 +58,83 @@ def _brush_from_dict(d) -> QBrush:
 # ---------------------------------------------------------------- items
 def item_to_dict(item) -> dict:
     pos = {"x": item.pos().x(), "y": item.pos().y()}
+    common = {"pos": pos, "opacity": item.opacity(),
+              "rotation": item.rotation()}
+    if isinstance(item, ArrowItem):
+        ln = item.line()
+        return {"type": "arrow", "pen": _pen_to_dict(item.pen()),
+                "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
+                **common}
     if isinstance(item, LineItem):
         ln = item.line()
-        return {"type": "line", "pos": pos, "pen": _pen_to_dict(item.pen()),
-                "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2()}
+        return {"type": "line", "pen": _pen_to_dict(item.pen()),
+                "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
+                **common}
+    if isinstance(item, RoundedRectItem):
+        r = item.rect()
+        return {"type": "roundrect", "pen": _pen_to_dict(item.pen()),
+                "brush": _brush_to_dict(item.brush()), "radius": item.radius(),
+                "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(),
+                **common}
+    if isinstance(item, PolygonItem):
+        return {"type": "polygon", "pen": _pen_to_dict(item.pen()),
+                "brush": _brush_to_dict(item.brush()), "kind": item.kind,
+                "points": [[p.x(), p.y()] for p in item.polygon()],
+                **common}
+    if isinstance(item, ImageItem):
+        return {"type": "image", "image": _pixmap_to_b64(item.pixmap()),
+                **common}
     if isinstance(item, (RectItem, EllipseItem)):
         r = item.rect()
         return {"type": "rect" if isinstance(item, RectItem) else "ellipse",
-                "pos": pos, "pen": _pen_to_dict(item.pen()),
+                "pen": _pen_to_dict(item.pen()),
                 "brush": _brush_to_dict(item.brush()),
-                "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height()}
+                "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(),
+                **common}
     if isinstance(item, TextItem):
-        return {"type": "text", "pos": pos,
-                "text": item.toPlainText(),
+        return {"type": "text", "text": item.toPlainText(),
                 "color": item.defaultTextColor().name(QColor.HexArgb),
                 "family": item.font().family(),
-                "size": item.font().pointSize()}
+                "size": item.font().pointSize(),
+                "bold": item.font().bold(),
+                "italic": item.font().italic(), **common}
     if isinstance(item, GroupItem):
-        return {"type": "group", "pos": pos,
-                "children": [item_to_dict(c) for c in item.childItems()]}
+        return {"type": "group",
+                "children": [item_to_dict(c) for c in item.childItems()],
+                **common}
     raise ValueError(f"unserialisable item: {type(item).__name__}")
 
 
 def item_from_dict(d: dict):
     kind = d.get("type")
-    if kind == "line":
-        item = LineItem(QLineF(d["x1"], d["y1"], d["x2"], d["y2"]))
+    if kind in ("line", "arrow"):
+        cls = ArrowItem if kind == "arrow" else LineItem
+        item = cls(QLineF(d["x1"], d["y1"], d["x2"], d["y2"]))
         item.setPen(_pen_from_dict(d.get("pen", {})))
     elif kind in ("rect", "ellipse"):
         cls = RectItem if kind == "rect" else EllipseItem
         item = cls(QRectF(d["x"], d["y"], d["w"], d["h"]))
         item.setPen(_pen_from_dict(d.get("pen", {})))
         item.setBrush(_brush_from_dict(d.get("brush")))
+    elif kind == "roundrect":
+        item = RoundedRectItem(QRectF(d["x"], d["y"], d["w"], d["h"]),
+                               d.get("radius", 12))
+        item.setPen(_pen_from_dict(d.get("pen", {})))
+        item.setBrush(_brush_from_dict(d.get("brush")))
+    elif kind == "polygon":
+        poly = QPolygonF([QPointF(x, y) for x, y in d.get("points", [])])
+        item = PolygonItem(poly, kind=d.get("kind", "polygon"))
+        item.setPen(_pen_from_dict(d.get("pen", {})))
+        item.setBrush(_brush_from_dict(d.get("brush")))
+    elif kind == "image":
+        item = ImageItem(_pixmap_from_b64(d["image"]))
     elif kind == "text":
         item = TextItem(d.get("text", ""))
         item.setDefaultTextColor(QColor(d.get("color", "#ff1a1a1a")))
-        item.setFont(QFont(d.get("family", "Segoe UI"), d.get("size", 14)))
+        font = QFont(d.get("family", "Segoe UI"), d.get("size", 14))
+        font.setBold(d.get("bold", False))
+        font.setItalic(d.get("italic", False))
+        item.setFont(font)
     elif kind == "group":
         item = GroupItem()
         for child_dict in d.get("children", []):
@@ -102,6 +144,8 @@ def item_from_dict(d: dict):
         raise ValueError(f"unknown item type: {kind!r}")
     pos = d.get("pos", {})
     item.setPos(pos.get("x", 0), pos.get("y", 0))
+    item.setOpacity(d.get("opacity", 1.0))
+    item.setRotation(d.get("rotation", 0.0))
     return item
 
 

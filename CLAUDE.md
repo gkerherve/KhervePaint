@@ -60,14 +60,22 @@ Everything lives in one `QGraphicsScene`:
   selectable. "Open PNG" loads into it; the **pencil** tool paints
   directly into its pixmap with a `QPainter` (freehand — pencil does
   NOT snap to grid).
-- **Vector tools** (line, rect, circle, ellipse, text) create
-  `QGraphicsItem` subclasses defined in `canvas.py` that mix in
-  `SnapMixin`, so items snap to the grid both on creation and while
-  being moved with the pointer. Circle is an ellipse constrained
-  square. Text items edit inline on double-click. A selected line
-  shows `EndpointHandle` children at each end — dragging one moves
-  that endpoint (snapping applies); handles are implementation
-  details and must never be serialised or counted as vector items.
+- **Vector tools** create `QGraphicsItem` subclasses defined in
+  `canvas.py` that mix in `SnapMixin`, so items snap to the grid both
+  on creation and while being moved with the pointer:
+  - Two-point tools (`_TWO_POINT_TOOLS`): line and arrow (`ArrowItem`
+    extends `LineItem` and draws a filled head).
+  - Rect-defined tools (`_RECT_TOOLS`): rect, circle (square ellipse),
+    ellipse, rounded rect (`RoundedRectItem`, real `radius`), and the
+    parametric polygons (triangle/diamond/pentagon/hexagon/star) via
+    one `PolygonItem` whose geometry is always a vertex list — so an
+    SVG-imported `<polygon>` and a star behave identically.
+  - Text (`TextItem`) edits inline on double-click.
+  - `ImageItem` is a movable bitmap on the vector layer (paste).
+  A selected line shows `EndpointHandle` children at each end —
+  dragging one moves that endpoint (snapping applies); handles are
+  implementation details and must never be serialised or counted as
+  vector items. Every item also round-trips opacity and rotation.
 - **Grid** is drawn in `PaintView.drawForeground` so it never appears
   in PNG exports. Grid size / show / snap live on the scene and
   round-trip through `.kpaint`.

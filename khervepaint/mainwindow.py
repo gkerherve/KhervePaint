@@ -14,10 +14,12 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
-                             QMessageBox, QSpinBox, QToolBar, QToolButton)
+                             QMenu, QMessageBox, QSpinBox, QToolBar,
+                             QToolButton)
 
 from . import APP_NAME, __version__, document, icons
-from .canvas import (CIRCLE, ELLIPSE, LINE, PENCIL, POINTER, RECT, TEXT,
+from .canvas import (ARROW, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE, PENCIL,
+                     PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT, TRIANGLE,
                      PaintScene, PaintView)
 from .style import THEMES, apply_style, current_theme
 
@@ -28,10 +30,21 @@ TOOLS = [
     (POINTER, "mdi.cursor-default-outline", "Pointer", "V"),
     (PENCIL, "mdi.pencil", "Pencil", "P"),
     (LINE, "mdi.vector-line", "Line", "L"),
+    (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
     (RECT, "mdi.rectangle-outline", "Rectangle", "R"),
     (CIRCLE, "mdi.circle-outline", "Circle", "C"),
     (ELLIPSE, "mdi.ellipse-outline", "Ellipse", "E"),
     (TEXT, "mdi.format-text", "Text", "T"),
+]
+
+#: Extra shapes gathered under one dropdown: (tool id, mdi icon, label).
+SHAPE_TOOLS = [
+    (ROUNDRECT, "mdi.rounded-corner", "Rounded rectangle"),
+    (TRIANGLE, "mdi.triangle-outline", "Triangle"),
+    (DIAMOND, "mdi.rhombus-outline", "Diamond"),
+    (PENTAGON, "mdi.pentagon-outline", "Pentagon"),
+    (HEXAGON, "mdi.hexagon-outline", "Hexagon"),
+    (STAR, "mdi.star-outline", "Star"),
 ]
 
 
@@ -75,7 +88,37 @@ class MainWindow(QMainWindow):
                 lambda _, t=tool: self._set_tool(t))
             self._tool_group.addAction(act)
             bar.addAction(act)
+        self._build_shapes_button(bar)
         self._tool_group.actions()[0].setChecked(True)
+
+    def _build_shapes_button(self, bar: QToolBar):
+        """A dropdown gathering the extra parametric shapes."""
+        button = QToolButton()
+        button.setPopupMode(QToolButton.MenuButtonPopup)
+        button.setToolTip("More shapes")
+        menu = QMenu(button)
+        for tool, glyph, label in SHAPE_TOOLS:
+            act = QAction(icons.icon(glyph), label, self)
+            act.setCheckable(True)
+            act.setData(tool)
+            act.triggered.connect(
+                lambda _, t=tool, g=glyph: self._pick_shape(t, g))
+            self._tool_group.addAction(act)
+            menu.addAction(act)
+        button.setMenu(menu)
+        first = SHAPE_TOOLS[0]
+        button.setIcon(icons.icon(first[1]))
+        button.clicked.connect(lambda: self._pick_shape(*self._last_shape))
+        self._last_shape = (first[0], first[1])
+        self._shapes_button = button
+        bar.addWidget(button)
+
+    def _pick_shape(self, tool: str, glyph: str):
+        self._last_shape = (tool, glyph)
+        self._shapes_button.setIcon(icons.icon(glyph))
+        for act in self._tool_group.actions():
+            act.setChecked(act.data() == tool)
+        self._set_tool(tool)
 
     def _build_options_bar(self):
         bar = QToolBar("Options")
