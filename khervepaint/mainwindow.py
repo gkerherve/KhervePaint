@@ -192,11 +192,14 @@ class MainWindow(QMainWindow):
         self._snap_act.toggled.connect(self._set_snap)
         bar.addAction(self._snap_act)
 
-        bar.addWidget(QLabel(" Grid "))
+        bar.addWidget(QLabel(" Divisions "))
         self._grid_spin = QSpinBox()
         self._grid_spin.setRange(2, 200)
-        self._grid_spin.setValue(self.scene.grid_size)
-        self._grid_spin.valueChanged.connect(self._set_grid_size)
+        self._grid_spin.setValue(self.scene.grid_divisions)
+        self._grid_spin.setToolTip(
+            "Grid divisions across the canvas — higher means more, "
+            "finer cells")
+        self._grid_spin.valueChanged.connect(self._set_grid_divisions)
         bar.addWidget(self._grid_spin)
         bar.addSeparator()
 
@@ -282,8 +285,8 @@ class MainWindow(QMainWindow):
     def _set_snap(self, snap: bool):
         self.scene.snap_enabled = snap
 
-    def _set_grid_size(self, size: int):
-        self.scene.grid_size = size
+    def _set_grid_divisions(self, divisions: int):
+        self.scene.grid_divisions = divisions
         self.view.viewport().update()
 
     def _select_all(self):
@@ -460,7 +463,7 @@ class MainWindow(QMainWindow):
     def _sync_grid_controls(self):
         self._grid_act.setChecked(self.scene.show_grid)
         self._snap_act.setChecked(self.scene.snap_enabled)
-        self._grid_spin.setValue(self.scene.grid_size)
+        self._grid_spin.setValue(self.scene.grid_divisions)
 
     def export_file(self):
         # Flattened raster exports; editable SVG is handled by Save.

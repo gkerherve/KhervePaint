@@ -88,7 +88,7 @@ def test_roundtrip_items(scene, tmp_path):
 
 
 def test_roundtrip_grid_settings(scene, tmp_path):
-    scene.grid_size = 35
+    scene.grid_divisions = 35
     scene.show_grid = False
     scene.snap_enabled = False
     path = tmp_path / "grid.kpaint"
@@ -96,9 +96,30 @@ def test_roundtrip_grid_settings(scene, tmp_path):
 
     other = PaintScene(10, 10)
     document.load_kpaint(other, str(path))
-    assert other.grid_size == 35
+    assert other.grid_divisions == 35
     assert other.show_grid is False
     assert other.snap_enabled is False
+
+
+def test_grid_size_derived_from_divisions():
+    scene = PaintScene(800, 600)
+    scene.grid_divisions = 40
+    assert scene.grid_size == 20          # 800 / 40
+    scene.grid_divisions = 80
+    assert scene.grid_size == 10          # more divisions -> finer
+    assert scene.grid_size < 20
+
+
+def test_legacy_pixel_grid_loads(scene, tmp_path):
+    import json
+    # An old .kpaint stored the grid as a pixel "size".
+    legacy = {"format": "kpaint", "version": 1, "width": 800, "height": 600,
+              "grid": {"size": 20, "show": True, "snap": True}, "items": []}
+    path = tmp_path / "legacy.kpaint"
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    assert other.grid_divisions == 40     # 800 / 20
 
 
 def test_roundtrip_group(scene, tmp_path):
@@ -131,7 +152,7 @@ def test_ungroup_restores_items(scene):
 
 
 def test_snap(scene):
-    scene.grid_size = 20
+    scene.grid_divisions = 20          # 400px wide / 20 -> 20px spacing
     assert scene.snap(QPointF(27, 51)) == QPointF(20, 60)
     assert scene.snap(QPointF(-9, 10)) == QPointF(0, 20)
 
@@ -253,14 +274,14 @@ def test_svg_native_roundtrip(scene, tmp_path):
 
 def test_svg_grid_metadata_roundtrip(scene, tmp_path):
     from khervepaint import svgio
-    scene.grid_size = 25
+    scene.grid_divisions = 25
     scene.show_grid = False
     scene.snap_enabled = False
     path = tmp_path / "grid.svg"
     svgio.save_svg(scene, str(path))
     other = PaintScene(10, 10)
     svgio.load_svg(other, str(path))
-    assert other.grid_size == 25
+    assert other.grid_divisions == 25
     assert other.show_grid is False
     assert other.snap_enabled is False
 

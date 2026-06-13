@@ -210,7 +210,7 @@ def save_svg(scene: PaintScene, path: str):
     root.set("width", f"{int(rect.width())}")
     root.set("height", f"{int(rect.height())}")
     root.set("viewBox", f"0 0 {int(rect.width())} {int(rect.height())}")
-    root.set(_kp("grid-size"), str(scene.grid_size))
+    root.set(_kp("grid-divisions"), str(scene.grid_divisions))
     root.set(_kp("grid-show"), "1" if scene.show_grid else "0")
     root.set(_kp("grid-snap"), "1" if scene.snap_enabled else "0")
 
@@ -517,9 +517,13 @@ def load_svg(scene: PaintScene, path: str):
     width, height = _root_size(root)
     scene.new_document(width, height)
 
-    gs = root.get(_kp("grid-size"))
-    if gs is not None:
-        scene.grid_size = int(float(gs))
+    divisions = root.get(_kp("grid-divisions"))
+    legacy = root.get(_kp("grid-size"))
+    if divisions is not None:
+        scene.grid_divisions = int(float(divisions))
+    elif legacy is not None:      # legacy: grid was a pixel spacing
+        scene.grid_divisions = max(2, round(width / max(float(legacy), 1)))
+    if divisions is not None or legacy is not None:
         scene.show_grid = root.get(_kp("grid-show"), "1") == "1"
         scene.snap_enabled = root.get(_kp("grid-snap"), "1") == "1"
 

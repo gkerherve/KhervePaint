@@ -213,8 +213,8 @@ def scene_to_dict(scene: PaintScene) -> dict:
     rect = scene.sceneRect()
     return {"format": "kpaint", "version": FORMAT_VERSION,
             "width": int(rect.width()), "height": int(rect.height()),
-            "grid": {"size": scene.grid_size, "show": scene.show_grid,
-                     "snap": scene.snap_enabled},
+            "grid": {"divisions": scene.grid_divisions,
+                     "show": scene.show_grid, "snap": scene.snap_enabled},
             "raster": _pixmap_to_b64(scene.raster_item.pixmap()),
             "items": [item_to_dict(i) for i in scene.vector_items()]}
 
@@ -222,9 +222,14 @@ def scene_to_dict(scene: PaintScene) -> dict:
 def dict_to_scene(data: dict, scene: PaintScene):
     if data.get("format") != "kpaint":
         raise ValueError("not a .kpaint document")
-    scene.new_document(data.get("width", 800), data.get("height", 600))
+    width = data.get("width", 800)
+    scene.new_document(width, data.get("height", 600))
     grid = data.get("grid", {})
-    scene.grid_size = grid.get("size", 20)
+    if "divisions" in grid:
+        scene.grid_divisions = grid["divisions"]
+    elif "size" in grid:          # legacy: grid was a pixel spacing
+        scene.grid_divisions = max(2, round((width or 1) /
+                                            max(grid["size"], 1)))
     scene.show_grid = grid.get("show", True)
     scene.snap_enabled = grid.get("snap", True)
     if data.get("raster"):

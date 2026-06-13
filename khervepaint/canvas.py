@@ -250,7 +250,10 @@ class PaintScene(QGraphicsScene):
         self.fill_enabled = False
         self.bucket_vector = False        # bucket output: raster vs vector
 
-        self.grid_size = 20
+        # The grid is specified as a number of divisions across the
+        # canvas width; the pixel spacing is derived (see grid_size).
+        # Bigger number -> more, finer cells.
+        self.grid_divisions = 40
         self.snap_enabled = True
         self.show_grid = True
 
@@ -289,6 +292,14 @@ class PaintScene(QGraphicsScene):
         """Top-level vector items, bottom to top (excludes the raster)."""
         return [i for i in sorted(self.items(), key=lambda i: i.zValue())
                 if i is not self.raster_item and i.parentItem() is None]
+
+    # ------------------------------------------------------------ grid
+    @property
+    def grid_size(self) -> int:
+        """Pixel spacing between grid lines, derived from the number of
+        divisions across the canvas width."""
+        width = self.sceneRect().width() or 1
+        return max(1, round(width / max(self.grid_divisions, 1)))
 
     # ------------------------------------------------------------ snapping
     def snap(self, pos: QPointF) -> QPointF:
