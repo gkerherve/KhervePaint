@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QDialog,
 from . import icons
 from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
-                     TextItem)
+                     TextItem, center_origin)
 
 _HAS_FILL = (RectItem, EllipseItem, RoundedRectItem, PolygonItem, PathItem)
 
@@ -195,7 +195,6 @@ class PropertiesDialog(QDialog):
         if scene is not None:
             scene.snap_enabled = False
         item.setPos(self.x.value(), self.y.value())
-        item.setRotation(self.rotation.value())
         item.setOpacity(self.opacity.value() / 100)
 
         if hasattr(self, "stroke_on"):
@@ -216,6 +215,10 @@ class PropertiesDialog(QDialog):
         self._apply_geometry()
         if isinstance(item, TextItem):
             self._apply_text()
+        # Re-centre the rotation origin against the (possibly new)
+        # geometry, then rotate — so it spins about its own centre.
+        center_origin(item)
+        item.setRotation(self.rotation.value())
         if scene is not None:
             scene.snap_enabled = prev_snap
         self.accept()

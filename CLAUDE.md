@@ -61,6 +61,9 @@ into a new module and import.
                        floods the enclosed region from the click, and
                        applies it either as raster paint or an editable
                        vector `PathItem` (behind the bounding shapes).
+  - `handles.py`     — `SelectionHandles`: resize handles per item type
+                       and a rotate knob (double-click). `Handle`-marked
+                       items, excluded from serialisation/picking.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
@@ -84,10 +87,18 @@ Everything lives in one `QGraphicsScene`:
     SVG-imported `<polygon>` and a star behave identically.
   - Text (`TextItem`) edits inline on double-click.
   - `ImageItem` is a movable bitmap on the vector layer (paste).
-  A selected line shows `EndpointHandle` children at each end —
-  dragging one moves that endpoint (snapping applies); handles are
-  implementation details and must never be serialised or counted as
-  vector items. Every item also round-trips opacity and rotation.
+  Every item also round-trips opacity and rotation, and rotates about
+  its own centre via `center_origin()` (transform origin = bounding-
+  rect centre) — never the scene origin, or far-from-origin shapes
+  swing off-screen.
+- **Selection handles** (`handles.py`) — selecting one item shows
+  resize handles (line/arrow endpoints, polygon vertices, rect/ellipse
+  bounding box, or uniform-scale corners for path/image/text/group);
+  double-clicking enters rotate mode (a knob spins it about its
+  centre). The scene owns one `SelectionHandles`; handles are
+  `Handle`-marked children of the active item, rebuilt on pointer
+  mouse-release, dropped when selection changes, and filtered out of
+  all serialisation (`isinstance(c, Handle)`).
 - **Grid** is drawn in `PaintView.drawForeground` so it never appears
   in PNG exports. Grid size / show / snap live on the scene and
   round-trip through `.kpaint`.
@@ -125,8 +136,9 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   checkable group), top toolbar = file ops + stroke/fill colour,
   line width, grid controls, group/ungroup.
 - Pointer tool = rubber-band select + move; other tools draw.
-- Right-click an item (pointer tool) for its context menu; double-click
-  a non-text item to open its full properties dialog.
+- Select an item to get resize handles; **double-click to rotate** it
+  about its centre. Right-click for the context menu (which includes
+  Edit properties… for the full per-item editor).
 - Status bar shows the cursor position in canvas coordinates.
 - **Window style**: Fusion as default; themes shared with the family
   (View > Theme).

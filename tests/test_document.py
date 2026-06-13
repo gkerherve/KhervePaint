@@ -316,23 +316,67 @@ def test_pdf_export(scene, tmp_path):
     assert out.read_bytes().startswith(b"%PDF")
 
 
-def test_line_endpoint_handles(scene):
+def test_line_resize_handles(scene):
     line = LineItem(QLineF(0, 0, 100, 50))
     scene.addItem(line)
-    assert line._handles is None
     line.setSelected(True)
-    assert all(h.isVisible() for h in line._handles)
-    assert line._handles[0].pos() == QPointF(0, 0)
-    assert line._handles[1].pos() == QPointF(100, 50)
+    scene.refresh_handles()
+    handles = scene._sel_handles
+    assert handles is not None and handles.kind == "line"
+    assert len(handles.handles) == 2
 
-    line.endpoint_moved(1, QPointF(200, 80))
-    assert line.line() == QLineF(0, 0, 200, 80)
-
-    line.setSelected(False)
-    assert not any(h.isVisible() for h in line._handles)
-    # Handles are implementation details: not serialised, not listed.
+    handles.drag("p2", QPointF(200, 80))      # drag the second endpoint
+    assert line.line().p2() == QPointF(200, 80)
+    # Handles are not vector items and not serialised.
     assert scene.vector_items() == [line]
     assert document.item_to_dict(line)["x2"] == 200
+
+
+def test_box_resize_handle(scene):
+    rect = RectItem(QRectF(0, 0, 40, 40))
+    scene.addItem(rect)
+    rect.setSelected(True)
+    scene.refresh_handles()
+    handles = scene._sel_handles
+    assert handles.kind == "box"
+    assert len(handles.handles) == 8
+    handles.drag("se", QPointF(100, 80))      # drag bottom-right corner
+    assert rect.rect() == QRectF(0, 0, 100, 80)
+
+
+def test_polygon_vertex_handle(scene):
+    from PyQt5.QtGui import QPolygonF
+    tri = PolygonItem(
+        QPolygonF([QPointF(0, 0), QPointF(40, 0), QPointF(20, 40)]),
+        kind="triangle")
+    scene.addItem(tri)
+    tri.setSelected(True)
+    scene.refresh_handles()
+    handles = scene._sel_handles
+    assert handles.kind == "polygon"
+    assert len(handles.handles) == 3
+    handles.drag(2, QPointF(20, 80))          # drag the apex down
+    assert tri.polygon().at(2) == QPointF(20, 80)
+
+
+def test_double_click_rotate_uses_centre(scene):
+    from PyQt5.QtGui import QPolygonF
+    tri = PolygonItem(
+        QPolygonF([QPointF(100, 100), QPointF(160, 100), QPointF(130, 160)]),
+        kind="triangle")
+    scene.addItem(tri)
+    before = tri.sceneBoundingRect().center()
+
+    scene.enter_rotate_mode(tri)
+    assert scene._sel_handles.kind == "rotate"
+    assert tri.transformOriginPoint() == tri.boundingRect().center()
+
+    tri.setRotation(90)
+    after = tri.sceneBoundingRect().center()
+    # Rotating about its own centre keeps the shape in roughly the
+    # same place (it does NOT fly off to the scene origin).
+    assert abs(after.x() - before.x()) < 1.0
+    assert abs(after.y() - before.y()) < 1.0
 
 
 def test_copy_paste_and_duplicate(app):

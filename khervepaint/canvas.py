@@ -60,78 +60,17 @@ class SnapMixin:
         return super().itemChange(change, value)
 
 
-HANDLE_SIZE = 10
-
-
-class EndpointHandle(QGraphicsRectItem):
-    """Drag handle pinned to one end of a LineItem.
-
-    Dragging is handled manually (grab on press) instead of via
-    ItemIsMovable so the parent line keeps its selection while the
-    handle is dragged.
-    """
-
-    def __init__(self, line_item: "LineItem", index: int):
-        s = HANDLE_SIZE
-        super().__init__(-s / 2, -s / 2, s, s, line_item)
-        self._line_item = line_item
-        self.index = index
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.setPen(QPen(QColor("#2176c7"), 0))
-        self.setBrush(QBrush(QColor("#ffffff")))
-        self.setCursor(Qt.SizeAllCursor)
-        self.setZValue(10)
-        self.hide()
-
-    def mousePressEvent(self, event):
-        # Clicking a non-selectable item cleared the scene selection —
-        # restore it so the handles stay visible during the drag.
-        self._line_item.setSelected(True)
-        event.accept()
-
-    def mouseMoveEvent(self, event):
-        scene_pos = event.scenePos()
-        if self.scene() is not None and self.scene().snap_enabled:
-            scene_pos = self.scene().snap(scene_pos)
-        pos = self._line_item.mapFromScene(scene_pos)
-        self.setPos(pos)
-        self._line_item.endpoint_moved(self.index, pos)
-
-    def mouseReleaseEvent(self, event):
-        if self.scene() is not None:
-            self.scene().changed_by_user.emit()
-        event.accept()
+def center_origin(item):
+    """Make the item rotate/scale about its own centre rather than the
+    scene origin (otherwise a shape whose geometry sits far from (0,0)
+    swings off-screen when rotated)."""
+    item.setTransformOriginPoint(item.boundingRect().center())
 
 
 class LineItem(SnapMixin, QGraphicsLineItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
-        self._handles = None
-
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemSelectedHasChanged:
-            self._show_handles(bool(value))
-        return super().itemChange(change, value)
-
-    def _show_handles(self, show: bool):
-        if show and self._handles is None:
-            self._handles = (EndpointHandle(self, 0),
-                             EndpointHandle(self, 1))
-        if self._handles is not None:
-            self.sync_handles()
-            for handle in self._handles:
-                handle.setVisible(show)
-
-    def sync_handles(self):
-        if self._handles is not None:
-            self._handles[0].setPos(self.line().p1())
-            self._handles[1].setPos(self.line().p2())
-
-    def endpoint_moved(self, index: int, pos):
-        ln = self.line()
-        (ln.setP1 if index == 0 else ln.setP2)(pos)
-        self.setLine(ln)
 
 
 class RectItem(SnapMixin, QGraphicsRectItem):
@@ -324,6 +263,10 @@ class PaintScene(QGraphicsScene):
         self._temp_item = None
         self._last_raster_pos = None
 
+        self._sel_handles = None        # SelectionHandles for active item
+        self._rotate_target = None      # item currently in rotate mode
+        self.selectionChanged.connect(self._on_selection_changed)
+
         self.new_document(width, height)
 
     # ------------------------------------------------------------ document
@@ -389,9 +332,47 @@ class PaintScene(QGraphicsScene):
         self.changed_by_user.emit()
 
     def delete_selection(self):
+        self.clear_handles()
         for item in self.selectedItems():
             self.removeItem(item)
         self.changed_by_user.emit()
+
+    # ------------------------------------------------------------ handles
+    def clear_handles(self):
+        if self._sel_handles is not None:
+            self._sel_handles.remove()
+            self._sel_handles = None
+
+    def _on_selection_changed(self):
+        # Drop handles whenever the active single selection goes away
+        # (covers clearSelection() before export/fill/save, and
+        # rubber-band multi-select).
+        if len(self.selectedItems()) != 1:
+            self.clear_handles()
+            self._rotate_target = None
+
+    def refresh_handles(self, mode=None, item=None):
+        """Rebuild handles for the active item. Without *mode*, keep
+        rotate mode if this item was put in it, else show resize."""
+        from .handles import RESIZE, ROTATE, SelectionHandles
+        sel = self.selectedItems()
+        target = item if item is not None else (
+            sel[0] if len(sel) == 1 else None)
+        self.clear_handles()
+        if target is None or self.tool != POINTER:
+            self._rotate_target = None
+            return
+        if mode is None:
+            mode = ROTATE if target is self._rotate_target else RESIZE
+        self._rotate_target = target if mode == ROTATE else None
+        self._sel_handles = SelectionHandles(self, target, mode)
+
+    def enter_rotate_mode(self, item):
+        from .handles import ROTATE
+        center_origin(item)
+        self.clearSelection()
+        item.setSelected(True)
+        self.refresh_handles(mode=ROTATE, item=item)
 
     # ------------------------------------------------------------ tools
     def mousePressEvent(self, event):
@@ -456,6 +437,8 @@ class PaintScene(QGraphicsScene):
     def mouseReleaseEvent(self, event):
         if not self._drawing:
             super().mouseReleaseEvent(event)
+            if self.tool == POINTER and event.button() == Qt.LeftButton:
+                self.refresh_handles()
             return
         self._drawing = False
         if self.tool == PENCIL:
@@ -474,6 +457,7 @@ class PaintScene(QGraphicsScene):
         if degenerate:
             self.removeItem(item)
         else:
+            center_origin(item)
             self.changed_by_user.emit()
 
     def _new_rect_item(self, tool: str):
@@ -521,8 +505,6 @@ class PaintView(QGraphicsView):
     cursor_moved = pyqtSignal(QPointF)
     #: (top-level item, global QPoint) when an item is right-clicked.
     item_context = pyqtSignal(object, object)
-    #: top-level item when a non-text item is double-clicked (edit).
-    item_edit = pyqtSignal(object)
 
     def __init__(self, scene: PaintScene, parent=None):
         super().__init__(scene, parent)
@@ -536,8 +518,9 @@ class PaintView(QGraphicsView):
         """Top-level editable item under *view_pos*, or None.
         Skips endpoint handles and the raster layer; climbs to the
         outermost group so right-clicking inside a group targets it."""
+        from .handles import Handle
         for it in self.items(view_pos):
-            if isinstance(it, EndpointHandle) or it is self.scene().raster_item:
+            if isinstance(it, Handle) or it is self.scene().raster_item:
                 continue
             while it.parentItem() is not None:
                 it = it.parentItem()
@@ -559,7 +542,7 @@ class PaintView(QGraphicsView):
         if self.scene().tool == POINTER:
             item = self._pick_item(event.pos())
             if item is not None and not isinstance(item, TextItem):
-                self.item_edit.emit(item)
+                self.scene().enter_rotate_mode(item)
                 return
         super().mouseDoubleClickEvent(event)
 

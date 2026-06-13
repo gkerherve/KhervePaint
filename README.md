@@ -39,6 +39,12 @@ python KhervePaint.py
 | E | Ellipse |
 | T | Text (click to place, double-click to edit) |
 
+Select a shape to get **resize handles** — drag the endpoints of a
+line, the vertices of a polygon, or the bounding-box corners of a
+rectangle/ellipse. **Double-click** a shape to **rotate** it about its
+own centre. Right-click for the context menu (edit properties,
+duplicate, order, group).
+
 The **bucket** fills a region enclosed by shape outlines — click inside
 the area walled off by two or more shapes and it fills with the current
 fill colour. The toolbar selector chooses whether each fill is painted

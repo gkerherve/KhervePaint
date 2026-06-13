@@ -70,7 +70,6 @@ class MainWindow(QMainWindow):
             lambda p: self.statusBar().showMessage(
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
         self.view.item_context.connect(self._show_item_menu)
-        self.view.item_edit.connect(self.edit_item)
 
         self._build_tool_bar()
         self._build_options_bar()
@@ -267,6 +266,8 @@ class MainWindow(QMainWindow):
     def _set_tool(self, tool: str):
         self.scene.tool = tool
         self.view.set_tool_cursor(tool)
+        if tool != POINTER:
+            self.scene.clear_handles()
 
     def _set_pen_width(self, width: int):
         self.scene.pen.setWidthF(width)

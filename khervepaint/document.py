@@ -25,7 +25,7 @@ from PyQt5.QtSvg import QSvgGenerator
 
 from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
                      PaintScene, PathItem, PolygonItem, RectItem,
-                     RoundedRectItem, TextItem)
+                     RoundedRectItem, TextItem, center_origin)
 
 FORMAT_VERSION = 1
 
@@ -134,8 +134,10 @@ def item_to_dict(item) -> dict:
                 "bold": item.font().bold(),
                 "italic": item.font().italic(), **common}
     if isinstance(item, GroupItem):
+        from .handles import Handle
         return {"type": "group",
-                "children": [item_to_dict(c) for c in item.childItems()],
+                "children": [item_to_dict(c) for c in item.childItems()
+                             if not isinstance(c, Handle)],
                 **common}
     raise ValueError(f"unserialisable item: {type(item).__name__}")
 
@@ -184,6 +186,7 @@ def item_from_dict(d: dict):
     pos = d.get("pos", {})
     item.setPos(pos.get("x", 0), pos.get("y", 0))
     item.setOpacity(d.get("opacity", 1.0))
+    center_origin(item)          # rotate about centre, matching how it saved
     item.setRotation(d.get("rotation", 0.0))
     item.setZValue(d.get("z", 0.0))
     return item

@@ -35,7 +35,7 @@ from PyQt5.QtGui import (QBrush, QColor, QFont, QPainterPath, QPen, QPixmap,
 
 from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LineItem,
                      PaintScene, PathItem, PolygonItem, RectItem,
-                     RoundedRectItem, TextItem)
+                     RoundedRectItem, TextItem, center_origin)
 from .document import cmds_to_painterpath, painterpath_to_cmds
 
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -128,10 +128,12 @@ def painterpath_to_d(path: QPainterPath) -> str:
 
 def _item_to_element(parent, item):
     if isinstance(item, GroupItem):
+        from .handles import Handle
         g = ET.SubElement(parent, _svg("g"))
         _set_common(g, item)
         for child in item.childItems():
-            _item_to_element(g, child)
+            if not isinstance(child, Handle):
+                _item_to_element(g, child)
         return g
 
     if isinstance(item, ArrowItem):
@@ -332,6 +334,7 @@ def _finalise(item, total: QTransform, style: dict):
     dx, dy, deg, _ = _decompose(total)
     item.setPos(dx, dy)
     if abs(deg) > _EPS:
+        center_origin(item)
         item.setRotation(deg)
     if "_opacity" in style:
         item.setOpacity(style["_opacity"])
@@ -441,6 +444,7 @@ def _build_text(el, total: QTransform, style: dict):
     item.setPos(pt)
     _, _, deg, _ = _decompose(total)
     if abs(deg) > _EPS:
+        center_origin(item)
         item.setRotation(deg)
     if "_opacity" in style:
         item.setOpacity(style["_opacity"])
