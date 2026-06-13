@@ -79,6 +79,8 @@ def _transform_attr(item) -> str:
         parts.append(f"translate({pos.x():g},{pos.y():g})")
     if abs(item.rotation()) > _EPS:
         parts.append(f"rotate({item.rotation():g})")
+    if abs(item.scale() - 1) > _EPS:
+        parts.append(f"scale({item.scale():g})")
     return " ".join(parts)
 
 
@@ -198,12 +200,25 @@ def _item_to_element(parent, item):
         el.set("x", "0"); el.set("y", "0")
         el.set("width", f"{pm.width()}"); el.set("height", f"{pm.height()}")
         el.set(f"{{{XLINK_NS}}}href", _pixmap_data_uri(pm))
+        # The image's full transform (translate + rotate + scale) goes
+        # out as a matrix so resizing and rotation are saved exactly.
+        m = (item.sceneTransform() if item.parentItem() is None
+             else item.itemTransform(item.parentItem()))
+        el.set("transform", _matrix_attr(m))
+        if item.opacity() < 1 - _EPS:
+            el.set("opacity", f"{item.opacity():g}")
+        return el
     else:
         return None
     _set_common(el, item)
     if isinstance(item, LabelMixin) and item.label():
         _emit_label(parent, el, item)
     return el
+
+
+def _matrix_attr(m) -> str:
+    return (f"matrix({m.m11():g},{m.m12():g},{m.m21():g},"
+            f"{m.m22():g},{m.dx():g},{m.dy():g})")
 
 
 def _emit_label(parent, el, item):
@@ -358,7 +373,7 @@ def _decompose(tf: QTransform):
     simple = (abs(m11 * m11 + m12 * m12 - 1) < 1e-3
               and abs(m11 - m22) < 1e-3 and abs(m12 + m21) < 1e-3
               and (m11 * m22 - m12 * m21) > 0)
-    degrees = math.degrees(math.atan2(m21, m11))
+    degrees = math.degrees(math.atan2(m12, m11))
     return dx, dy, degrees, simple
 
 
@@ -499,14 +514,18 @@ def _pixmap_from_href(href: str) -> QPixmap:
 def _build_image(el, total: QTransform, style: dict):
     pm = _pixmap_from_href(_href(el))
     item = ImageItem(pm)
-    w = float(el.get("width", pm.width() or 1))
-    h = float(el.get("height", pm.height() or 1))
-    if pm.width() and pm.height():
-        sx, sy = w / pm.width(), h / pm.height()
-        if abs(sx - 1) > _EPS or abs(sy - 1) > _EPS:
-            item.setTransform(QTransform.fromScale(sx, sy))
-    pt = total.map(QPointF(float(el.get("x", 0)), float(el.get("y", 0))))
-    item.setPos(pt)
+    natw, nath = pm.width() or 1, pm.height() or 1
+    x, y = float(el.get("x", 0)), float(el.get("y", 0))
+    w = float(el.get("width", natw))
+    h = float(el.get("height", nath))
+    # native pixels -> element box (scale then translate) -> parent
+    content = QTransform(w / natw, 0, 0, h / nath, 0, 0) * \
+        QTransform(1, 0, 0, 1, x, y)
+    full = content * total
+    item.setTransformOriginPoint(0, 0)
+    item.setTransform(QTransform(full.m11(), full.m12(),
+                                 full.m21(), full.m22(), 0, 0))
+    item.setPos(full.dx(), full.dy())
     if "_opacity" in style:
         item.setOpacity(style["_opacity"])
     return item

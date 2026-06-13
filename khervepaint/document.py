@@ -111,7 +111,8 @@ def cmds_to_painterpath(cmds: list) -> QPainterPath:
 def item_to_dict(item) -> dict:
     pos = {"x": item.pos().x(), "y": item.pos().y()}
     common = {"pos": pos, "opacity": item.opacity(),
-              "rotation": item.rotation(), "z": item.zValue()}
+              "rotation": item.rotation(), "z": item.zValue(),
+              "scale": item.scale()}
     if isinstance(item, ArrowItem):
         ln = item.line()
         return {"type": "arrow", "pen": _pen_to_dict(item.pen()),
@@ -208,8 +209,9 @@ def item_from_dict(d: dict):
     pos = d.get("pos", {})
     item.setPos(pos.get("x", 0), pos.get("y", 0))
     item.setOpacity(d.get("opacity", 1.0))
-    center_origin(item)          # rotate about centre, matching how it saved
+    center_origin(item)          # rotate/scale about centre as it saved
     item.setRotation(d.get("rotation", 0.0))
+    item.setScale(d.get("scale", 1.0))
     item.setZValue(d.get("z", 0.0))
     return item
 

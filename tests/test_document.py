@@ -219,6 +219,27 @@ def test_polygon_set_rect_shapes():
         assert item.polygon().count() == vertices
 
 
+def test_kpaint_image_scale_rotation(scene, tmp_path):
+    from khervepaint.canvas import center_origin
+    from PyQt5.QtGui import QPixmap
+    pm = QPixmap(30, 20)
+    pm.fill(QColor("#0088ff"))
+    img = ImageItem(pm)
+    img.setPos(12, 8)
+    center_origin(img)
+    img.setRotation(45)
+    img.setScale(1.5)
+    scene.addItem(img)
+
+    path = tmp_path / "imgscale.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    loaded = next(i for i in other.vector_items() if isinstance(i, ImageItem))
+    assert abs(loaded.scale() - 1.5) < 1e-6
+    assert abs(loaded.rotation() - 45) < 1e-6
+
+
 def test_roundtrip_image(scene, tmp_path):
     from PyQt5.QtGui import QPixmap
     pm = QPixmap(20, 12)
@@ -284,6 +305,52 @@ def test_svg_grid_metadata_roundtrip(scene, tmp_path):
     assert other.grid_divisions == 25
     assert other.show_grid is False
     assert other.snap_enabled is False
+
+
+def _scene_br(item):
+    r = item.sceneBoundingRect()
+    return [round(v, 2) for v in (r.x(), r.y(), r.width(), r.height())]
+
+
+def test_svg_image_scale_rotation_roundtrip(scene, tmp_path):
+    from khervepaint import svgio
+    from khervepaint.canvas import center_origin
+    from PyQt5.QtGui import QPixmap
+    pm = QPixmap(40, 20)
+    pm.fill(QColor("#ff0000"))
+    img = ImageItem(pm)
+    img.setPos(50, 60)
+    center_origin(img)
+    img.setRotation(30)
+    img.setScale(2.0)
+    scene.addItem(img)
+    before = _scene_br(img)
+
+    path = tmp_path / "img.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    loaded = next(i for i in other.vector_items() if isinstance(i, ImageItem))
+    # scale (2x) and rotation (30 deg) survive: same on-screen footprint
+    assert _scene_br(loaded) == before
+    assert loaded.pixmap().width() == 40        # native pixels unchanged
+
+
+def test_svg_shape_rotation_sign(scene, tmp_path):
+    from khervepaint import svgio
+    from khervepaint.canvas import center_origin
+    rect = RectItem(QRectF(0, 0, 40, 20))
+    rect.setPos(50, 60)
+    center_origin(rect)
+    rect.setRotation(30)
+    scene.addItem(rect)
+
+    path = tmp_path / "rot.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    loaded = other.vector_items()[0]
+    assert abs(loaded.rotation() - 30) < 1e-3   # +30, not mirrored to -30
 
 
 def test_svg_import_external_group_and_path(scene, tmp_path):
