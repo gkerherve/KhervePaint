@@ -854,6 +854,32 @@ def test_explode_hexagon_to_six_lines(scene):
     assert all(count == 2 for count in endpoints.values())
 
 
+def test_explode_ellipse_to_arcs(scene):
+    ell = EllipseItem(QRectF(0, 0, 80, 60))
+    ell.setPen(QPen(QColor("#aa3300"), 2))
+    scene.addItem(ell)
+    ell.setSelected(True)
+    scene.explode_selection()
+    items = scene.vector_items()
+    assert not any(isinstance(i, EllipseItem) for i in items)
+    arcs = [i for i in items if isinstance(i, PathItem)]
+    assert len(arcs) == 4                        # ellipse = four cubic arcs
+    assert all(a.pen().color().name() == "#aa3300" for a in arcs)
+
+
+def test_explode_halfcircle(scene):
+    from khervepaint.canvas import ArcShapeItem
+    arc = ArcShapeItem(QRectF(0, 0, 40, 40), kind="halfcircle")
+    scene.addItem(arc)
+    arc.setSelected(True)
+    scene.explode_selection()
+    items = scene.vector_items()
+    assert not any(isinstance(i, ArcShapeItem) for i in items)
+    # the flat diameter becomes a line, the curve becomes arc path(s)
+    assert any(isinstance(i, LineItem) for i in items)
+    assert any(isinstance(i, PathItem) for i in items)
+
+
 def test_explode_rect_to_four_lines(scene):
     rect = RectItem(QRectF(0, 0, 40, 30))
     rect.setPen(QPen(QColor("#336699"), 3))

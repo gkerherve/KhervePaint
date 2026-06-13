@@ -123,9 +123,12 @@ Everything lives in one `QGraphicsScene`:
   round-trip through `.kpaint`.
 - **Groups** use `QGraphicsItemGroup` via a snap-aware subclass;
   Ctrl+G / Ctrl+Shift+G.
-- **Explode** (`explode_selection`, Ctrl+Shift+E / context menu) breaks a
-  polygon/rect into its edge `LineItem`s (in scene coords, inheriting the
-  pen), left selected so a side can be deleted and the rest regrouped.
+- **Explode** (`explode_selection`, Ctrl+Shift+E / context menu) breaks
+  any shape's outline into its individual segments — straight edges →
+  `LineItem`, curved edges (ellipse/rounded-corner/arc/pencil) →
+  per-segment `PathItem` — by walking `_outline_path(item)` mapped to
+  scene coords. Left selected so a piece can be deleted and the rest
+  regrouped. (Lines/text/images/groups have no breakable outline.)
 - **Mirror** (`mirror_selection`, Ctrl+Shift+H / J, context menu, toolbar)
   flips selected items in place about their centre by flipping geometry
   (polygon/line/path), the pixmap (image) or the arc flip flags — so the

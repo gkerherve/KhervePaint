@@ -51,9 +51,11 @@ duplicate, order, group).
 The **Shapes** dropdown includes rounded rectangle, triangle, diamond,
 pentagon, hexagon, star and **half / quarter circles**.
 
-**Explode** (Ctrl+Shift+E, or the right-click menu) breaks a polygon or
-rectangle into its separate edge lines — so you can delete or edit one
-side, then select the rest and regroup (Ctrl+G). **Flip horizontal /
+**Explode** (Ctrl+Shift+E, or the right-click menu) breaks any shape's
+outline into its separate segments — straight edges become lines and
+curves (ellipses, rounded corners, arcs) become individual arc pieces —
+so you can delete or edit one part, then select the rest and regroup
+(Ctrl+G). **Flip horizontal /
 vertical** (Ctrl+Shift+H / J, right-click, or toolbar) mirrors the
 selected shapes in place.
 

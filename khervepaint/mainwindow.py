@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
         bar.addAction(icons.icon("mdi.ungroup"), "Ungroup",
                       self.scene.ungroup_selection)
         bar.addAction(icons.icon("mdi.arrow-expand-all"),
-                      "Explode to lines", self.scene.explode_selection)
+                      "Explode shape", self.scene.explode_selection)
         bar.addAction(icons.icon("mdi.flip-horizontal"), "Flip horizontal",
                       lambda: self.scene.mirror_selection(True))
         bar.addAction(icons.icon("mdi.flip-vertical"), "Flip vertical",
@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("&Group", self.scene.group_selection, "Ctrl+G")
         edit_menu.addAction("&Ungroup", self.scene.ungroup_selection,
                             "Ctrl+Shift+G")
-        edit_menu.addAction("E&xplode to lines", self.scene.explode_selection,
+        edit_menu.addAction("E&xplode shape", self.scene.explode_selection,
                             "Ctrl+Shift+E")
         edit_menu.addSeparator()
         edit_menu.addAction("Flip &Horizontal",

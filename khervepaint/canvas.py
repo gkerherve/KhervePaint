@@ -517,53 +517,84 @@ class PaintScene(QGraphicsScene):
         self.changed_by_user.emit()
 
     def explode_selection(self):
-        """Break selected polygons/rectangles into their individual edge
-        lines, so a single side can be deleted or edited (then the rest
-        regrouped with Ctrl+G). The new lines are left selected."""
+        """Break each selected shape's outline into its individual edge
+        segments (straight edges -> lines, curved edges -> arc paths), so
+        a single piece can be deleted or edited (then the rest regrouped
+        with Ctrl+G). The new segments are left selected."""
         self.clear_handles()
-        new_lines = []
+        new_items = []
         originals = []
         for item in self.selectedItems():
             segments = self._explode_item(item)
             if segments:
                 originals.append(item)
-                new_lines.extend(segments)
-        if not new_lines:
+                new_items.extend(segments)
+        if not new_items:
             return
         for item in originals:
             self.removeItem(item)
         self.clearSelection()
-        for line in new_lines:
-            self.addItem(line)
-            line.setSelected(True)
+        for seg in new_items:
+            self.addItem(seg)
+            seg.setSelected(True)
         self.changed_by_user.emit()
 
     @staticmethod
-    def _explode_points(item):
-        """The shape's outline vertices in scene coordinates, or None if
-        the item has no straight edges to explode."""
+    def _outline_path(item):
+        """The shape's outline as a QPainterPath in item-local coords, or
+        None if the item has no breakable outline (line/text/image/group)."""
         if isinstance(item, PolygonItem):
-            poly = item.polygon()
-            return [item.mapToScene(poly.at(i)) for i in range(poly.count())]
-        if isinstance(item, (RectItem, RoundedRectItem)):
-            r = item.rect()
-            return [item.mapToScene(r.topLeft()),
-                    item.mapToScene(r.topRight()),
-                    item.mapToScene(r.bottomRight()),
-                    item.mapToScene(r.bottomLeft())]
-        return None
+            path = QPainterPath()
+            path.addPolygon(item.polygon())
+            path.closeSubpath()
+            return path
+        if isinstance(item, RectItem):
+            path = QPainterPath()
+            path.addRect(item.rect())
+            return path
+        if isinstance(item, EllipseItem):
+            path = QPainterPath()
+            path.addEllipse(item.rect())
+            return path
+        if isinstance(item, (RoundedRectItem, ArcShapeItem, PathItem)):
+            return QPainterPath(item.path())
+        return None                          # line/arrow/text/image/group
 
     def _explode_item(self, item):
-        points = self._explode_points(item)
-        if not points or len(points) < 2:
+        local = self._outline_path(item)
+        if local is None or local.elementCount() < 2:
             return None
+        path = item.sceneTransform().map(local)   # to scene coordinates
         pen = QPen(item.pen())
         segments = []
-        n = len(points)
-        for i in range(n):                 # closed outline: last -> first
-            line = LineItem(QLineF(points[i], points[(i + 1) % n]))
-            line.setPen(pen)
-            segments.append(line)
+        cur = None
+        i, n = 0, path.elementCount()
+        while i < n:
+            e = path.elementAt(i)
+            if e.isMoveTo():
+                cur = QPointF(e.x, e.y)
+                i += 1
+            elif e.isLineTo():
+                end = QPointF(e.x, e.y)
+                if cur is not None:
+                    line = LineItem(QLineF(cur, end))
+                    line.setPen(pen)
+                    segments.append(line)
+                cur = end
+                i += 1
+            else:                            # cubic: control1 + 2 data points
+                c2 = path.elementAt(i + 1)
+                ep = path.elementAt(i + 2)
+                sub = QPainterPath()
+                sub.moveTo(cur)
+                sub.cubicTo(QPointF(e.x, e.y), QPointF(c2.x, c2.y),
+                            QPointF(ep.x, ep.y))
+                arc = PathItem(sub)
+                arc.setPen(pen)
+                arc.setBrush(QBrush(Qt.NoBrush))
+                segments.append(arc)
+                cur = QPointF(ep.x, ep.y)
+                i += 3
         return segments
 
     # ------------------------------------------------------------ handles

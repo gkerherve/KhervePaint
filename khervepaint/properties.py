@@ -23,9 +23,13 @@ from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QDialog,
                              QVBoxLayout)
 
 from . import icons
-from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
-                     LineItem, PathItem, PolygonItem, RectItem,
-                     RoundedRectItem, TextItem, center_origin)
+from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
+                     ImageItem, LabelMixin, LineItem, PathItem, PolygonItem,
+                     RectItem, RoundedRectItem, TextItem, center_origin)
+
+#: Shapes whose outline can be exploded into edge segments.
+_EXPLODABLE = (PolygonItem, RectItem, EllipseItem, RoundedRectItem,
+               ArcShapeItem, PathItem)
 
 _HAS_FILL = (RectItem, EllipseItem, RoundedRectItem, PolygonItem, PathItem)
 
@@ -315,7 +319,7 @@ def build_context_menu(window, item) -> QMenu:
     else:
         menu.addAction(icons.icon("mdi.group"), "Group selection",
                        window.scene.group_selection)
-    if isinstance(item, (PolygonItem, RectItem, RoundedRectItem)):
+    if isinstance(item, _EXPLODABLE):
         menu.addAction(icons.icon("mdi.arrow-expand-all"),
-                       "Explode to lines", window.scene.explode_selection)
+                       "Explode shape", window.scene.explode_selection)
     return menu
