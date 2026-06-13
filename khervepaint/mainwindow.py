@@ -15,7 +15,7 @@ from PyQt5.QtCore import QMimeData, QSettings, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
-                             QMenu, QMessageBox, QSpinBox, QToolBar,
+                             QMessageBox, QSpinBox, QToolBar,
                              QToolButton, QUndoStack)
 
 from . import APP_NAME, __version__, document, icons, svgio
@@ -105,46 +105,24 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.LeftToolBarArea, bar)
         self._tool_group = QActionGroup(self)
         for tool, glyph, label, shortcut in TOOLS:
-            act = QAction(icons.icon(glyph), label, self)
-            act.setCheckable(True)
-            act.setShortcut(shortcut)
-            act.setToolTip(f"{label} ({shortcut})")
-            act.setData(tool)
-            act.triggered.connect(
-                lambda _, t=tool: self._set_tool(t))
-            self._tool_group.addAction(act)
-            bar.addAction(act)
-        self._build_shapes_button(bar)
+            self._add_tool_action(bar, tool, glyph, label, shortcut)
+        bar.addSeparator()
+        for tool, glyph, label in SHAPE_TOOLS:
+            self._add_tool_action(bar, tool, glyph, label, None)
         self._tool_group.actions()[0].setChecked(True)
 
-    def _build_shapes_button(self, bar: QToolBar):
-        """A dropdown gathering the extra parametric shapes."""
-        button = QToolButton()
-        button.setPopupMode(QToolButton.MenuButtonPopup)
-        button.setToolTip("More shapes")
-        menu = QMenu(button)
-        for tool, glyph, label in SHAPE_TOOLS:
-            act = QAction(icons.icon(glyph), label, self)
-            act.setCheckable(True)
-            act.setData(tool)
-            act.triggered.connect(
-                lambda _, t=tool, g=glyph: self._pick_shape(t, g))
-            self._tool_group.addAction(act)
-            menu.addAction(act)
-        button.setMenu(menu)
-        first = SHAPE_TOOLS[0]
-        button.setIcon(icons.icon(first[1]))
-        button.clicked.connect(lambda: self._pick_shape(*self._last_shape))
-        self._last_shape = (first[0], first[1])
-        self._shapes_button = button
-        bar.addWidget(button)
-
-    def _pick_shape(self, tool: str, glyph: str):
-        self._last_shape = (tool, glyph)
-        self._shapes_button.setIcon(icons.icon(glyph))
-        for act in self._tool_group.actions():
-            act.setChecked(act.data() == tool)
-        self._set_tool(tool)
+    def _add_tool_action(self, bar, tool, glyph, label, shortcut):
+        act = QAction(icons.icon(glyph), label, self)
+        act.setCheckable(True)
+        if shortcut:
+            act.setShortcut(shortcut)
+            act.setToolTip(f"{label} ({shortcut})")
+        else:
+            act.setToolTip(label)
+        act.setData(tool)
+        act.triggered.connect(lambda _, t=tool: self._set_tool(t))
+        self._tool_group.addAction(act)
+        bar.addAction(act)
 
     def _build_options_bar(self):
         bar = QToolBar("Options")
