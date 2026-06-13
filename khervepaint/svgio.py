@@ -520,9 +520,12 @@ def load_svg(scene: PaintScene, path: str):
         scene.snap_enabled = root.get(_kp("grid-snap"), "1") == "1"
 
     base = {"fill": "#000000", "stroke": "none"}
+    z = 0
     for child in root:
         item = _parse_element(child, QTransform(), base, scene)
         if item is not None:
+            item.setZValue(z)
+            z += 1
             scene.addItem(item)
 
 

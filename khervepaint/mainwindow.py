@@ -68,6 +68,8 @@ class MainWindow(QMainWindow):
         self.view.cursor_moved.connect(
             lambda p: self.statusBar().showMessage(
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
+        self.view.item_context.connect(self._show_item_menu)
+        self.view.item_edit.connect(self.edit_item)
 
         self._build_tool_bar()
         self._build_options_bar()
@@ -338,6 +340,25 @@ class MainWindow(QMainWindow):
 
     def _view_centre(self):
         return self.view.mapToScene(self.view.viewport().rect().center())
+
+    # ------------------------------------------------------------ editing
+    def _show_item_menu(self, item, global_pos):
+        from .properties import build_context_menu
+        build_context_menu(self, item).exec_(global_pos)
+
+    def edit_item(self, item):
+        from .properties import PropertiesDialog
+        if PropertiesDialog(item, self).exec_():
+            self.scene.changed_by_user.emit()
+
+    def reorder_item(self, item, where: str):
+        """Move *item* in front of / behind every other vector item."""
+        others = [i for i in self.scene.vector_items() if i is not item]
+        if not others:
+            return
+        zs = [i.zValue() for i in others]
+        item.setZValue(max(zs) + 1 if where == "front" else min(zs) - 1)
+        self.scene.changed_by_user.emit()
 
     def pick_stroke_color(self):
         color = QColorDialog.getColor(self.scene.pen.color(), self,

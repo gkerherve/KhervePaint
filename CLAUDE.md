@@ -52,6 +52,11 @@ into a new module and import.
   - `svgio.py`       — default format: editable SVG writer + parser
                        (breaks groups/paths/transforms into native
                        items). Imports the path helpers from document.
+  - `properties.py`  — right-click context menu (edit/duplicate/delete/
+                       order/group) + `PropertiesDialog`: edit every
+                       property of one item (transform, stroke, fill,
+                       geometry, text/font). Double-click a non-text
+                       item also opens it.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
@@ -111,6 +116,8 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   checkable group), top toolbar = file ops + stroke/fill colour,
   line width, grid controls, group/ungroup.
 - Pointer tool = rubber-band select + move; other tools draw.
+- Right-click an item (pointer tool) for its context menu; double-click
+  a non-text item to open its full properties dialog.
 - Status bar shows the cursor position in canvas coordinates.
 - **Window style**: Fusion as default; themes shared with the family
   (View > Theme).

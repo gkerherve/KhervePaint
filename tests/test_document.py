@@ -357,6 +357,79 @@ def test_copy_paste_and_duplicate(app):
     assert len(win.scene.vector_items()) == before + 2
 
 
+def test_properties_dialog_applies(app):
+    from khervepaint.properties import PropertiesDialog
+    scene = PaintScene(200, 200)
+    rect = RectItem(QRectF(0, 0, 40, 30))
+    scene.addItem(rect)
+
+    dlg = PropertiesDialog(rect)
+    dlg.x.setValue(15); dlg.y.setValue(25)
+    dlg.rotation.setValue(45)
+    dlg.opacity.setValue(50)
+    dlg.stroke_on.setChecked(True)
+    dlg.stroke_color.set_color(QColor("#112233"))
+    dlg.stroke_width.setValue(6)
+    dlg.fill_on.setChecked(True)
+    dlg.fill_color.set_color(QColor("#445566"))
+    dlg.rw.setValue(80); dlg.rh.setValue(60)
+    dlg._apply_and_accept()
+
+    assert rect.pos() == QPointF(15, 25)
+    assert abs(rect.rotation() - 45) < 1e-6
+    assert abs(rect.opacity() - 0.5) < 1e-6
+    assert rect.pen().color().name() == "#112233"
+    assert rect.pen().widthF() == 6
+    assert rect.brush().color().name() == "#445566"
+    assert rect.rect() == QRectF(0, 0, 80, 60)
+
+
+def test_properties_dialog_text(app):
+    from khervepaint.properties import PropertiesDialog
+    scene = PaintScene(200, 200)
+    text = TextItem("old")
+    scene.addItem(text)
+    dlg = PropertiesDialog(text)
+    dlg.text.setPlainText("new label")
+    dlg.font_size.setValue(28)
+    dlg.bold.setChecked(True)
+    dlg._apply_and_accept()
+    assert text.toPlainText() == "new label"
+    assert text.font().pointSize() == 28
+    assert text.font().bold() is True
+
+
+def test_context_menu_builds(app):
+    from khervepaint.mainwindow import MainWindow
+    from khervepaint.properties import build_context_menu
+    win = MainWindow()
+    rect = RectItem(QRectF(0, 0, 10, 10))
+    win.scene.addItem(rect)
+    menu = build_context_menu(win, rect)
+    labels = [a.text() for a in menu.actions() if a.text()]
+    assert "Edit properties…" in labels
+    assert "Bring to front" in labels
+
+
+def test_reorder_persists_through_svg(app, tmp_path):
+    from khervepaint import svgio
+    from khervepaint.mainwindow import MainWindow
+    win = MainWindow()
+    bottom = RectItem(QRectF(0, 0, 10, 10))
+    top = EllipseItem(QRectF(0, 0, 10, 10))
+    win.scene.addItem(bottom)
+    win.scene.addItem(top)
+    win.reorder_item(bottom, "front")
+    assert bottom.zValue() > top.zValue()
+
+    path = tmp_path / "order.svg"
+    svgio.save_svg(win.scene, str(path))
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    items = other.vector_items()          # ascending z
+    assert isinstance(items[-1], RectItem)   # bottom is now on top
+
+
 def test_pencil_paints_raster(scene):
     before = scene.raster_item.pixmap().toImage()
     scene.pen = QPen(QColor("#000000"), 5)

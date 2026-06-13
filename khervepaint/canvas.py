@@ -511,6 +511,10 @@ class PaintView(QGraphicsView):
     """Canvas view: grid overlay, zoom, cursor tracking."""
 
     cursor_moved = pyqtSignal(QPointF)
+    #: (top-level item, global QPoint) when an item is right-clicked.
+    item_context = pyqtSignal(object, object)
+    #: top-level item when a non-text item is double-clicked (edit).
+    item_edit = pyqtSignal(object)
 
     def __init__(self, scene: PaintScene, parent=None):
         super().__init__(scene, parent)
@@ -519,6 +523,37 @@ class PaintView(QGraphicsView):
         self.setMouseTracking(True)
         self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+
+    def _pick_item(self, view_pos):
+        """Top-level editable item under *view_pos*, or None.
+        Skips endpoint handles and the raster layer; climbs to the
+        outermost group so right-clicking inside a group targets it."""
+        for it in self.items(view_pos):
+            if isinstance(it, EndpointHandle) or it is self.scene().raster_item:
+                continue
+            while it.parentItem() is not None:
+                it = it.parentItem()
+            return it
+        return None
+
+    def contextMenuEvent(self, event):
+        if self.scene().tool != POINTER:
+            return
+        item = self._pick_item(event.pos())
+        if item is None:
+            return
+        if not item.isSelected():
+            self.scene().clearSelection()
+            item.setSelected(True)
+        self.item_context.emit(item, event.globalPos())
+
+    def mouseDoubleClickEvent(self, event):
+        if self.scene().tool == POINTER:
+            item = self._pick_item(event.pos())
+            if item is not None and not isinstance(item, TextItem):
+                self.item_edit.emit(item)
+                return
+        super().mouseDoubleClickEvent(event)
 
     def set_tool_cursor(self, tool: str):
         if tool == POINTER:
