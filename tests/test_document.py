@@ -38,6 +38,21 @@ def scene(app):
     return PaintScene(400, 300)
 
 
+@pytest.fixture
+def window(app):
+    """A MainWindow destroyed immediately (sip.delete) after the test,
+    so accumulated top-level widgets don't segfault at interpreter exit."""
+    from khervepaint.mainwindow import MainWindow
+    win = MainWindow()
+    yield win
+    win._undo_stack.setClean()       # avoid the offscreen discard dialog
+    win.close()
+    app.processEvents()
+    from PyQt5 import sip
+    sip.delete(win)
+    app.processEvents()
+
+
 def _populated(scene):
     line = LineItem(QLineF(0, 0, 100, 50))
     line.setPen(QPen(QColor("#ff0000"), 3))
@@ -467,9 +482,8 @@ def test_double_click_rotate_uses_centre(scene):
     assert abs(after.y() - before.y()) < 1.0
 
 
-def test_copy_paste_and_duplicate(app):
-    from khervepaint.mainwindow import MainWindow
-    win = MainWindow()
+def test_copy_paste_and_duplicate(window):
+    win = window
     rect = RectItem(QRectF(0, 0, 30, 20))
     rect.setPos(5, 5)
     win.scene.addItem(rect)
@@ -531,10 +545,9 @@ def test_properties_dialog_text(app):
     assert text.font().bold() is True
 
 
-def test_context_menu_builds(app):
-    from khervepaint.mainwindow import MainWindow
+def test_context_menu_builds(window):
     from khervepaint.properties import build_context_menu
-    win = MainWindow()
+    win = window
     rect = RectItem(QRectF(0, 0, 10, 10))
     win.scene.addItem(rect)
     menu = build_context_menu(win, rect)
@@ -543,10 +556,9 @@ def test_context_menu_builds(app):
     assert "Bring to front" in labels
 
 
-def test_reorder_persists_through_svg(app, tmp_path):
+def test_reorder_persists_through_svg(window, tmp_path):
     from khervepaint import svgio
-    from khervepaint.mainwindow import MainWindow
-    win = MainWindow()
+    win = window
     bottom = RectItem(QRectF(0, 0, 10, 10))
     top = EllipseItem(QRectF(0, 0, 10, 10))
     win.scene.addItem(bottom)
@@ -694,6 +706,64 @@ def test_scene_crop_flow(app):
     assert img.pixmap().width() == 10
     # crop overlay items are gone (only the image remains as a vector item)
     assert scene.vector_items() == [img]
+
+
+def test_undo_redo_add_move_delete(window):
+    win = window
+    s = win.scene
+    s.snap_enabled = False
+
+    rect = RectItem(QRectF(0, 0, 30, 20))
+    rect.setPos(10, 10)
+    s.addItem(rect)
+    s.changed_by_user.emit()                   # an "add" gesture
+    assert len(s.vector_items()) == 1
+
+    s.vector_items()[0].setPos(80, 90)
+    s.changed_by_user.emit()                   # a "move" gesture
+    assert s.vector_items()[0].pos() == QPointF(80, 90)
+
+    win._undo_stack.undo()                     # undo the move
+    assert s.vector_items()[0].pos() == QPointF(10, 10)
+
+    win._undo_stack.undo()                     # undo the add
+    assert s.vector_items() == []
+
+    win._undo_stack.redo()                     # redo the add
+    assert len(s.vector_items()) == 1
+    assert s.vector_items()[0].pos() == QPointF(10, 10)
+
+
+def test_undo_restores_label_and_transform(window):
+    from khervepaint.canvas import center_origin
+    win = window
+    s = win.scene
+    rect = RectItem(QRectF(0, 0, 40, 40))
+    s.addItem(rect)
+    s.changed_by_user.emit()
+
+    rect = s.vector_items()[0]
+    rect.set_label("Hi")
+    center_origin(rect)
+    rect.setRotation(45)
+    s.changed_by_user.emit()
+    assert s.vector_items()[0].label() == "Hi"
+
+    win._undo_stack.undo()                     # revert label + rotation
+    reverted = s.vector_items()[0]
+    assert reverted.label() == ""
+    assert abs(reverted.rotation()) < 1e-6
+
+
+def test_save_marks_history_clean(window, tmp_path):
+    win = window
+    s = win.scene
+    s.addItem(RectItem(QRectF(0, 0, 10, 10)))
+    s.changed_by_user.emit()
+    assert win._undo_stack.isClean() is False
+    win._path = str(tmp_path / "doc.svg")
+    win.save_file()
+    assert win._undo_stack.isClean() is True
 
 
 def test_pencil_creates_vector_stroke(scene):

@@ -323,6 +323,7 @@ class PaintScene(QGraphicsScene):
         self._sel_handles = None        # SelectionHandles for active item
         self._rotate_target = None      # item currently in rotate mode
         self._crop = None               # active CropSession, if any
+        self._press_positions = {}      # selected item positions at press
         self.selectionChanged.connect(self._on_selection_changed)
 
         self.new_document(width, height)
@@ -465,6 +466,9 @@ class PaintScene(QGraphicsScene):
     def mousePressEvent(self, event):
         if self.tool == POINTER or event.button() != Qt.LeftButton:
             super().mousePressEvent(event)
+            if self.tool == POINTER:
+                self._press_positions = {it: it.pos()
+                                         for it in self.selectedItems()}
             return
         # Let an in-progress text edit receive the click first.
         focus = self.focusItem()
@@ -523,7 +527,10 @@ class PaintScene(QGraphicsScene):
         if not self._drawing:
             super().mouseReleaseEvent(event)
             if self.tool == POINTER and event.button() == Qt.LeftButton:
+                moved = self._moved_since_press()
                 self.refresh_handles()
+                if moved:
+                    self.changed_by_user.emit()
             return
         self._drawing = False
         if self.tool == PENCIL:
@@ -574,6 +581,12 @@ class PaintScene(QGraphicsScene):
         else:
             center_origin(stroke)
             self.changed_by_user.emit()
+
+    def _moved_since_press(self) -> bool:
+        """True if any item selected at press has since changed position
+        (a pointer move gesture), so it can be recorded for undo."""
+        return any(it.scene() is self and it.pos() != pos
+                   for it, pos in self._press_positions.items())
 
     def _new_rect_item(self, tool: str):
         """A fresh, empty rect-defined item for *tool*."""

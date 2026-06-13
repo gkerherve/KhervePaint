@@ -154,20 +154,35 @@ position, geometry, pen/brush, opacity, rotation; groups nest
 
 ## Roadmap
 
-- Undo/redo on a shared `QUndoStack` (add/remove/move/geometry/paint
-  strokes), mirroring KherveSheet's `undo_commands.py`.
-- Resize/rotate handles on selected vector items.
-- Eraser, flood fill, colour picker for the raster layer.
-- Layers panel; raster layer resize/crop.
-- Copy/paste of vector items, including across documents.
-- Resize handles on rect/ellipse (lines already have endpoint handles).
+- Eraser and colour picker for the raster layer.
+- Layers panel.
+- Copy/paste of vector items across documents.
 
 ## Undo / redo policy
 
-**Every user-visible change should become undoable** as the app
-matures: cell-local text undo comes free in text items, but item
-add/remove/move/geometry changes and raster strokes must move onto a
-shared QUndoStack.
+**Every change to the document is undoable** via a full-document
+snapshot stack: `undo.py`'s `SnapshotCommand` on a `QUndoStack` owned
+by `MainWindow`. The mechanism is driven entirely by the scene's
+`changed_by_user` signal — whenever it fires, the window serialises the
+whole document (`document.scene_to_dict`, which already captures every
+item property, the raster layer and the grid) and pushes a command
+that swaps between the before/after snapshots. Undo/redo restore by
+calling `document.dict_to_scene`. So anything that round-trips through
+the persistence layer is automatically undoable.
+
+**This makes one rule load-bearing: every new user action that changes
+the document MUST emit `changed_by_user` exactly once when it
+completes** (not per mouse-move — once per finished gesture). If it
+doesn't, the action silently won't be undoable.
+
+**Pre-commit check (required): before committing any change, verify
+that every new or modified user action that alters the document emits
+`changed_by_user`, and that the property it changes is serialised by
+`document.py`/`svgio.py` (so the snapshot captures it). If you add a
+new persisted property, it must be in `scene_to_dict`/`item_to_dict`
+*and* survive `dict_to_scene` — otherwise undo will lose it.** Confirm
+this explicitly in the commit, e.g. add a one-line test or note that
+the action is undoable.
 
 ## Persistence policy
 

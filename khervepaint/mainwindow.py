@@ -16,9 +16,10 @@ from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
                              QMenu, QMessageBox, QSpinBox, QToolBar,
-                             QToolButton)
+                             QToolButton, QUndoStack)
 
 from . import APP_NAME, __version__, document, icons, svgio
+from .undo import SnapshotCommand
 from .canvas import (ARROW, BUCKET, CIRCLE, DIAMOND, ELLIPSE, HEXAGON, LINE,
                      PENCIL, PENTAGON, POINTER, RECT, ROUNDRECT, STAR, TEXT,
                      TRIANGLE, ImageItem, PaintScene, PaintView)
@@ -64,8 +65,20 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.view)
 
         self._path = None
-        self._dirty = False
-        self.scene.changed_by_user.connect(self._mark_dirty)
+        self._undo_stack = QUndoStack(self)
+        self._undo_stack.setUndoLimit(80)
+        self._restoring = False
+        self._snapshot = document.scene_to_dict(self.scene)
+        self._undo_stack.cleanChanged.connect(lambda *_: self._update_title())
+
+        self._undo_act = self._undo_stack.createUndoAction(self, "Undo")
+        self._undo_act.setShortcut(QKeySequence.Undo)
+        self._undo_act.setIcon(icons.icon("mdi.undo"))
+        self._redo_act = self._undo_stack.createRedoAction(self, "Redo")
+        self._redo_act.setShortcuts([QKeySequence.Redo, QKeySequence("Ctrl+Y")])
+        self._redo_act.setIcon(icons.icon("mdi.redo"))
+
+        self.scene.changed_by_user.connect(self._capture_change)
         self.view.cursor_moved.connect(
             lambda p: self.statusBar().showMessage(
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
@@ -140,6 +153,9 @@ class MainWindow(QMainWindow):
                       self.save_file)
         bar.addAction(icons.icon("mdi.export"), "Export PNG / PDF",
                       self.export_file)
+        bar.addSeparator()
+        bar.addAction(self._undo_act)
+        bar.addAction(self._redo_act)
         bar.addSeparator()
 
         self._stroke_btn = QToolButton()
@@ -228,6 +244,9 @@ class MainWindow(QMainWindow):
         file_menu.addAction("E&xit", self.close, "Ctrl+Q")
 
         edit_menu = m.addMenu("&Edit")
+        edit_menu.addAction(self._undo_act)
+        edit_menu.addAction(self._redo_act)
+        edit_menu.addSeparator()
         edit_menu.addAction("Cu&t", self.cut_selection, QKeySequence.Cut)
         edit_menu.addAction("&Copy", self.copy_selection, QKeySequence.Copy)
         edit_menu.addAction("&Paste", self.paste, QKeySequence.Paste)
@@ -409,7 +428,7 @@ class MainWindow(QMainWindow):
             return
         self.scene.new_document(800, 600)
         self._path = None
-        self._dirty = False
+        self._reset_history()
         self._update_title()
 
     def open_file(self):
@@ -436,7 +455,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, APP_NAME, f"Could not open:\n{exc}")
             return
         self._sync_grid_controls()
-        self._dirty = False
+        self._reset_history()
         self.view.zoom_reset()
         self._update_title()
 
@@ -452,7 +471,7 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not save:\n{exc}")
             return
-        self._dirty = False
+        self._undo_stack.setClean()
         self._update_title()
 
     def save_file_as(self):
@@ -491,18 +510,40 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not export:\n{exc}")
 
-    # ------------------------------------------------------------ misc
-    def _mark_dirty(self):
-        self._dirty = True
-        self._update_title()
+    # ------------------------------------------------------------ history
+    def _capture_change(self):
+        """Snapshot the document after a user change and push an undo
+        command. Skipped while restoring (undo/redo) to avoid feedback."""
+        if self._restoring:
+            return
+        after = document.scene_to_dict(self.scene)
+        if after == self._snapshot:
+            return
+        self._undo_stack.push(SnapshotCommand(self, self._snapshot, after))
+        self._snapshot = after
 
+    def _restore_snapshot(self, state: dict):
+        self._restoring = True
+        document.dict_to_scene(state, self.scene)
+        self._snapshot = state
+        self._sync_grid_controls()
+        self.scene.clear_handles()
+        self.view.viewport().update()
+        self._restoring = False
+
+    def _reset_history(self):
+        """Start a fresh history baseline (New / Open)."""
+        self._snapshot = document.scene_to_dict(self.scene)
+        self._undo_stack.clear()          # also marks the stack clean
+
+    # ------------------------------------------------------------ misc
     def _update_title(self):
         name = Path(self._path).name if self._path else "Untitled"
-        star = "*" if self._dirty else ""
+        star = "" if self._undo_stack.isClean() else "*"
         self.setWindowTitle(f"{star}{name} — {APP_NAME} v{__version__}")
 
     def _confirm_discard(self) -> bool:
-        if not self._dirty:
+        if self._undo_stack.isClean():
             return True
         answer = QMessageBox.question(
             self, APP_NAME, "Discard unsaved changes?",
