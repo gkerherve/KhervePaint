@@ -544,14 +544,17 @@ class MainWindow(QMainWindow):
         has_sel = any(i.parentItem() is None
                       for i in self.scene.selectedItems())
         dlg = CanvasSizeDialog(
-            self, current=(rect.width(), rect.height()), has_selection=has_sel)
+            self, current=(rect.width(), rect.height()),
+            dpi=self.scene.dpi, has_selection=has_sel)
         if not dlg.exec_():
             return
         choice = dlg.result_value()
         if choice[0] == "fit":
             self.scene.fit_to_content(selection_only=choice[1])
         else:
-            self.scene.resize_canvas(choice[1], choice[2])
+            _, px_w, px_h, dpi = choice
+            self.scene.dpi = dpi
+            self.scene.resize_canvas(px_w, px_h)
         self.view.zoom_reset()
 
     def save_file_as(self):

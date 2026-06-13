@@ -310,6 +310,7 @@ class PaintScene(QGraphicsScene):
         self.grid_divisions = 40
         self.snap_enabled = True
         self.show_grid = True
+        self.dpi = 96             # pixels per inch, for physical export size
 
         self.raster_item = QGraphicsPixmapItem()
         self.raster_item.setZValue(-10)

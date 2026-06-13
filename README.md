@@ -58,11 +58,14 @@ properties), and images can be **cropped** — right-click an image →
 grid control sets the number of **divisions** across the canvas, so a
 higher number means a finer grid.
 
-**File ▸ Drawing Size** sets the canvas size: pick a publication preset
-(A4, US Letter, journal column widths at 300 dpi, slides), enter a
-custom width × height, or **fit to drawing** to shrink the canvas snugly
-around your shapes (optionally just the selection). Everything is
-undoable with **Ctrl+Z / Ctrl+Y**.
+**File ▸ Drawing Size** sets the canvas in **px, inches or mm** at a
+chosen **DPI** — with publication presets including **ACS single column
+(3.25 in)** and **double column (7.0 in)** at 300 dpi, plus A4/Letter
+and slides. Exports carry the real physical size: PNG embeds the DPI,
+PDF pages are the figure's true inch size, and SVG sets its width/height
+in inches (with a pixel `viewBox`). You can also **fit to drawing** to
+shrink the canvas snugly around your shapes (optionally just the
+selection). Everything is undoable with **Ctrl+Z / Ctrl+Y**.
 
 The **bucket** fills a region enclosed by shape outlines — click inside
 the area walled off by two or more shapes and it fills with the current

@@ -857,6 +857,53 @@ def test_save_adds_to_recent(window, tmp_path):
     window._clear_recent()
 
 
+def test_dpi_roundtrip_kpaint(scene, tmp_path):
+    scene.dpi = 300
+    path = tmp_path / "dpi.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    assert other.dpi == 300
+
+
+def test_dpi_roundtrip_svg(scene, tmp_path):
+    from khervepaint import svgio
+    scene.dpi = 300
+    path = tmp_path / "dpi.svg"
+    svgio.save_svg(scene, str(path))
+    text = path.read_text(encoding="utf-8")
+    assert 'in"' in text                       # physical width in inches
+    assert "viewBox" in text                    # pixel coordinate system
+    other = PaintScene(10, 10)
+    svgio.load_svg(other, str(path))
+    assert other.dpi == 300
+    assert other.sceneRect().width() == 400     # px size preserved
+
+
+def test_acs_preset_pixels(app):
+    from khervepaint.canvassize import CanvasSizeDialog
+    dlg = CanvasSizeDialog(current=(800, 600), dpi=96)
+    # select the ACS single column preset (index 1)
+    dlg.preset_combo.setCurrentIndex(1)
+    dlg._apply_preset(1)
+    mode, pw, ph, dpi = dlg.result_value()
+    assert mode == "size"
+    assert dpi == 300
+    assert pw == round(3.25 * 300)              # 975 px wide
+    assert ph == round(2.50 * 300)              # 750 px tall
+
+
+def test_size_dialog_mm_conversion(app):
+    from khervepaint.canvassize import CanvasSizeDialog
+    dlg = CanvasSizeDialog(current=(800, 600), dpi=300)
+    dlg.unit_combo.setCurrentText("mm")
+    dlg.width_spin.setValue(82.5)               # ACS single column in mm
+    dlg.height_spin.setValue(50)
+    _, pw, ph, dpi = dlg.result_value()
+    # 82.5 mm at 300 dpi = 82.5/25.4*300 ≈ 974 px
+    assert abs(pw - round(82.5 / 25.4 * 300)) <= 1
+
+
 def test_resize_canvas_keeps_items(scene):
     rect = RectItem(QRectF(0, 0, 30, 20))
     rect.setPos(15, 15)

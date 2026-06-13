@@ -67,10 +67,13 @@ into a new module and import.
   - `crop.py`        — `CropSession`: interactive image crop overlay
                        (dim mask + frame + handles); Enter applies,
                        Esc cancels. Right-click an image → Crop image.
-  - `canvassize.py`  — `CanvasSizeDialog` (File ▸ Drawing Size):
-                       publication presets, custom W×H, or fit-to-
-                       drawing. Drives `scene.resize_canvas` /
-                       `fit_to_content` (both undoable).
+  - `canvassize.py`  — `CanvasSizeDialog` (File ▸ Drawing Size): size in
+                       px/in/mm at a DPI, ACS journal + paper presets,
+                       custom, or fit-to-drawing. Sets `scene.dpi` and
+                       drives `resize_canvas`/`fit_to_content` (undoable).
+                       `scene.dpi` round-trips (.kpaint/SVG) and drives
+                       physical export size (PNG dpi, PDF page, SVG inch
+                       width with px viewBox).
   - `undo.py`        — `SnapshotCommand`: whole-document snapshot
                        undo/redo (see Undo / redo policy).
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).

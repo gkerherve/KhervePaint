@@ -254,10 +254,15 @@ def _emit_label(parent, el, item):
 
 def save_svg(scene: PaintScene, path: str):
     rect = scene.sceneRect()
+    dpi = getattr(scene, "dpi", 96)
+    w, h = int(rect.width()), int(rect.height())
     root = ET.Element(_svg("svg"))
-    root.set("width", f"{int(rect.width())}")
-    root.set("height", f"{int(rect.height())}")
-    root.set("viewBox", f"0 0 {int(rect.width())} {int(rect.height())}")
+    # Physical size (in) for publication, with a pixel viewBox so the
+    # coordinate system stays in px and our loader reads it back exactly.
+    root.set("width", f"{w / dpi:g}in")
+    root.set("height", f"{h / dpi:g}in")
+    root.set("viewBox", f"0 0 {w} {h}")
+    root.set(_kp("dpi"), str(dpi))
     root.set(_kp("grid-divisions"), str(scene.grid_divisions))
     root.set(_kp("grid-show"), "1" if scene.show_grid else "0")
     root.set(_kp("grid-snap"), "1" if scene.snap_enabled else "0")
@@ -587,6 +592,10 @@ def load_svg(scene: PaintScene, path: str):
     root = ET.parse(path).getroot()
     width, height = _root_size(root)
     scene.new_document(width, height)
+
+    dpi = root.get(_kp("dpi"))
+    if dpi is not None:
+        scene.dpi = int(float(dpi))
 
     divisions = root.get(_kp("grid-divisions"))
     legacy = root.get(_kp("grid-size"))

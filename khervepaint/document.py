@@ -27,7 +27,7 @@ from .canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem, LabelMixin,
                      LineItem, PaintScene, PathItem, PolygonItem, RectItem,
                      RoundedRectItem, TextItem, center_origin)
 
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 
 
 # ---------------------------------------------------------------- pens
@@ -237,6 +237,7 @@ def scene_to_dict(scene: PaintScene) -> dict:
     rect = scene.sceneRect()
     return {"format": "kpaint", "version": FORMAT_VERSION,
             "width": int(rect.width()), "height": int(rect.height()),
+            "dpi": getattr(scene, "dpi", 96),
             "grid": {"divisions": scene.grid_divisions,
                      "show": scene.show_grid, "snap": scene.snap_enabled},
             "raster": _pixmap_to_b64(scene.raster_item.pixmap()),
@@ -248,6 +249,7 @@ def dict_to_scene(data: dict, scene: PaintScene):
         raise ValueError("not a .kpaint document")
     width = data.get("width", 800)
     scene.new_document(width, data.get("height", 600))
+    scene.dpi = data.get("dpi", 96)
     grid = data.get("grid", {})
     if "divisions" in grid:
         scene.grid_divisions = grid["divisions"]
@@ -287,6 +289,9 @@ def export_png(scene: PaintScene, path: str):
     image = QImage(int(rect.width()), int(rect.height()),
                    QImage.Format_ARGB32)
     image.fill(Qt.white)
+    dpm = round(getattr(scene, "dpi", 96) / 0.0254)   # dots per metre
+    image.setDotsPerMeterX(dpm)
+    image.setDotsPerMeterY(dpm)
     painter = QPainter(image)
     painter.setRenderHint(QPainter.Antialiasing)
     scene.render(painter, target=QRectF(image.rect()), source=rect)
@@ -311,14 +316,16 @@ def export_svg(scene: PaintScene, path: str):
 
 
 def export_pdf(scene: PaintScene, path: str):
-    """Render to a single-page PDF sized to the canvas (96 dpi)."""
+    """Render to a single-page PDF sized to the canvas at its dpi, so
+    the page is the figure's true physical size."""
     scene.clearSelection()
     rect = scene.sceneRect()
+    dpi = getattr(scene, "dpi", 96)
     writer = QPdfWriter(path)
-    writer.setResolution(96)
-    # Page size is in points (1/72 inch); the canvas is in 96-dpi px.
+    writer.setResolution(round(dpi))
+    # Page size in points (1/72 inch); canvas pixels / dpi = inches.
     writer.setPageSize(QPageSize(
-        QSizeF(rect.width() * 72 / 96, rect.height() * 72 / 96),
+        QSizeF(rect.width() * 72 / dpi, rect.height() * 72 / dpi),
         QPageSize.Point))
     writer.setPageMargins(QMarginsF(0, 0, 0, 0))
     painter = QPainter(writer)
