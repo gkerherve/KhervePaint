@@ -1128,6 +1128,17 @@ def test_ai_providers_metadata():
     assert p.DEFAULT_BASE["Ollama"].startswith("http://localhost")
 
 
+def test_settings_isolated_from_real_store():
+    """Guard: the suite must never read/write the developer's real
+    KhervePaint settings (registry on Windows) — conftest redirects all
+    app QSettings to a throwaway temp file."""
+    from khervepaint import ai_assistant, mainwindow, style
+    for mod in (ai_assistant, mainwindow, style):
+        name = mod.QSettings("Kherve", "KhervePaint").fileName()
+        assert name.endswith("settings.ini"), name
+        assert "HKEY" not in name.upper(), name
+
+
 def test_ai_dock_builds(window):
     assert window.ai_dock is not None
     # the toggle is wired into the View menu

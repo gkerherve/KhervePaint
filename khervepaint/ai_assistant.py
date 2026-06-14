@@ -476,6 +476,7 @@ class AiDock(QDockWidget):
         # keep the last 100 turns so the store stays small
         self._settings.setValue("ai/history",
                                 json.dumps(self._history[-100:]))
+        self._settings.sync()           # flush now so a hard close keeps it
 
     def _load_history(self):
         raw = self._settings.value("ai/history", "")

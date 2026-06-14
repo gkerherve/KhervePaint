@@ -10,3 +10,7 @@ dist/
 *.kpaint.bak
 Test/
 scratch/
+
+# scratch / preview artifacts
+_preview/
+_render_examples.py
