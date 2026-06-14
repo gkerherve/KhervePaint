@@ -15,14 +15,16 @@ the Free Software Foundation, either version 3 of the License, or
 import json
 import re
 
-from PyQt5.QtCore import QSettings, Qt, QThread, pyqtSignal
+from PyQt5.QtCore import QLineF, QRectF, QSettings, Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor, QPen
-from PyQt5.QtCore import QLineF, QRectF
-from PyQt5.QtWidgets import (QComboBox, QDockWidget, QHBoxLayout, QLabel,
-                             QLineEdit, QPlainTextEdit, QPushButton,
-                             QTextBrowser, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
+                             QDockWidget, QFormLayout, QGroupBox, QHBoxLayout,
+                             QLabel, QLineEdit, QMessageBox, QPlainTextEdit,
+                             QPushButton, QTextBrowser, QToolButton,
+                             QVBoxLayout, QWidget)
 
 from . import ai_providers as providers
+from . import icons
 from .canvas import (ARC_KINDS, POLYGON_KINDS, ArcShapeItem, ArrowItem,
                      EllipseItem, LineItem, PolygonItem, RectItem,
                      RoundedRectItem, TextItem, center_origin)
@@ -187,6 +189,123 @@ class _Worker(QThread):
             self.failed.emit(str(exc))
 
 
+# ---------------------------------------------------------------- settings
+class AiSettingsDialog(QDialog):
+    """Provider / model / API-key settings, like the rest of the family."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("AI Chat Settings")
+        self.setMinimumWidth(440)
+        self._settings = QSettings(*_SETTINGS)
+        self._worker = None
+
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        layout.addLayout(form)
+
+        self.provider_combo = QComboBox()
+        for key in providers.PROVIDERS:
+            self.provider_combo.addItem(providers.DISPLAY_NAMES[key], key)
+        form.addRow("Provider:", self.provider_combo)
+
+        model_row = QHBoxLayout()
+        self.model_combo = QComboBox()
+        self.model_combo.setEditable(True)
+        self.refresh_btn = QToolButton()
+        self.refresh_btn.setIcon(icons.icon("mdi.refresh"))
+        self.refresh_btn.setToolTip("Refresh the model list from the provider")
+        model_row.addWidget(self.model_combo, 1)
+        model_row.addWidget(self.refresh_btn)
+        form.addRow("Model:", model_row)
+
+        self.key_edit = QLineEdit()
+        self.key_edit.setEchoMode(QLineEdit.Password)
+        form.addRow("API Key:", self.key_edit)
+
+        self.base_label = QLabel("Base URL:")
+        self.base_edit = QLineEdit()
+        form.addRow(self.base_label, self.base_edit)
+
+        self.help_box = QGroupBox("How to get an API key")
+        help_layout = QVBoxLayout(self.help_box)
+        self.help_label = QLabel()
+        self.help_label.setWordWrap(True)
+        help_layout.addWidget(self.help_label)
+        layout.addWidget(self.help_box)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok
+                                   | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self._accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        self.provider_combo.currentIndexChanged.connect(self._load_provider)
+        self.refresh_btn.clicked.connect(self._refresh)
+
+        saved = self._settings.value("ai/provider", "Claude")
+        idx = self.provider_combo.findData(saved)
+        if idx >= 0:
+            self.provider_combo.setCurrentIndex(idx)
+        self._load_provider()
+
+    def _provider(self):
+        return self.provider_combo.currentData()
+
+    def _load_provider(self, *_):
+        provider = self._provider()
+        self.key_edit.setText(self._settings.value(f"ai/key/{provider}", ""))
+        self.base_edit.setText(self._settings.value(f"ai/base/{provider}", ""))
+        self.key_edit.setEnabled(provider in providers.NEEDS_KEY)
+        show_base = provider in ("Local", "Ollama")
+        self.base_label.setVisible(show_base)
+        self.base_edit.setVisible(show_base)
+        self.model_combo.blockSignals(True)
+        self.model_combo.clear()
+        self.model_combo.addItems(providers.DEFAULT_MODELS.get(provider, []))
+        saved = self._settings.value(f"ai/model/{provider}", "")
+        if saved:
+            self.model_combo.setCurrentText(saved)
+        self.model_combo.blockSignals(False)
+        self.help_label.setText(providers.PROVIDER_HELP.get(provider, ""))
+
+    def _refresh(self):
+        provider = self._provider()
+        key, base = self.key_edit.text(), self.base_edit.text()
+        self.refresh_btn.setEnabled(False)
+        self._worker = _Worker(
+            lambda: providers.list_models(provider, key, base), self)
+        self._worker.done.connect(self._models_ready)
+        self._worker.failed.connect(self._refresh_failed)
+        self._worker.start()
+
+    def _models_ready(self, models):
+        self.refresh_btn.setEnabled(True)
+        if not models:
+            QMessageBox.information(self, "AI Chat", "No models returned.")
+            return
+        current = self.model_combo.currentText()
+        self.model_combo.clear()
+        self.model_combo.addItems(models)
+        self.model_combo.setCurrentText(current if current in models
+                                        else models[0])
+
+    def _refresh_failed(self, message):
+        self.refresh_btn.setEnabled(True)
+        QMessageBox.warning(self, "AI Chat",
+                            f"Could not list models:\n{message}")
+
+    def _accept(self):
+        provider = self._provider()
+        self._settings.setValue("ai/provider", provider)
+        self._settings.setValue(f"ai/key/{provider}", self.key_edit.text())
+        self._settings.setValue(f"ai/base/{provider}", self.base_edit.text())
+        if self.model_combo.currentText():
+            self._settings.setValue(f"ai/model/{provider}",
+                                    self.model_combo.currentText())
+        self.accept()
+
+
 # ---------------------------------------------------------------- dock
 class AiDock(QDockWidget):
     def __init__(self, scene, parent=None):
@@ -201,26 +320,14 @@ class AiDock(QDockWidget):
         layout = QVBoxLayout(body)
         layout.setContentsMargins(6, 6, 6, 6)
 
-        row = QHBoxLayout()
-        self.provider_combo = QComboBox()
-        self.provider_combo.addItems(providers.PROVIDERS)
-        self.model_combo = QComboBox()
-        self.model_combo.setEditable(True)
-        self.model_combo.setMinimumWidth(120)
-        self.refresh_btn = QPushButton("Refresh")
-        self.refresh_btn.setToolTip("List the models this provider offers")
-        row.addWidget(self.provider_combo)
-        row.addWidget(self.model_combo, 1)
-        row.addWidget(self.refresh_btn)
-        layout.addLayout(row)
-
-        self.key_edit = QLineEdit()
-        self.key_edit.setEchoMode(QLineEdit.Password)
-        self.key_edit.setPlaceholderText("API key")
-        layout.addWidget(self.key_edit)
-        self.base_edit = QLineEdit()
-        self.base_edit.setPlaceholderText("Base URL (Local / Ollama)")
-        layout.addWidget(self.base_edit)
+        header = QHBoxLayout()
+        self.status_label = QLabel()
+        self.status_label.setStyleSheet("color:#888;")
+        self.settings_btn = QPushButton(icons.icon("mdi.cog-outline"),
+                                        " Settings")
+        header.addWidget(self.status_label, 1)
+        header.addWidget(self.settings_btn)
+        layout.addLayout(header)
 
         self.transcript = QTextBrowser()
         self.transcript.setOpenExternalLinks(True)
@@ -228,8 +335,8 @@ class AiDock(QDockWidget):
 
         self.input = QPlainTextEdit()
         self.input.setPlaceholderText(
-            "Ask me to draw… e.g. “draw a blue flowchart box with the "
-            "label Start and an arrow to a circle below it”")
+            "Ask me to draw… e.g. “a blue flowchart box labelled Start "
+            "with an arrow to a circle below it”")
         self.input.setFixedHeight(64)
         layout.addWidget(self.input)
         self.send_btn = QPushButton("Send")
@@ -237,46 +344,23 @@ class AiDock(QDockWidget):
 
         self.setWidget(body)
 
-        self.provider_combo.currentTextChanged.connect(self._load_provider)
-        self.model_combo.currentTextChanged.connect(self._save_model)
-        self.key_edit.editingFinished.connect(self._save_settings)
-        self.base_edit.editingFinished.connect(self._save_settings)
-        self.refresh_btn.clicked.connect(self._refresh_models)
+        self.settings_btn.clicked.connect(self._open_settings)
         self.send_btn.clicked.connect(self._send)
 
-        saved = self._settings.value("ai/provider", "Claude")
-        if saved in providers.PROVIDERS:
-            self.provider_combo.setCurrentText(saved)
-        self._load_provider(self.provider_combo.currentText())
-        self._log("system", "Pick a provider, set its API key, then ask me "
-                            "to draw something. Use Refresh to list models.")
+        self._update_status()
+        self._log("system", "Click Settings to choose a provider and enter "
+                            "your API key, then ask me to draw something.")
 
     # ------------------------------------------------------- settings
-    def _provider(self):
-        return self.provider_combo.currentText()
+    def _open_settings(self):
+        if AiSettingsDialog(self).exec_():
+            self._update_status()
 
-    def _load_provider(self, provider):
-        self._settings.setValue("ai/provider", provider)
-        self.key_edit.setText(self._settings.value(f"ai/key/{provider}", ""))
-        self.base_edit.setText(self._settings.value(f"ai/base/{provider}", ""))
-        self.key_edit.setEnabled(provider in providers.NEEDS_KEY)
-        self.base_edit.setEnabled(provider in ("Local", "Ollama"))
-        self.model_combo.blockSignals(True)
-        self.model_combo.clear()
-        self.model_combo.addItems(providers.DEFAULT_MODELS.get(provider, []))
-        saved_model = self._settings.value(f"ai/model/{provider}", "")
-        if saved_model:
-            self.model_combo.setCurrentText(saved_model)
-        self.model_combo.blockSignals(False)
-
-    def _save_model(self, model):
-        if model:
-            self._settings.setValue(f"ai/model/{self._provider()}", model)
-
-    def _save_settings(self):
-        provider = self._provider()
-        self._settings.setValue(f"ai/key/{provider}", self.key_edit.text())
-        self._settings.setValue(f"ai/base/{provider}", self.base_edit.text())
+    def _update_status(self):
+        provider = self._settings.value("ai/provider", "Claude")
+        model = self._settings.value(f"ai/model/{provider}", "no model")
+        self.status_label.setText(
+            f"{providers.DISPLAY_NAMES.get(provider, provider)} · {model}")
 
     # ------------------------------------------------------- transcript
     def _log(self, role, text):
@@ -292,39 +376,18 @@ class AiDock(QDockWidget):
 
     def _busy(self, busy):
         self.send_btn.setEnabled(not busy)
-        self.refresh_btn.setEnabled(not busy)
 
     # ------------------------------------------------------- actions
-    def _refresh_models(self):
-        provider = self._provider()
-        key, base = self.key_edit.text(), self.base_edit.text()
-        self._busy(True)
-        self._log("system", f"Fetching {provider} models…")
-        self._run(lambda: providers.list_models(provider, key, base),
-                  self._models_ready)
-
-    def _models_ready(self, models):
-        self._busy(False)
-        if not models:
-            self._log("system", "No models returned.")
-            return
-        current = self.model_combo.currentText()
-        self.model_combo.blockSignals(True)
-        self.model_combo.clear()
-        self.model_combo.addItems(models)
-        self.model_combo.setCurrentText(current if current in models
-                                        else models[0])
-        self.model_combo.blockSignals(False)
-        self._log("system", f"{len(models)} models available.")
-
     def _send(self):
         text = self.input.toPlainText().strip()
         if not text:
             return
-        provider = self._provider()
-        model = self.model_combo.currentText().strip()
+        provider = self._settings.value("ai/provider", "Claude")
+        model = self._settings.value(f"ai/model/{provider}", "")
+        key = self._settings.value(f"ai/key/{provider}", "")
+        base = self._settings.value(f"ai/base/{provider}", "")
         if not model:
-            self._log("error", "Choose a model first (try Refresh).")
+            self._log("error", "Open Settings and choose a model first.")
             return
         self.input.clear()
         self._log("you", text)
@@ -335,7 +398,6 @@ class AiDock(QDockWidget):
             w=int(rect.width()), h=int(rect.height()),
             summary=_scene_summary(self.scene))
         messages = [{"role": "system", "content": system}] + self._history
-        key, base = self.key_edit.text(), self.base_edit.text()
         self._busy(True)
         self._run(lambda: providers.chat(provider, model, messages, key, base),
                   self._reply_ready)

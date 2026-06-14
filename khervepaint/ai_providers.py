@@ -41,6 +41,56 @@ _OPENAI_LIKE = {"ChatGPT", "Mistral", "Local"}
 
 PROVIDERS = list(DEFAULT_BASE)
 
+#: Friendly names shown in the settings dialog.
+DISPLAY_NAMES = {
+    "Claude": "Anthropic (Claude)",
+    "ChatGPT": "OpenAI (ChatGPT)",
+    "Mistral": "Mistral",
+    "Ollama": "Ollama (local)",
+    "Local": "Local server",
+}
+
+
+def provider_for_display(name):
+    for key, label in DISPLAY_NAMES.items():
+        if label == name:
+            return key
+    return name
+
+
+#: "How to get an API key" guidance per provider.
+PROVIDER_HELP = {
+    "Claude": ("To get an API key:\n"
+               "1. Go to console.anthropic.com\n"
+               "2. Sign up or log in\n"
+               "3. Navigate to API Keys in the left sidebar\n"
+               "4. Click \"Create Key\" and copy the key (starts with sk-ant-)\n"
+               "5. Add credit to your account under Billing"),
+    "ChatGPT": ("To get an API key:\n"
+                "1. Go to platform.openai.com\n"
+                "2. Sign up or log in\n"
+                "3. Open API keys (top-right account menu)\n"
+                "4. Click \"Create new secret key\" and copy it (sk-...)\n"
+                "5. Add a payment method under Billing"),
+    "Mistral": ("To get an API key:\n"
+                "1. Go to console.mistral.ai\n"
+                "2. Sign up or log in\n"
+                "3. Open API Keys\n"
+                "4. Create a new key and copy it\n"
+                "5. Add billing if required"),
+    "Ollama": ("No API key needed — Ollama runs locally:\n"
+               "1. Install Ollama from ollama.com\n"
+               "2. Start it (serves at http://localhost:11434)\n"
+               "3. Pull a model, e.g.  ollama pull llama3\n"
+               "4. Click the refresh icon to list installed models"),
+    "Local": ("For a local OpenAI-compatible server "
+              "(LM Studio, llama.cpp, vLLM…):\n"
+              "1. Start the server\n"
+              "2. Set the Base URL (e.g. http://localhost:1234)\n"
+              "3. An API key is usually not required\n"
+              "4. Click the refresh icon to list models"),
+}
+
 #: A few sensible defaults so the model box is never empty; use Refresh
 #: to pull the live list from the provider.
 DEFAULT_MODELS = {

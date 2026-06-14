@@ -1051,6 +1051,16 @@ def test_ai_dock_builds(window):
     assert window.ai_dock.toggleViewAction() is not None
 
 
+def test_ai_settings_dialog(window):
+    from khervepaint.ai_assistant import AiSettingsDialog
+    from khervepaint import ai_providers as p
+    dlg = AiSettingsDialog(window)
+    assert dlg.provider_combo.count() == 5            # five providers
+    assert dlg.provider_combo.itemData(0) in p.PROVIDERS
+    assert p.provider_for_display("Anthropic (Claude)") == "Claude"
+    assert "console.anthropic.com" in p.PROVIDER_HELP["Claude"]
+
+
 def test_help_content(window):
     from khervepaint import help as h
     guide = h.user_guide_html()
