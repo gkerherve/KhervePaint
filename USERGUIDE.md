@@ -97,7 +97,8 @@ path** behind the shapes.
 
 Paste a screenshot or copied image with **Ctrl+V** — it drops in as a
 movable picture. To **crop** it, right-click → *Crop image*, drag the
-frame handles, then press **Enter** to apply (or **Esc** to cancel).
+frame handles, then **double-click** (or press **Enter**) to apply —
+**Esc** cancels.
 
 ## 9. Grid & snap
 

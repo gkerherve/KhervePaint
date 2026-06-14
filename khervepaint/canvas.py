@@ -923,6 +923,7 @@ class PaintView(QGraphicsView):
         self.setMouseTracking(True)
         self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setFocusPolicy(Qt.StrongFocus)   # so Enter/Esc reach the view
         # Repaint the whole viewport on every change: partial updates
         # leave stale selection dashes / handles behind after deselect.
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
@@ -952,6 +953,9 @@ class PaintView(QGraphicsView):
         self.item_context.emit(item, event.globalPos())
 
     def mouseDoubleClickEvent(self, event):
+        if self.scene().crop_active():        # double-click confirms a crop
+            self.scene().apply_crop()
+            return
         if self.scene().tool == POINTER:
             item = self._pick_item(event.pos())
             if item is not None and not isinstance(item, TextItem):

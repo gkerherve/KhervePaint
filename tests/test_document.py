@@ -747,6 +747,27 @@ def test_crop_session_applies(app):
     assert img.pos() == QPointF(15, 14)
 
 
+def test_crop_freezes_image_then_restores(app):
+    from PyQt5.QtWidgets import QGraphicsItem
+    from PyQt5.QtGui import QPixmap
+    scene = PaintScene(200, 200)
+    pm = QPixmap(40, 30)
+    pm.fill(QColor("#00aa00"))
+    img = ImageItem(pm)
+    scene.addItem(img)
+    assert img.flags() & QGraphicsItem.ItemIsMovable
+
+    scene.begin_crop(img)
+    assert not (img.flags() & QGraphicsItem.ItemIsMovable)
+    assert not (img.flags() & QGraphicsItem.ItemIsSelectable)
+    scene._crop.rect = QRectF(5, 5, 20, 15)
+    scene.apply_crop()
+    assert img.pixmap().width() == 20
+    # move/select restored after cropping
+    assert img.flags() & QGraphicsItem.ItemIsMovable
+    assert img.flags() & QGraphicsItem.ItemIsSelectable
+
+
 def test_scene_crop_flow(app):
     from PyQt5.QtGui import QPixmap
     scene = PaintScene(200, 200)

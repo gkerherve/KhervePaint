@@ -172,8 +172,8 @@ path</b> behind the shapes.</p>
 <h2>8 · Images</h2>
 <p>Paste a screenshot or copied image with <b>Ctrl+V</b> — it drops in as
 a movable picture. To <b>crop</b> it, right-click → <i>Crop image</i>,
-drag the frame handles, then press <b>Enter</b> to apply (or <b>Esc</b>
-to cancel).</p>
+drag the frame handles, then <b>double-click</b> (or press <b>Enter</b>)
+to apply — <b>Esc</b> cancels.</p>
 
 <h2>9 · Grid &amp; snap</h2>
 <p>The <b>Divisions</b> box sets how many grid cells span the canvas — a

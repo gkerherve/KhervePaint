@@ -16,7 +16,8 @@ the Free Software Foundation, either version 3 of the License, or
 
 from PyQt5.QtCore import QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainterPath, QPen
-from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsRectItem
+from PyQt5.QtWidgets import (QGraphicsItem, QGraphicsPathItem,
+                             QGraphicsRectItem)
 
 from .handles import _BLUE, _BOX_CURSORS, Handle, _RectHandle
 
@@ -39,6 +40,11 @@ class CropSession:
         pm = image.pixmap()
         self.bounds = QRectF(0, 0, pm.width(), pm.height())
         self.rect = QRectF(self.bounds)
+        # Freeze the image while cropping so it can't be moved or show
+        # its own selection handles over the crop overlay.
+        self._old_flags = image.flags()
+        image.setFlag(QGraphicsItem.ItemIsMovable, False)
+        image.setFlag(QGraphicsItem.ItemIsSelectable, False)
         self._build()
 
     def _build(self):
@@ -133,3 +139,4 @@ class CropSession:
         self.handles = []
         self.mask = None
         self.frame = None
+        self.image.setFlags(self._old_flags)      # restore move/select

@@ -474,7 +474,8 @@ class MainWindow(QMainWindow):
         self.scene.begin_crop(item)
         self.view.setFocus()
         self.statusBar().showMessage(
-            "Crop: drag the handles, then Enter to apply or Esc to cancel")
+            "Crop: drag the handles, then double-click (or Enter) to apply "
+            "— Esc to cancel")
 
     def reorder_item(self, item, where: str):
         """Move *item* in front of / behind every other vector item."""
