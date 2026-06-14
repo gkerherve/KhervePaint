@@ -83,6 +83,7 @@ def user_guide_html() -> str:
     ])
     file_keys = _shortcut_rows([
         ("Ctrl+N / Ctrl+O / Ctrl+S", "New / Open / Save"),
+        ("Ctrl+Shift+N", "New window"),
         ("Ctrl+Shift+S", "Save As"),
         ("Ctrl+Shift+P", "Drawing size"),
         ("Ctrl+E", "Export PNG / PDF"),

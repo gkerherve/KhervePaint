@@ -85,8 +85,12 @@ SHAPE_GROUPS = [
 
 
 class MainWindow(QMainWindow):
+    #: Live top-level windows, so additional ones aren't garbage-collected.
+    _windows = []
+
     def __init__(self):
         super().__init__()
+        MainWindow._windows.append(self)
         self.setWindowIcon(icons.app_icon())
         self.resize(1200, 800)
 
@@ -298,6 +302,7 @@ class MainWindow(QMainWindow):
 
         file_menu = m.addMenu("&File")
         file_menu.addAction("&New", self.new_document, QKeySequence.New)
+        file_menu.addAction("New &Window", self.new_window, "Ctrl+Shift+N")
         file_menu.addAction("&Open...", self.open_file, QKeySequence.Open)
         self._recent_menu = file_menu.addMenu("Open &Recent")
         self._recent_menu.aboutToShow.connect(self._rebuild_recent_menu)
@@ -552,6 +557,15 @@ class MainWindow(QMainWindow):
         self._reset_history()
         self._update_title()
 
+    def new_window(self):
+        """Open a second, independent KhervePaint window (own document)."""
+        win = MainWindow()
+        win.move(self.x() + 40, self.y() + 40)
+        win.show()
+        win.raise_()
+        win.activateWindow()
+        return win
+
     def open_file(self):
         if not self._confirm_discard():
             return
@@ -743,6 +757,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self._confirm_discard():
+            if self in MainWindow._windows:
+                MainWindow._windows.remove(self)
             event.accept()
         else:
             event.ignore()

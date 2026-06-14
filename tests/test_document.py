@@ -1128,6 +1128,19 @@ def test_ai_providers_metadata():
     assert p.DEFAULT_BASE["Ollama"].startswith("http://localhost")
 
 
+def test_new_window_opens_independent_window(window):
+    cls = type(window)
+    win2 = window.new_window()
+    assert win2 is not window
+    assert win2.scene is not window.scene          # independent document
+    assert win2 in cls._windows                    # tracked so it survives
+    win2._undo_stack.setClean()
+    win2.close()                                   # closeEvent untracks it
+    assert win2 not in cls._windows
+    from PyQt5 import sip
+    sip.delete(win2)
+
+
 def test_settings_isolated_from_real_store():
     """Guard: the suite must never read/write the developer's real
     KhervePaint settings (registry on Windows) — conftest redirects all
