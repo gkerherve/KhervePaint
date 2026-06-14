@@ -87,6 +87,12 @@ into a new module and import.
                        Parses the model's JSON shape specs and creates
                        real, undoable items (`apply_specs`). Network runs
                        on a `QThread`.
+  - `examples.py`    — built-in **Examples** menu: labelled A4 schematics
+                       of lab techniques (XPS, XRD, FTIR, TGA, BET, TEM,
+                       AFM, XRF, SIMS), grouped by category. Each is a
+                       builder returning shape specs (the AI format) the
+                       menu loads via `apply_specs` onto a fresh A4 page;
+                       every element is a normal editable item.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 

@@ -30,6 +30,15 @@ circle below"). The reply's shape specs become real, editable, undoable
 items on the canvas. Keys are stored locally via QSettings; no extra
 dependencies (it uses `urllib`).
 
+## Examples
+
+The **Examples** menu loads ready-made, fully labelled schematics of
+common lab techniques onto an A4 page, grouped by category —
+**Spectroscopy** (XPS, FTIR, XRF, SIMS), **Diffraction** (XRD),
+**Microscopy** (TEM, AFM) and **Thermal & sorption** (TGA, BET). Each is
+built from normal editable items, so it doubles as a starting point you
+can restyle, relabel and export.
+
 ## Run
 
 ```

@@ -1372,3 +1372,39 @@ def test_pencil_stroke_resizes_with_handles(scene):
     handles.begin("se", QPointF(40, 20))
     handles.drag("se", QPointF(80, 40))        # drag a corner outward
     assert stroke.scale() > before             # the stroke grew
+
+
+# ------------------------------------------------------------ examples
+def test_examples_registry_covers_techniques():
+    from khervepaint import examples
+    names = " ".join(n for _, n, _ in examples.EXAMPLES)
+    for tech in ("XPS", "XRD", "FTIR", "TGA", "BET", "TEM",
+                 "AFM", "XRF", "SIMS"):
+        assert tech in names, tech
+    # every entry has a callable builder and a category
+    for cat, name, builder in examples.EXAMPLES:
+        assert cat and name and callable(builder)
+
+
+def test_examples_build_real_items(app):
+    from khervepaint import examples
+    from khervepaint.ai_assistant import apply_specs
+    scene = PaintScene(examples.PAGE_W, examples.PAGE_H)
+    for _, name, builder in examples.EXAMPLES:
+        scene.new_document(examples.PAGE_W, examples.PAGE_H)
+        specs = builder()
+        items = apply_specs(scene, specs)
+        # almost every spec should become an item (allow a stray skip)
+        assert len(items) >= len(specs) - 1, name
+        assert len(items) > 5, name            # a real schematic, not a stub
+
+
+def test_load_example_resets_document(window):
+    from khervepaint import examples
+    builder = examples.EXAMPLES[0][2]
+    window.load_example(builder, "test")
+    assert window.scene.sceneRect().width() == examples.PAGE_W
+    assert window.scene.dpi == examples.PAGE_DPI
+    assert window._path is None
+    assert len(window.scene.vector_items()) > 5
+    assert window._undo_stack.isClean()        # loaded as the clean baseline

@@ -150,6 +150,21 @@ down to a circle"*. The shapes it returns become real, editable items on
 the canvas, so you can move, restyle and undo them. API keys are stored
 locally on your machine.
 
+## 15. Examples
+
+The **Examples** menu loads ready-made, fully labelled schematics of
+common lab techniques onto an A4 page, grouped by category:
+
+- **Spectroscopy** — XPS, FTIR, XRF, SIMS
+- **Diffraction** — XRD
+- **Microscopy** — TEM, AFM
+- **Thermal & sorption** — TGA, BET
+
+Each schematic is built from ordinary editable items, so you can restyle,
+relabel, rearrange and export it like any drawing. Loading an example
+replaces the current document (you are asked first if it has unsaved
+changes).
+
 ## Keyboard shortcuts
 
 **Tools:** V pointer · P pencil · B bucket · L line · A arrow · R rect ·

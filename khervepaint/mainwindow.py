@@ -364,10 +364,45 @@ class MainWindow(QMainWindow):
             theme_group.addAction(act)
             theme_menu.addAction(act)
 
+        self._build_examples_menu(m)
+
         help_menu = m.addMenu("&Help")
         help_menu.addAction("&User Guide", self._user_guide, "F1")
         help_menu.addSeparator()
         help_menu.addAction("&About", self._about)
+
+    def _build_examples_menu(self, menubar):
+        """Examples ▸ <category> ▸ <technique>: labelled A4 schematics."""
+        from . import examples
+        menu = menubar.addMenu("E&xamples")
+        submenus = {}
+        for category, name, builder in examples.EXAMPLES:
+            sub = submenus.get(category)
+            if sub is None:
+                sub = submenus[category] = menu.addMenu(category)
+            sub.addAction(name, lambda _=False, b=builder, n=name:
+                          self.load_example(b, n))
+
+    def load_example(self, builder, name=""):
+        """Replace the document with a built-in example sketch."""
+        from . import examples
+        from .ai_assistant import apply_specs
+        if not self._confirm_discard():
+            return
+        self.scene.new_document(examples.PAGE_W, examples.PAGE_H)
+        self.scene.dpi = examples.PAGE_DPI
+        try:
+            apply_specs(self.scene, builder())
+        except Exception as exc:               # never leave a half doc
+            QMessageBox.warning(self, APP_NAME,
+                                f"Could not build example:\n{exc}")
+        self.scene.clearSelection()
+        self.scene.clear_handles()
+        self._path = None
+        self._sync_grid_controls()
+        self._reset_history()
+        self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        self._update_title()
 
     # ------------------------------------------------------------ state
     def _set_tool(self, tool: str):

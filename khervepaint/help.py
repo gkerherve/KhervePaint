@@ -225,6 +225,16 @@ line shows and the send button becomes a <b>Stop</b> button. The chat is
 remembered between sessions; the clear icon wipes it. Keys are stored
 locally on your machine.</p>
 
+<h2>15 · Examples</h2>
+<p>The <b>Examples</b> menu loads ready-made, fully labelled schematics of
+common lab techniques onto an A4 page — grouped by category
+(<b>Spectroscopy</b>: XPS, FTIR, XRF, SIMS; <b>Diffraction</b>: XRD;
+<b>Microscopy</b>: TEM, AFM; <b>Thermal &amp; sorption</b>: TGA, BET).
+Every element is a normal editable item, so a sketch is a starting point
+you can restyle, relabel, rearrange and export. Loading an example
+replaces the current drawing (you are asked first if it has unsaved
+changes).</p>
+
 <h2>Keyboard shortcuts</h2>
 <p><b>Tools</b></p>{tools}
 <p><b>Edit &amp; arrange</b></p>{edit_keys}
