@@ -158,7 +158,7 @@ def chat(provider, model, messages, api_key="", base_url=""):
         system = "\n\n".join(m["content"] for m in messages
                              if m["role"] == "system")
         convo = [m for m in messages if m["role"] != "system"]
-        body = {"model": model, "max_tokens": 2048, "messages": convo}
+        body = {"model": model, "max_tokens": 4096, "messages": convo}
         if system:
             body["system"] = system
         data = _post(f"{_base('Claude', base_url)}/v1/messages", body,

@@ -62,7 +62,10 @@ Keep coordinates within the canvas."""
 
 # ---------------------------------------------------------------- specs
 def extract_specs(text: str):
-    """Pull a JSON array of shape specs out of an assistant reply."""
+    """Pull a JSON array of shape specs out of an assistant reply.
+
+    Falls back to salvaging individual ``{...}`` objects when the JSON is
+    truncated (long diagrams can be cut off by the token limit)."""
     candidates = re.findall(r"```[a-zA-Z-]*\s*(.*?)```", text, re.DOTALL)
     candidates.append(text)
     for blob in candidates:
@@ -74,7 +77,39 @@ def extract_specs(text: str):
             return data
         if isinstance(data, dict) and isinstance(data.get("shapes"), list):
             return data["shapes"]
-    return []
+    source = candidates[0] if len(candidates) > 1 else text
+    return _salvage_objects(source)
+
+
+def _salvage_objects(text: str):
+    """Parse every complete top-level {...} object in *text* (so a cut-off
+    JSON array still yields the shapes that were fully written)."""
+    objs = []
+    depth = start = 0
+    in_str = esc = False
+    for i, ch in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == '}' and depth > 0:
+            depth -= 1
+            if depth == 0:
+                try:
+                    objs.append(json.loads(text[start:i + 1]))
+                except ValueError:
+                    pass
+    return objs
 
 
 def _pen(spec):
@@ -523,11 +558,15 @@ class AiDock(QDockWidget):
     def _reply_ready(self, reply):
         self._busy(False)
         self._history.append({"role": "assistant", "content": reply})
-        self._log("ai", reply)
         specs = extract_specs(reply)
+        # Show only the prose, never the raw JSON block.
+        prose = re.sub(r"```.*?```", "", reply, flags=re.DOTALL).strip()
         if specs:
             created = apply_specs(self.scene, specs)
-            self._log("system", f"Added {len(created)} shape(s) to the canvas.")
+            self._log("ai", prose or "Done.")
+            self._log("system", f"Drew {len(created)} shape(s) on the canvas.")
+        else:
+            self._log("ai", prose or reply)
 
     # ------------------------------------------------------- threading
     def _run(self, fn, on_done):
