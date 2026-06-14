@@ -176,8 +176,11 @@ position, geometry, pen/brush, opacity, rotation; groups nest
 ## UI conventions
 
 - Single canvas window; left toolbar column = tools (exclusive
-  checkable group), top toolbar = file ops + stroke/fill colour,
-  line width, grid controls, group/ungroup.
+  checkable group). Direct buttons (pointer/pencil/bucket/line/arrow/
+  text) plus four shape **dropdown** buttons (`SHAPE_GROUPS`:
+  Rectangles, Ellipses & arcs, Polygons, Stars & symbols) — each a
+  `QToolButton` menu that remembers the last-picked shape. Top toolbar =
+  file ops + undo/redo + stroke/fill colour, width, grid, arrange.
 - Pointer tool = rubber-band select + move; other tools draw.
 - Select an item to get resize handles; **double-click to rotate** it
   about its centre. Right-click for the context menu (which includes

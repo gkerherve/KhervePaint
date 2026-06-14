@@ -38,11 +38,16 @@ tool draws.
 | E | Ellipse |
 | T | Text |
 
-Below the basic tools is the full set of **shapes**: rounded rectangle,
-triangle, right triangle, diamond, parallelogram, trapezoid, pentagon,
-hexagon, heptagon, octagon, 5- and 6-point stars, cross, chevron, block
-arrow, lightning bolt, house, and half / quarter circles. Click one,
-then drag on the canvas to draw it.
+Related **shapes** are grouped under four dropdown buttons — click the
+small arrow to pick one (the button then remembers it), then drag on the
+canvas to draw:
+
+- **Rectangles** — rectangle, rounded rectangle
+- **Ellipses & arcs** — circle, ellipse, half circle, quarter circle
+- **Polygons** — triangle, right triangle, diamond, parallelogram,
+  trapezoid, pentagon, hexagon, heptagon, octagon
+- **Stars & symbols** — 5- and 6-point stars, cross, chevron, block
+  arrow, lightning bolt, house
 
 ## 3. Colours, width and fill
 

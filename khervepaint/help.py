@@ -117,11 +117,14 @@ guide and never appears in exports.</p>
 <p>Pick a tool from the left column. The pointer selects; every other
 tool draws. Keyboard shortcuts:</p>
 {tools}
-<p>Below the basic tools is the full set of <b>shapes</b> — rounded
-rectangle, triangle, right triangle, diamond, parallelogram, trapezoid,
-pentagon, hexagon, heptagon, octagon, 5- and 6-point stars, cross,
-chevron, block arrow, lightning bolt, house, and half / quarter circles.
-Click one, then drag on the canvas to draw it.</p>
+<p>Related <b>shapes</b> are grouped under four dropdown buttons:
+<b>Rectangles</b> (rectangle, rounded rectangle), <b>Ellipses &amp;
+arcs</b> (circle, ellipse, half &amp; quarter circle), <b>Polygons</b>
+(triangle, right triangle, diamond, parallelogram, trapezoid,
+pentagon…octagon) and <b>Stars &amp; symbols</b> (5/6-point star, cross,
+chevron, block arrow, lightning bolt, house). Click the small arrow to
+pick a shape — the button then remembers it — and drag on the canvas to
+draw.</p>
 
 <h2>3 · Colours, width and fill</h2>
 <p>On the top toolbar: click the <b>stroke</b> swatch (outline colour) or

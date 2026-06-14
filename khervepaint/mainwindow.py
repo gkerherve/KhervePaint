@@ -15,7 +15,7 @@ from PyQt5.QtCore import QMimeData, QSettings, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QFileDialog, QLabel, QMainWindow,
-                             QMessageBox, QSpinBox, QToolBar,
+                             QMenu, QMessageBox, QSpinBox, QToolBar,
                              QToolButton, QUndoStack)
 
 from . import APP_NAME, __version__, document, icons, svgio
@@ -39,40 +39,48 @@ MIME_ITEMS = "application/x-khervepaint-items"
 SETTINGS = ("Kherve", "KhervePaint")
 MAX_RECENT = 10
 
-#: (tool id, mdi icon, label, shortcut)
-TOOLS = [
+#: Standalone tool buttons: (tool id, mdi icon, label, shortcut).
+DIRECT_TOOLS = [
     (POINTER, "mdi.cursor-default-outline", "Pointer", "V"),
     (PENCIL, "mdi.pencil", "Pencil", "P"),
     (BUCKET, "mdi.format-color-fill", "Bucket fill", "B"),
     (LINE, "mdi.vector-line", "Line", "L"),
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
-    (RECT, "mdi.rectangle-outline", "Rectangle", "R"),
-    (CIRCLE, "mdi.circle-outline", "Circle", "C"),
-    (ELLIPSE, "mdi.ellipse-outline", "Ellipse", "E"),
-    (TEXT, "mdi.format-text", "Text", "T"),
 ]
 
-#: Extra shapes shown as their own tool buttons: (tool id, mdi icon, label).
-SHAPE_TOOLS = [
-    (ROUNDRECT, "mdi.rounded-corner", "Rounded rectangle"),
-    (TRIANGLE, "mdi.triangle-outline", "Triangle"),
-    (RIGHT_TRIANGLE, "mdi.vector-triangle", "Right triangle"),
-    (DIAMOND, "mdi.rhombus-outline", "Diamond"),
-    (PARALLELOGRAM, "mdi.vector-parallelogram", "Parallelogram"),
-    (TRAPEZOID, "mdi.vector-polygon", "Trapezoid"),
-    (PENTAGON, "mdi.pentagon-outline", "Pentagon"),
-    (HEXAGON, "mdi.hexagon-outline", "Hexagon"),
-    (HEPTAGON, "mdi.septagon-outline", "Heptagon"),
-    (OCTAGON, "mdi.octagon-outline", "Octagon"),
-    (STAR, "mdi.star-outline", "Star (5-point)"),
-    (STAR6, "mdi.hexagram-outline", "Star (6-point)"),
-    (PLUS, "mdi.plus", "Cross / plus"),
-    (CHEVRON, "mdi.chevron-right", "Chevron"),
-    (ARROW_RIGHT, "mdi.arrow-right-bold-outline", "Block arrow"),
-    (LIGHTNING, "mdi.lightning-bolt-outline", "Lightning bolt"),
-    (HOUSE, "mdi.home-outline", "House"),
-    (HALFCIRCLE, "mdi.circle-half-full", "Half circle"),
-    (QUARTERCIRCLE, "mdi.circle-slice-2", "Quarter circle"),
+#: Shapes grouped into dropdown buttons: (button tooltip, [(tool, icon,
+#: label, shortcut), ...]). A None icon is drawn from the shape itself.
+SHAPE_GROUPS = [
+    ("Rectangles", [
+        (RECT, "mdi.rectangle-outline", "Rectangle", "R"),
+        (ROUNDRECT, "mdi.rounded-corner", "Rounded rectangle", None),
+    ]),
+    ("Ellipses & arcs", [
+        (CIRCLE, "mdi.circle-outline", "Circle", "C"),
+        (ELLIPSE, "mdi.ellipse-outline", "Ellipse", "E"),
+        (HALFCIRCLE, "mdi.circle-half-full", "Half circle", None),
+        (QUARTERCIRCLE, "mdi.circle-slice-2", "Quarter circle", None),
+    ]),
+    ("Polygons", [
+        (TRIANGLE, "mdi.triangle-outline", "Triangle", None),
+        (RIGHT_TRIANGLE, "mdi.vector-triangle", "Right triangle", None),
+        (DIAMOND, "mdi.rhombus-outline", "Diamond", None),
+        (PARALLELOGRAM, None, "Parallelogram", None),
+        (TRAPEZOID, "mdi.vector-polygon", "Trapezoid", None),
+        (PENTAGON, "mdi.pentagon-outline", "Pentagon", None),
+        (HEXAGON, "mdi.hexagon-outline", "Hexagon", None),
+        (HEPTAGON, None, "Heptagon", None),
+        (OCTAGON, "mdi.octagon-outline", "Octagon", None),
+    ]),
+    ("Stars & symbols", [
+        (STAR, "mdi.star-outline", "Star (5-point)", None),
+        (STAR6, "mdi.hexagram-outline", "Star (6-point)", None),
+        (PLUS, "mdi.plus", "Cross / plus", None),
+        (CHEVRON, "mdi.chevron-right", "Chevron", None),
+        (ARROW_RIGHT, "mdi.arrow-right-bold-outline", "Block arrow", None),
+        (LIGHTNING, "mdi.lightning-bolt-outline", "Lightning bolt", None),
+        (HOUSE, "mdi.home-outline", "House", None),
+    ]),
 ]
 
 
@@ -119,15 +127,16 @@ class MainWindow(QMainWindow):
         bar.setMovable(False)
         self.addToolBar(Qt.LeftToolBarArea, bar)
         self._tool_group = QActionGroup(self)
-        for tool, glyph, label, shortcut in TOOLS:
+        self._group_current = {}          # dropdown button -> active QAction
+        for tool, glyph, label, shortcut in DIRECT_TOOLS:
             self._add_tool_action(bar, tool, icons.icon(glyph), label,
                                   shortcut)
         bar.addSeparator()
-        for tool, glyph, label in SHAPE_TOOLS:
-            ic = icons.icon(glyph)
-            if ic.isNull():            # no MDI glyph: draw the shape itself
-                ic = icons.shape_icon(tool, size=TOOL_ICON_SIZE.width())
-            self._add_tool_action(bar, tool, ic, label, None)
+        for label, items in SHAPE_GROUPS:
+            self._build_shape_dropdown(bar, label, items)
+        bar.addSeparator()
+        self._add_tool_action(bar, TEXT, icons.icon("mdi.format-text"),
+                              "Text", "T")
         self._tool_group.actions()[0].setChecked(True)
 
     def _add_tool_action(self, bar, tool, icon, label, shortcut):
@@ -142,6 +151,48 @@ class MainWindow(QMainWindow):
         act.triggered.connect(lambda _, t=tool: self._set_tool(t))
         self._tool_group.addAction(act)
         bar.addAction(act)
+
+    def _tool_icon(self, tool, glyph):
+        ic = icons.icon(glyph) if glyph else QIcon()
+        if ic.isNull():               # no MDI glyph: draw the shape itself
+            ic = icons.shape_icon(tool, size=TOOL_ICON_SIZE.width())
+        return ic
+
+    def _build_shape_dropdown(self, bar, tooltip, items):
+        """A dropdown button grouping related shapes; the button shows the
+        last-picked shape, the arrow opens the rest."""
+        button = QToolButton()
+        button.setPopupMode(QToolButton.MenuButtonPopup)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setToolTip(tooltip)
+        menu = QMenu(button)
+        first_act = None
+        for tool, glyph, label, shortcut in items:
+            act = QAction(self._tool_icon(tool, glyph), label, self)
+            act.setCheckable(True)
+            act.setData(tool)
+            if shortcut:
+                act.setShortcut(shortcut)
+                act.setToolTip(f"{label} ({shortcut})")
+                self.addAction(act)       # keep the shortcut active app-wide
+            act.triggered.connect(
+                lambda _, b=button, a=act: self._pick_grouped(b, a))
+            self._tool_group.addAction(act)
+            menu.addAction(act)
+            first_act = first_act or act
+        button.setMenu(menu)
+        button.setIcon(first_act.icon())
+        self._group_current[button] = first_act
+        button.clicked.connect(
+            lambda _=False, b=button: self._pick_grouped(b,
+                                                         self._group_current[b]))
+        bar.addWidget(button)
+
+    def _pick_grouped(self, button, act):
+        self._group_current[button] = act
+        button.setIcon(act.icon())
+        act.setChecked(True)
+        self._set_tool(act.data())
 
     def _build_options_bar(self):
         bar = QToolBar("Options")
