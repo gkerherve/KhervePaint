@@ -17,7 +17,7 @@ import re
 
 from PyQt5.QtCore import (QLineF, QRectF, QSettings, QSize, Qt, QThread,
                           pyqtSignal)
-from PyQt5.QtGui import QBrush, QColor, QFont, QPen
+from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QTextCursor
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
                              QDockWidget, QFormLayout, QGroupBox, QHBoxLayout,
                              QLabel, QLineEdit, QMessageBox, QPlainTextEdit,
@@ -309,14 +309,25 @@ class AiSettingsDialog(QDialog):
 
 # ---------------------------------------------------------------- dock
 class _ChatInput(QPlainTextEdit):
-    """Multi-line input that submits on Enter (Shift+Enter = newline)."""
+    """Multi-line input that submits on Enter (Shift+Enter = newline) and
+    recalls previously sent prompts with Up/Down (at the first/last line)."""
 
     submitted = pyqtSignal()
+    history_prev = pyqtSignal()
+    history_next = pyqtSignal()
 
     def keyPressEvent(self, event):
         if (event.key() in (Qt.Key_Return, Qt.Key_Enter)
                 and not event.modifiers() & Qt.ShiftModifier):
             self.submitted.emit()
+            return
+        cursor = self.textCursor()
+        if event.key() == Qt.Key_Up and cursor.blockNumber() == 0:
+            self.history_prev.emit()
+            return
+        if (event.key() == Qt.Key_Down
+                and cursor.blockNumber() == self.document().blockCount() - 1):
+            self.history_next.emit()
             return
         super().keyPressEvent(event)
 
@@ -328,6 +339,9 @@ class AiDock(QDockWidget):
         self.setObjectName("AiAssistant")
         self._worker = None
         self._history = []
+        self._sent = []                 # past user prompts (Up/Down recall)
+        self._hist_index = None
+        self._draft = ""
         self._settings = QSettings(*_SETTINGS)
         self._font_pt = int(self._settings.value("ai/fontpt", 10))
 
@@ -373,6 +387,8 @@ class AiDock(QDockWidget):
 
         self.setWidget(body)
         self.input.submitted.connect(self._send)
+        self.input.history_prev.connect(self._history_prev)
+        self.input.history_next.connect(self._history_next)
 
         self._apply_font()
         self._update_status()
@@ -445,6 +461,33 @@ class AiDock(QDockWidget):
     def _busy(self, busy):
         self.send_btn.setEnabled(not busy)
 
+    # ------------------------------------------------------- history
+    def _history_prev(self):
+        if not self._sent:
+            return
+        if self._hist_index is None:
+            self._draft = self.input.toPlainText()
+            self._hist_index = len(self._sent) - 1
+        elif self._hist_index > 0:
+            self._hist_index -= 1
+        self._set_input(self._sent[self._hist_index])
+
+    def _history_next(self):
+        if self._hist_index is None:
+            return
+        if self._hist_index < len(self._sent) - 1:
+            self._hist_index += 1
+            self._set_input(self._sent[self._hist_index])
+        else:
+            self._hist_index = None
+            self._set_input(self._draft)
+
+    def _set_input(self, text):
+        self.input.setPlainText(text)
+        cursor = self.input.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        self.input.setTextCursor(cursor)
+
     # ------------------------------------------------------- actions
     def _send(self):
         text = self.input.toPlainText().strip()
@@ -462,6 +505,9 @@ class AiDock(QDockWidget):
                               "Settings (the gear icon).")
             return
         self.input.clear()
+        self._sent.append(text)
+        self._hist_index = None
+        self._draft = ""
         self._log("you", text)
         self._history.append({"role": "user", "content": text})
 

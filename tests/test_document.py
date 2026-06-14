@@ -1085,6 +1085,22 @@ def test_ai_send_without_key_warns(window):
     assert "API key" in dock.transcript.toPlainText()
 
 
+def test_ai_input_history_recall(window):
+    dock = window.ai_dock
+    dock._sent = ["first prompt", "second prompt"]   # simulate two sent
+    dock.input.setPlainText("draft")
+    dock._history_prev()                              # Up -> newest
+    assert dock.input.toPlainText() == "second prompt"
+    dock._history_prev()                              # Up -> older
+    assert dock.input.toPlainText() == "first prompt"
+    dock._history_prev()                              # Up -> stays at oldest
+    assert dock.input.toPlainText() == "first prompt"
+    dock._history_next()                              # Down -> newer
+    assert dock.input.toPlainText() == "second prompt"
+    dock._history_next()                              # Down past newest -> draft
+    assert dock.input.toPlainText() == "draft"
+
+
 def test_ai_settings_dialog(window):
     from khervepaint.ai_assistant import AiSettingsDialog
     from khervepaint import ai_providers as p
