@@ -1160,6 +1160,24 @@ def test_ai_input_history_recall(window):
     assert dock.input.toPlainText() == "draft"
 
 
+def test_ai_busy_shows_thinking_and_stop(window):
+    dock = window.ai_dock
+    dock._busy(True)
+    assert dock._is_busy
+    assert not dock.thinking_label.isHidden()
+    assert dock.send_btn.toolTip() == "Stop"
+    # a send is ignored while a request is in flight
+    before = len(dock._history)
+    dock.input.setPlainText("ignored while busy")
+    dock._send()
+    assert len(dock._history) == before
+    # stopping clears the busy state
+    dock._stop()
+    assert not dock._is_busy
+    assert dock.thinking_label.isHidden()
+    assert dock.send_btn.toolTip() == "Send"
+
+
 def test_ai_history_persists(window):
     dock = window.ai_dock
     dock._history = [{"role": "user", "content": "remember this"},

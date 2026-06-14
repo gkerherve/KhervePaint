@@ -16,7 +16,7 @@ import json
 import re
 
 from PyQt5.QtCore import (QLineF, QRectF, QSettings, QSize, Qt, QThread,
-                          pyqtSignal)
+                          QTimer, pyqtSignal)
 from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QTextCursor
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
                              QDockWidget, QFormLayout, QGroupBox, QHBoxLayout,
@@ -373,6 +373,11 @@ class AiDock(QDockWidget):
         self.scene = scene
         self.setObjectName("AiAssistant")
         self._worker = None
+        self._is_busy = False
+        self._think_dots = 0
+        self._think_timer = QTimer(self)
+        self._think_timer.setInterval(400)
+        self._think_timer.timeout.connect(self._tick)
         self._history = []
         self._sent = []                 # past user prompts (Up/Down recall)
         self._hist_index = None
@@ -410,11 +415,16 @@ class AiDock(QDockWidget):
         self.transcript.setOpenExternalLinks(True)
         layout.addWidget(self.transcript, 1)
 
+        self.thinking_label = QLabel()
+        self.thinking_label.setStyleSheet("color:#2e7d4f; font-style:italic;")
+        self.thinking_label.setVisible(False)
+        layout.addWidget(self.thinking_label)
+
         input_row = QHBoxLayout()
         self.input = _ChatInput()
         self.input.setPlaceholderText("Ask Claude to draw…")
         self.input.setFixedHeight(70)
-        self.send_btn = self._tool(None, "Send", self._send, "mdi.send")
+        self.send_btn = self._tool(None, "Send", self._send_or_stop, "mdi.send")
         self.send_btn.setIconSize(QSize(24, 24))
         input_row.addWidget(self.input, 1)
         input_row.addWidget(self.send_btn, 0, Qt.AlignBottom)
@@ -523,7 +533,39 @@ class AiDock(QDockWidget):
         self.transcript.append(f"<div style='margin:4px 0;'>{prefix}{safe}</div>")
 
     def _busy(self, busy):
-        self.send_btn.setEnabled(not busy)
+        self._is_busy = busy
+        if busy:
+            self._think_dots = 0
+            self.thinking_label.setText("Assistant is thinking")
+            self.thinking_label.setVisible(True)
+            self._think_timer.start()
+            self.send_btn.setIcon(icons.icon("mdi.stop"))
+            self.send_btn.setToolTip("Stop")
+        else:
+            self._think_timer.stop()
+            self.thinking_label.setVisible(False)
+            self.send_btn.setIcon(icons.icon("mdi.send"))
+            self.send_btn.setToolTip("Send")
+
+    def _tick(self):
+        self._think_dots = (self._think_dots + 1) % 4
+        self.thinking_label.setText("Assistant is thinking"
+                                    + "." * self._think_dots)
+
+    def _send_or_stop(self):
+        self._stop() if self._is_busy else self._send()
+
+    def _stop(self):
+        """Abandon the in-flight request (its late result is ignored)."""
+        if self._worker is not None:
+            for sig in (self._worker.done, self._worker.failed):
+                try:
+                    sig.disconnect()
+                except TypeError:
+                    pass
+            self._worker = None
+        self._busy(False)
+        self._log("system", "Stopped.")
 
     # ------------------------------------------------------- history
     def _history_prev(self):
@@ -554,6 +596,8 @@ class AiDock(QDockWidget):
 
     # ------------------------------------------------------- actions
     def _send(self):
+        if self._is_busy:
+            return
         text = self.input.toPlainText().strip()
         if not text:
             return

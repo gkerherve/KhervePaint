@@ -220,7 +220,10 @@ URL), and press <b>Refresh</b> to list that provider's models. Then ask
 in plain language, e.g. <i>“draw a blue flowchart box labelled Start with
 an arrow down to a circle”</i>. The shapes it returns are added to the
 canvas as real, editable items, so you can move, restyle and undo them
-like anything else. Keys are stored locally on your machine.</p>
+like anything else. While it works, an <i>“Assistant is thinking…”</i>
+line shows and the send button becomes a <b>Stop</b> button. The chat is
+remembered between sessions; the clear icon wipes it. Keys are stored
+locally on your machine.</p>
 
 <h2>Keyboard shortcuts</h2>
 <p><b>Tools</b></p>{tools}
