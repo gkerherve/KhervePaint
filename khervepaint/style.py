@@ -104,7 +104,18 @@ QComboBox {{
     min-width: 70px;
 }}
 QComboBox:hover {{ border-color: {t['select']}; }}
-QComboBox::drop-down {{ border: none; width: 18px; }}
+QComboBox::drop-down {{ subcontrol-origin: padding;
+    subcontrol-position: center right; border: none; width: 18px; }}
+QComboBox::down-arrow {{
+    image: none;
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {t['icon']};
+    margin-right: 6px;
+}}
+QComboBox::down-arrow:on {{ border-top: none;
+    border-bottom: 5px solid {t['icon']}; }}
 QComboBox QAbstractItemView {{ background: {t['card']};
     selection-background-color: {t['hover']};
     selection-color: {t['text']}; }}
