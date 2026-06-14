@@ -163,7 +163,8 @@ class MainWindow(QMainWindow):
         """A dropdown button grouping related shapes; the button shows the
         last-picked shape, the arrow opens the rest."""
         button = QToolButton()
-        button.setPopupMode(QToolButton.MenuButtonPopup)
+        # Clicking the icon opens the shape list directly (no split arrow).
+        button.setPopupMode(QToolButton.InstantPopup)
         button.setToolButtonStyle(Qt.ToolButtonIconOnly)
         button.setToolTip(tooltip)
         menu = QMenu(button)
@@ -184,9 +185,6 @@ class MainWindow(QMainWindow):
         button.setMenu(menu)
         button.setIcon(first_act.icon())
         self._group_current[button] = first_act
-        button.clicked.connect(
-            lambda _=False, b=button: self._pick_grouped(b,
-                                                         self._group_current[b]))
         bar.addWidget(button)
 
     def _pick_grouped(self, button, act):

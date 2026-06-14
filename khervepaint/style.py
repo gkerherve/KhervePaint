@@ -94,7 +94,7 @@ QToolButton {{ border: none; border-radius: 6px; padding: 4px;
 QToolButton:hover {{ background: {t['hover']}; }}
 QToolButton:pressed {{ background: {t['pressed']}; }}
 QToolButton:checked {{ background: {t['pressed']}; }}
-QToolButton::menu-indicator {{ image: none; }}
+QToolButton::menu-indicator {{ image: none; width: 0; height: 0; }}
 
 QComboBox {{
     background: {t['card']};
