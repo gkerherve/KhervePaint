@@ -1160,6 +1160,22 @@ def test_ai_input_history_recall(window):
     assert dock.input.toPlainText() == "draft"
 
 
+def test_ai_history_persists(window):
+    dock = window.ai_dock
+    dock._history = [{"role": "user", "content": "remember this"},
+                     {"role": "assistant", "content": "ok ```json\n[]```"}]
+    dock._save_history()
+    # a fresh load (as on app restart) restores the conversation
+    dock._history = []
+    dock._sent = []
+    dock._load_history()
+    assert dock._history[0]["content"] == "remember this"
+    assert dock._sent == ["remember this"]
+    assert "remember this" in dock.transcript.toPlainText()
+    assert "json" not in dock.transcript.toPlainText().lower()  # JSON hidden
+    dock._clear()                                # reset stored history
+
+
 def test_ai_settings_dialog(window):
     from khervepaint.ai_assistant import AiSettingsDialog
     from khervepaint import ai_providers as p

@@ -427,7 +427,7 @@ class AiDock(QDockWidget):
 
         self._apply_font()
         self._update_status()
-        self._welcome()
+        self._load_history()
 
     def _tool(self, text, tip, slot, glyph=None):
         btn = QToolButton()
@@ -461,6 +461,31 @@ class AiDock(QDockWidget):
             font.setPointSize(self._font_pt)
             widget.setFont(font)
 
+    # ------------------------------------------------------- persistence
+    def _save_history(self):
+        # keep the last 100 turns so the store stays small
+        self._settings.setValue("ai/history",
+                                json.dumps(self._history[-100:]))
+
+    def _load_history(self):
+        raw = self._settings.value("ai/history", "")
+        try:
+            self._history = json.loads(raw) if raw else []
+        except (ValueError, TypeError):
+            self._history = []
+        self._sent = [m["content"] for m in self._history
+                      if m.get("role") == "user"]
+        if self._history:
+            for msg in self._history:
+                if msg.get("role") == "user":
+                    self._log("you", msg.get("content", ""))
+                elif msg.get("role") == "assistant":
+                    prose = re.sub(r"```.*?```", "", msg.get("content", ""),
+                                   flags=re.DOTALL).strip()
+                    self._log("ai", prose or "(shapes)")
+        else:
+            self._welcome()
+
     def _welcome(self):
         self._log("system",
                   "Hello! I can help you build your drawing — ask me to add "
@@ -479,6 +504,10 @@ class AiDock(QDockWidget):
     def _clear(self):
         self.transcript.clear()
         self._history = []
+        self._sent = []
+        self._hist_index = None
+        self._draft = ""
+        self._save_history()
         self._welcome()
 
     # ------------------------------------------------------- transcript
@@ -545,6 +574,7 @@ class AiDock(QDockWidget):
         self._draft = ""
         self._log("you", text)
         self._history.append({"role": "user", "content": text})
+        self._save_history()
 
         rect = self.scene.sceneRect()
         system = SYSTEM_PROMPT.format(
@@ -558,6 +588,7 @@ class AiDock(QDockWidget):
     def _reply_ready(self, reply):
         self._busy(False)
         self._history.append({"role": "assistant", "content": reply})
+        self._save_history()
         specs = extract_specs(reply)
         # Show only the prose, never the raw JSON block.
         prose = re.sub(r"```.*?```", "", reply, flags=re.DOTALL).strip()
