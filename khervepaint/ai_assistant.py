@@ -457,6 +457,10 @@ class AiDock(QDockWidget):
         if not model:
             self._log("error", "Open Settings and choose a model first.")
             return
+        if provider in providers.NEEDS_KEY and not key.strip():
+            self._log("error", "Set your API key for this provider in "
+                              "Settings (the gear icon).")
+            return
         self.input.clear()
         self._log("you", text)
         self._history.append({"role": "user", "content": text})

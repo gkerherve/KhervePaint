@@ -20,6 +20,7 @@ the Free Software Foundation, either version 3 of the License, or
 """
 
 import json
+import urllib.error
 import urllib.request
 
 ANTHROPIC_VERSION = "2023-06-01"
@@ -107,23 +108,42 @@ def _base(provider, base_url=""):
     return (base_url or DEFAULT_BASE[provider]).rstrip("/")
 
 
+def _send(req, timeout):
+    """Run a request, turning an HTTP error into the API's own message."""
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as err:
+        detail = err.read().decode("utf-8", "replace")
+        try:
+            data = json.loads(detail)
+            detail = (data.get("error", {}).get("message")
+                      or data.get("message") or detail)
+        except ValueError:
+            pass
+        hint = ""
+        if err.code in (401, 403):
+            hint = " — check your API key in Settings (no spaces/newlines)."
+        raise RuntimeError(f"HTTP {err.code}: {detail[:300]}{hint}")
+
+
 def _post(url, body, headers, timeout=90):
     req = urllib.request.Request(
         url, data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json", **headers},
         method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    return _send(req, timeout)
 
 
 def _get(url, headers, timeout=30):
     req = urllib.request.Request(url, headers=headers, method="GET")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    return _send(req, timeout)
 
 
 def chat(provider, model, messages, api_key="", base_url=""):
     """Send *messages* ([{role, content}, …]) and return the reply text."""
+    api_key = (api_key or "").strip()
+    base_url = (base_url or "").strip()
     if provider in _OPENAI_LIKE:
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         data = _post(f"{_base(provider, base_url)}/v1/chat/completions",
@@ -154,6 +174,8 @@ def chat(provider, model, messages, api_key="", base_url=""):
 
 def list_models(provider, api_key="", base_url=""):
     """Return the available model ids for *provider* (sorted)."""
+    api_key = (api_key or "").strip()
+    base_url = (base_url or "").strip()
     if provider in _OPENAI_LIKE:
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         data = _get(f"{_base(provider, base_url)}/v1/models", headers)

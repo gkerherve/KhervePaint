@@ -1051,6 +1051,16 @@ def test_ai_dock_builds(window):
     assert window.ai_dock.toggleViewAction() is not None
 
 
+def test_ai_send_without_key_warns(window):
+    dock = window.ai_dock
+    dock._settings.setValue("ai/provider", "Claude")
+    dock._settings.setValue("ai/key/Claude", "")
+    dock._settings.setValue("ai/model/Claude", "claude-x")
+    dock.input.setPlainText("hi")
+    dock._send()                              # no key: warns, no network
+    assert "API key" in dock.transcript.toPlainText()
+
+
 def test_ai_settings_dialog(window):
     from khervepaint.ai_assistant import AiSettingsDialog
     from khervepaint import ai_providers as p
