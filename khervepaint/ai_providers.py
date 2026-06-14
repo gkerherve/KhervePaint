@@ -92,14 +92,18 @@ PROVIDER_HELP = {
               "4. Click the refresh icon to list models"),
 }
 
-#: A few sensible defaults so the model box is never empty; use Refresh
-#: to pull the live list from the provider.
+#: Built-in model lists so the combo is useful before you Refresh.
+#: The Refresh button pulls the provider's live list (the source of truth).
 DEFAULT_MODELS = {
     "Claude": ["claude-opus-4-8", "claude-sonnet-4-6",
-               "claude-haiku-4-5-20251001"],
-    "ChatGPT": ["gpt-4o", "gpt-4o-mini"],
-    "Mistral": ["mistral-large-latest", "mistral-small-latest"],
-    "Ollama": [],
+               "claude-haiku-4-5-20251001", "claude-fable-5"],
+    "ChatGPT": ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini",
+                "o3", "o4-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+    "Mistral": ["mistral-large-latest", "mistral-medium-latest",
+                "mistral-small-latest", "open-mistral-nemo",
+                "codestral-latest"],
+    "Ollama": ["llama3.2", "llama3.1", "llama3", "mistral", "qwen2.5",
+               "gemma2", "phi3"],
     "Local": [],
 }
 

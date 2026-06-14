@@ -1093,6 +1093,11 @@ def test_ai_settings_dialog(window):
     assert dlg.provider_combo.itemData(0) in p.PROVIDERS
     assert p.provider_for_display("Anthropic (Claude)") == "Claude"
     assert "console.anthropic.com" in p.PROVIDER_HELP["Claude"]
+    # the Model combo is populated per provider
+    for key, least in (("Claude", 4), ("ChatGPT", 6), ("Mistral", 4),
+                       ("Ollama", 5)):
+        dlg.provider_combo.setCurrentIndex(dlg.provider_combo.findData(key))
+        assert dlg.model_combo.count() >= least, key
 
 
 def test_help_content(window):
