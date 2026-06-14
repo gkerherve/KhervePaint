@@ -151,6 +151,8 @@ def _spec_to_item(spec):
         item.setFont(QFont("Segoe UI", int(spec.get("size", 14))))
         item.setPos(x, y)
         center_origin(item)
+        if spec.get("rotation"):
+            item.setRotation(float(spec["rotation"]))
         return item
     elif shape in ("rect", "circle", "ellipse"):
         item = RectItem(rect) if shape == "rect" else EllipseItem(rect)
@@ -176,6 +178,8 @@ def _spec_to_item(spec):
     if label and hasattr(item, "set_label"):
         item.set_label(str(label))
     center_origin(item)
+    if spec.get("rotation"):
+        item.setRotation(float(spec["rotation"]))
     return item
 
 

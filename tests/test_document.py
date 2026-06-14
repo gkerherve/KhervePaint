@@ -1389,9 +1389,14 @@ def test_pencil_stroke_resizes_with_handles(scene):
 def test_examples_registry_covers_techniques():
     from khervepaint import examples
     names = " ".join(n for _, n, _ in examples.EXAMPLES)
-    for tech in ("XPS", "XRD", "FTIR", "TGA", "BET", "TEM",
-                 "AFM", "XRF", "SIMS"):
+    for tech in ("XPS", "UPS", "AES", "XRD", "LEED", "FTIR", "Raman",
+                 "UV-Vis", "NMR", "TGA", "DSC", "BET", "TEM", "SEM", "AFM",
+                 "STM", "XRF", "SIMS", "ICP-MS", "GC-MS", "HPLC"):
         assert tech in names, tech
+    assert len(examples.EXAMPLES) >= 20
+    # categories appear in the intended menu order
+    cats = [c for c, _, _ in examples.EXAMPLES]
+    assert cats == sorted(cats, key=lambda c: examples._ORDER.index(c))
     # every entry has a callable builder and a category
     for cat, name, builder in examples.EXAMPLES:
         assert cat and name and callable(builder)
@@ -1407,7 +1412,23 @@ def test_examples_build_real_items(app):
         items = apply_specs(scene, specs)
         # almost every spec should become an item (allow a stray skip)
         assert len(items) >= len(specs) - 1, name
-        assert len(items) > 5, name            # a real schematic, not a stub
+        assert len(items) > 15, name           # a detailed schematic
+        # drawn geometry sits inside the A4 page (text width is
+        # font-dependent and unreliable headless, so skip text extents)
+        for it in items:
+            r = it.sceneBoundingRect()
+            assert r.left() > -5 and r.top() > -5, name
+            if not isinstance(it, TextItem):
+                assert r.right() < examples.PAGE_W + 5, name
+                assert r.bottom() < examples.PAGE_H + 5, name
+
+
+def test_example_spec_rotation_is_applied(app):
+    from khervepaint.ai_assistant import apply_specs
+    scene = PaintScene(400, 400)
+    items = apply_specs(scene, [{"shape": "triangle", "x": 50, "y": 50,
+                                 "w": 40, "h": 40, "rotation": 180}])
+    assert abs(items[0].rotation() - 180) < 0.01
 
 
 def test_load_example_resets_document(window):

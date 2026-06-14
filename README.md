@@ -32,12 +32,20 @@ dependencies (it uses `urllib`).
 
 ## Examples
 
-The **Examples** menu loads ready-made, fully labelled schematics of
-common lab techniques onto an A4 page, grouped by category —
-**Spectroscopy** (XPS, FTIR, XRF, SIMS), **Diffraction** (XRD),
-**Microscopy** (TEM, AFM) and **Thermal & sorption** (TGA, BET). Each is
-built from normal editable items, so it doubles as a starting point you
-can restyle, relabel and export.
+The **Examples** menu loads ready-made, fully labelled instrument
+schematics onto an A4 page — each with the instrument cross-section
+(beam paths, lenses, chambers, detectors), a realistic data plot and a
+caption. They are grouped by category:
+
+- **Spectroscopy** — XPS, UPS, AES, FTIR, Raman, UV-Vis, XRF, NMR
+- **Mass spectrometry** — SIMS, ICP-MS, GC-MS
+- **Diffraction** — XRD, LEED
+- **Microscopy** — TEM, SEM, AFM, STM
+- **Thermal & sorption** — TGA, DSC, BET
+- **Chromatography** — HPLC
+
+Every element is a normal editable KhervePaint item, so each schematic
+doubles as a starting point you can restyle, relabel and export.
 
 ## Run
 

@@ -87,12 +87,21 @@ into a new module and import.
                        Parses the model's JSON shape specs and creates
                        real, undoable items (`apply_specs`). Network runs
                        on a `QThread`.
-  - `examples.py`    — built-in **Examples** menu: labelled A4 schematics
-                       of lab techniques (XPS, XRD, FTIR, TGA, BET, TEM,
-                       AFM, XRF, SIMS), grouped by category. Each is a
-                       builder returning shape specs (the AI format) the
-                       menu loads via `apply_specs` onto a fresh A4 page;
-                       every element is a normal editable item.
+  - `examples.py`    — built-in **Examples** menu assembly: imports the
+                       `SKETCHES` registry and exposes `EXAMPLES` (sorted
+                       by category order) + the `PAGE_*` constants. The
+                       menu loads a builder's shape specs (the AI format)
+                       via `apply_specs` onto a fresh A4 page; every
+                       element is a normal editable item.
+  - `example_kit.py` — drawing toolkit for the schematics: header band,
+                       beam ray-paths, lenses, leader-line callouts,
+                       framed plots (ticks/peaks), micrographs, legends,
+                       wrapped captions. A4 page constants live here.
+  - `example_sketches.py` — the `build_*` builders (XPS, UPS, AES, FTIR,
+                       Raman, UV-Vis, XRF, NMR, SIMS, ICP-MS, GC-MS, XRD,
+                       LEED, TEM, SEM, AFM, STM, TGA, DSC, BET, HPLC …)
+                       and the `SKETCHES` list. Split from the toolkit so
+                       neither file outgrows ~1500 lines.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 

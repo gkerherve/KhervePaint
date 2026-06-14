@@ -152,18 +152,22 @@ locally on your machine.
 
 ## 15. Examples
 
-The **Examples** menu loads ready-made, fully labelled schematics of
-common lab techniques onto an A4 page, grouped by category:
+The **Examples** menu loads ready-made, fully labelled instrument
+schematics onto an A4 page — each with the instrument cross-section
+(beam paths, lenses, chambers, detectors), a realistic data plot and a
+short caption. They are grouped by category:
 
-- **Spectroscopy** — XPS, FTIR, XRF, SIMS
-- **Diffraction** — XRD
-- **Microscopy** — TEM, AFM
-- **Thermal & sorption** — TGA, BET
+- **Spectroscopy** — XPS, UPS, AES, FTIR, Raman, UV-Vis, XRF, NMR
+- **Mass spectrometry** — SIMS, ICP-MS, GC-MS
+- **Diffraction** — XRD, LEED
+- **Microscopy** — TEM, SEM, AFM, STM
+- **Thermal & sorption** — TGA, DSC, BET
+- **Chromatography** — HPLC
 
 Each schematic is built from ordinary editable items, so you can restyle,
-relabel, rearrange and export it like any drawing. Loading an example
-replaces the current document (you are asked first if it has unsaved
-changes).
+relabel, rearrange and export it like any drawing — or ask the AI
+assistant to extend it. Loading an example replaces the current document
+(you are asked first if it has unsaved changes).
 
 ## Keyboard shortcuts
 
