@@ -273,9 +273,9 @@ class SelectionHandles:
             r.setWidth(1)
         if r.height() < 1:
             r.setHeight(1)
-        if isinstance(self.item, RoundedRectItem):
+        if hasattr(self.item, "set_rect"):      # rounded-rect, arc shapes
             self.item.set_rect(r)
-        else:
+        else:                                   # rect, ellipse
             self.item.setRect(r)
         if self.item.rotation() == 0:
             center_origin(self.item)

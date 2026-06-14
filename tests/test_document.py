@@ -468,6 +468,30 @@ def test_line_resize_handles(scene):
     assert document.item_to_dict(line)["x2"] == 200
 
 
+def test_box_resize_all_shapes(scene):
+    from khervepaint.canvas import ArcShapeItem, RoundedRectItem
+    from khervepaint.handles import SelectionHandles, RESIZE
+    builders = [
+        lambda: RectItem(QRectF(10, 10, 60, 40)),
+        lambda: EllipseItem(QRectF(10, 10, 60, 40)),
+        lambda: RoundedRectItem(QRectF(10, 10, 60, 40), 8),
+        lambda: ArcShapeItem(QRectF(10, 10, 60, 40), "halfcircle"),
+        lambda: ArcShapeItem(QRectF(10, 10, 60, 40), "quartercircle"),
+    ]
+    for build in builders:
+        item = build()
+        scene.addItem(item)
+        item.setSelected(True)
+        handles = SelectionHandles(scene, item, RESIZE)
+        assert handles.kind == "box"
+        handles.begin("se", QPointF(70, 50))
+        handles.drag("se", QPointF(140, 110))      # must not raise
+        handles.end()
+        assert item.rect().width() > 60            # actually grew
+        handles.remove()
+        scene.removeItem(item)
+
+
 def test_box_resize_handle(scene):
     rect = RectItem(QRectF(0, 0, 40, 40))
     scene.addItem(rect)
