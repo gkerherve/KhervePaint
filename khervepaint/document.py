@@ -20,7 +20,8 @@ import json
 from PyQt5.QtCore import (QBuffer, QByteArray, QLineF, QMarginsF, QPointF,
                           QRectF, QSize, QSizeF, Qt)
 from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
-                         QPainterPath, QPdfWriter, QPen, QPixmap, QPolygonF)
+                         QPainterPath, QPdfWriter, QPen, QPixmap, QPolygonF,
+                         QTransform)
 from PyQt5.QtSvg import QSvgGenerator
 
 from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
@@ -28,7 +29,7 @@ from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
                      PolygonItem, RectItem, RoundedRectItem, TextItem,
                      center_origin)
 
-FORMAT_VERSION = 2
+FORMAT_VERSION = 3
 
 
 # ---------------------------------------------------------------- pens
@@ -148,8 +149,12 @@ def item_to_dict(item) -> dict:
                 "brush": _brush_to_dict(item.brush()),
                 "cmds": painterpath_to_cmds(item.path()), **common}
     if isinstance(item, ImageItem):
+        parent = item.parentItem()
+        m = (item.itemTransform(parent) if parent is not None
+             else item.sceneTransform())
         return {"type": "image", "image": _pixmap_to_b64(item.pixmap()),
-                **common}
+                "matrix": [m.m11(), m.m12(), m.m21(), m.m22(),
+                           m.dx(), m.dy()], **common}
     if isinstance(item, (RectItem, EllipseItem)):
         r = item.rect()
         return {"type": "rect" if isinstance(item, RectItem) else "ellipse",
@@ -223,13 +228,19 @@ def item_from_dict(d: dict):
     else:
         raise ValueError(f"unknown item type: {kind!r}")
     _apply_label(item, d)
-    pos = d.get("pos", {})
-    item.setPos(pos.get("x", 0), pos.get("y", 0))
     item.setOpacity(d.get("opacity", 1.0))
-    center_origin(item)          # rotate/scale about centre as it saved
-    item.setRotation(d.get("rotation", 0.0))
-    item.setScale(d.get("scale", 1.0))
     item.setZValue(d.get("z", 0.0))
+    if kind == "image" and "matrix" in d:
+        mx = d["matrix"]
+        item.setTransformOriginPoint(0, 0)
+        item.setTransform(QTransform(mx[0], mx[1], mx[2], mx[3], 0, 0))
+        item.setPos(mx[4], mx[5])
+    else:
+        pos = d.get("pos", {})
+        item.setPos(pos.get("x", 0), pos.get("y", 0))
+        center_origin(item)      # rotate/scale about centre as it saved
+        item.setRotation(d.get("rotation", 0.0))
+        item.setScale(d.get("scale", 1.0))
     return item
 
 

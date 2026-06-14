@@ -24,12 +24,12 @@ the Free Software Foundation, either version 3 of the License, or
 import math
 
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt
-from PyQt5.QtGui import QBrush, QColor, QPen, QPolygonF
+from PyQt5.QtGui import QBrush, QColor, QPen, QPolygonF, QTransform
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsLineItem, QGraphicsRectItem)
 
-from .canvas import (ArcShapeItem, EllipseItem, LineItem, PolygonItem,
-                     RectItem, RoundedRectItem, center_origin)
+from .canvas import (ArcShapeItem, EllipseItem, ImageItem, LineItem,
+                     PolygonItem, RectItem, RoundedRectItem, center_origin)
 
 HANDLE_SIZE = 9
 RESIZE, ROTATE = "resize", "rotate"
@@ -123,6 +123,8 @@ def _kind_of(item, mode: str) -> str:
     if isinstance(item, (RectItem, EllipseItem, RoundedRectItem,
                          ArcShapeItem)):
         return "box"
+    if isinstance(item, ImageItem):
+        return "image"
     return "scale"
 
 
@@ -153,7 +155,7 @@ class SelectionHandles:
         elif self.kind == "polygon":
             count = self.item.polygon().count()
             self.handles = [self._rect_handle(i) for i in range(count)]
-        elif self.kind == "box":
+        elif self.kind in ("box", "image"):
             self.handles = [self._rect_handle(r, _BOX_CURSORS[r])
                             for r in _BOX_CURSORS]
         else:                       # scale
@@ -217,6 +219,8 @@ class SelectionHandles:
             self._drag_vertex(role, local)
         elif self.kind == "box":
             self._drag_box(role, local)
+        elif self.kind == "image":
+            self._drag_image(role, snapped)
         self.reposition()
 
     def end(self):
@@ -279,6 +283,37 @@ class SelectionHandles:
             self.item.setRect(r)
         if self.item.rotation() == 0:
             center_origin(self.item)
+
+    def _drag_image(self, role, scene_pos):
+        """Resize an image like a box, snapping the dragged corner to the
+        grid. The pixmap is stretched to fill the new rect via a scale
+        transform (the opposite corner stays fixed)."""
+        cur = self.item.sceneBoundingRect()
+        r = QRectF(cur)
+        if "n" in role:
+            r.setTop(scene_pos.y())
+        if "s" in role:
+            r.setBottom(scene_pos.y())
+        if "w" in role:
+            r.setLeft(scene_pos.x())
+        if "e" in role:
+            r.setRight(scene_pos.x())
+        r = r.normalized()
+        if r.width() < 1:
+            r.setWidth(1)
+        if r.height() < 1:
+            r.setHeight(1)
+        br = self.item.boundingRect()           # may include a half-px edge
+        if br.width() < 1 or br.height() < 1:
+            return
+        sx, sy = r.width() / br.width(), r.height() / br.height()
+        was_snap = self.scene.snap_enabled
+        self.scene.snap_enabled = False         # corner already snapped
+        self.item.setTransformOriginPoint(0, 0)
+        self.item.setTransform(QTransform(sx, 0, 0, sy, 0, 0))
+        # map the boundingRect's top-left exactly onto the target rect
+        self.item.setPos(r.left() - sx * br.left(), r.top() - sy * br.top())
+        self.scene.snap_enabled = was_snap
 
 
 def _dist(a: QPointF, b: QPointF) -> float:

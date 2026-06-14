@@ -279,13 +279,38 @@ def test_kpaint_image_scale_rotation(scene, tmp_path):
     img.setScale(1.5)
     scene.addItem(img)
 
+    before = img.sceneBoundingRect()
     path = tmp_path / "imgscale.kpaint"
     document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
     document.load_kpaint(other, str(path))
     loaded = next(i for i in other.vector_items() if isinstance(i, ImageItem))
-    assert abs(loaded.scale() - 1.5) < 1e-6
-    assert abs(loaded.rotation() - 45) < 1e-6
+    after = loaded.sceneBoundingRect()             # full transform round-trips
+    assert abs(after.width() - before.width()) < 0.5
+    assert abs(after.height() - before.height()) < 0.5
+    assert abs(after.x() - before.x()) < 0.5
+    assert abs(after.y() - before.y()) < 0.5
+
+
+def test_image_resize_snaps_to_grid(scene):
+    from khervepaint.handles import SelectionHandles, RESIZE
+    from PyQt5.QtGui import QPixmap
+    scene.grid_divisions = 20                       # 400px / 20 -> 20px grid
+    scene.snap_enabled = True
+    pm = QPixmap(40, 40)
+    pm.fill(QColor("#777777"))
+    img = ImageItem(pm)
+    img.setPos(0, 0)
+    scene.addItem(img)
+    img.setSelected(True)
+    handles = SelectionHandles(scene, img, RESIZE)
+    assert handles.kind == "image"
+    handles.begin("se", QPointF(40, 40))
+    handles.drag("se", QPointF(83, 97))            # snaps to 80, 100
+    handles.end()
+    br = img.sceneBoundingRect()
+    assert round(br.right()) == 80                  # snapped to the grid
+    assert round(br.bottom()) == 100
 
 
 def test_roundtrip_image(scene, tmp_path):
@@ -1059,6 +1084,19 @@ def test_ai_extract_specs():
     assert extract_specs('```\n{"shapes":[{"shape":"circle"}]}\n```') \
         == [{"shape": "circle"}]
     assert extract_specs("no shapes here") == []
+
+
+def test_ai_extract_truncated_json():
+    from khervepaint.ai_assistant import extract_specs
+    # a long reply cut off mid-array (no closing ]/```): salvage what's whole
+    reply = ('Here you go:\n```json\n'
+             '[{"shape":"rect","x":0,"y":0,"w":10,"h":10},\n'
+             '{"shape":"circle","x":5,"y":5,"w":8,"h":8},\n'
+             '{"shape":"rect","x":9')
+    specs = extract_specs(reply)
+    assert len(specs) == 2                       # two complete objects salvaged
+    assert specs[0]["shape"] == "rect"
+    assert specs[1]["shape"] == "circle"
 
 
 def test_ai_apply_specs_creates_items(scene):
