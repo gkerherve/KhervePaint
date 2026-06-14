@@ -20,6 +20,16 @@ offered, and Export (Ctrl+E) writes flattened `.png` or single-page
 `.pdf`. Selected lines show endpoint handles — drag a handle to move
 just that end of the line.
 
+## AI assistant
+
+A dockable **AI Assistant** (View ▸ AI Assistant) can draw for you. Pick
+a provider — **Claude, ChatGPT, Mistral, Ollama or a Local endpoint** —
+enter its API key, hit **Refresh** to list its models, then ask in plain
+language ("draw a blue flowchart box labelled Start with an arrow to a
+circle below"). The reply's shape specs become real, editable, undoable
+items on the canvas. Keys are stored locally via QSettings; no extra
+dependencies (it uses `urllib`).
+
 ## Run
 
 ```

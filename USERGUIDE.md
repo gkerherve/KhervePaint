@@ -138,6 +138,17 @@ resizes.
 Zoom with **Ctrl + mouse wheel**, reset with **Ctrl+0**. Pick a colour
 theme under **View ▸ Theme**.
 
+## 14. AI assistant
+
+Open **View ▸ AI Assistant** for a chat panel that can draw for you.
+Choose a provider — **Claude, ChatGPT, Mistral, Ollama** or a **Local**
+endpoint — enter its API key (Ollama/Local need only a base URL), and
+press **Refresh** to list that provider's models. Then ask in plain
+language, e.g. *"draw a blue flowchart box labelled Start with an arrow
+down to a circle"*. The shapes it returns become real, editable items on
+the canvas, so you can move, restyle and undo them. API keys are stored
+locally on your machine.
+
 ## Keyboard shortcuts
 
 **Tools:** V pointer · P pencil · B bucket · L line · A arrow · R rect ·

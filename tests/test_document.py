@@ -1004,6 +1004,53 @@ def test_generated_shape_icons(app):
     assert icons.shape_icon("not_a_shape").isNull()
 
 
+def test_ai_extract_specs():
+    from khervepaint.ai_assistant import extract_specs
+    reply = ('Sure, here you go:\n```json\n'
+             '[{"shape":"rect","x":10,"y":20,"w":80,"h":40}]\n```\nDone.')
+    specs = extract_specs(reply)
+    assert specs == [{"shape": "rect", "x": 10, "y": 20, "w": 80, "h": 40}]
+    # the {"shapes": [...]} form and bare JSON also work
+    assert extract_specs('```\n{"shapes":[{"shape":"circle"}]}\n```') \
+        == [{"shape": "circle"}]
+    assert extract_specs("no shapes here") == []
+
+
+def test_ai_apply_specs_creates_items(scene):
+    from khervepaint.ai_assistant import apply_specs
+    from khervepaint.canvas import ArrowItem, PolygonItem
+    specs = [
+        {"shape": "rect", "x": 0, "y": 0, "w": 60, "h": 40,
+         "stroke": "#112233", "fill": "#abcdef", "label": "Start"},
+        {"shape": "arrow", "x1": 0, "y1": 0, "x2": 50, "y2": 50},
+        {"shape": "hexagon", "x": 100, "y": 100, "w": 40, "h": 40},
+        {"shape": "text", "x": 10, "y": 10, "text": "hi", "size": 20},
+    ]
+    created = apply_specs(scene, specs)
+    assert len(created) == 4
+    rect = next(i for i in created if isinstance(i, RectItem))
+    assert rect.brush().color().name() == "#abcdef"
+    assert rect.label() == "Start"
+    assert any(isinstance(i, ArrowItem) for i in created)
+    assert any(isinstance(i, PolygonItem) and i.kind == "hexagon"
+               for i in created)
+    assert any(isinstance(i, TextItem) for i in created)
+
+
+def test_ai_providers_metadata():
+    from khervepaint import ai_providers as p
+    assert set(p.PROVIDERS) == {"Claude", "ChatGPT", "Mistral",
+                                "Ollama", "Local"}
+    assert "Claude" in p.NEEDS_KEY and "Ollama" not in p.NEEDS_KEY
+    assert p.DEFAULT_BASE["Ollama"].startswith("http://localhost")
+
+
+def test_ai_dock_builds(window):
+    assert window.ai_dock is not None
+    # the toggle is wired into the View menu
+    assert window.ai_dock.toggleViewAction() is not None
+
+
 def test_help_content(window):
     from khervepaint import help as h
     guide = h.user_guide_html()

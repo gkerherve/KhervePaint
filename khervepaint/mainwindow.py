@@ -116,6 +116,7 @@ class MainWindow(QMainWindow):
 
         self._build_tool_bar()
         self._build_options_bar()
+        self._build_ai_dock()
         self._build_menus()
         self.statusBar()
         self._update_title()
@@ -193,6 +194,11 @@ class MainWindow(QMainWindow):
         button.setIcon(act.icon())
         act.setChecked(True)
         self._set_tool(act.data())
+
+    def _build_ai_dock(self):
+        from .ai_assistant import AiDock
+        self.ai_dock = AiDock(self.scene, self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.ai_dock)
 
     def _build_options_bar(self):
         bar = QToolBar("Options")
@@ -345,6 +351,10 @@ class MainWindow(QMainWindow):
         view_menu.addAction("Zoom &Out", lambda: self.view.zoom(1 / 1.25),
                             QKeySequence.ZoomOut)
         view_menu.addAction("&Reset Zoom", self.view.zoom_reset, "Ctrl+0")
+        view_menu.addSeparator()
+        ai_action = self.ai_dock.toggleViewAction()
+        ai_action.setText("&AI Assistant")
+        view_menu.addAction(ai_action)
         view_menu.addSeparator()
         theme_menu = view_menu.addMenu("&Theme")
         theme_group = QActionGroup(self)

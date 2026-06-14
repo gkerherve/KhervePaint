@@ -212,6 +212,16 @@ fills and canvas resizes.</p>
 <p>Zoom with <b>Ctrl + mouse wheel</b>, reset with <b>Ctrl+0</b>. Pick a
 colour theme under <b>View ▸ Theme</b>.</p>
 
+<h2>14 · AI assistant</h2>
+<p>Open <b>View ▸ AI Assistant</b> for a chat panel that can draw for
+you. Choose a provider — <b>Claude, ChatGPT, Mistral, Ollama</b> or a
+<b>Local</b> endpoint — enter its API key (Ollama/Local need only a base
+URL), and press <b>Refresh</b> to list that provider's models. Then ask
+in plain language, e.g. <i>“draw a blue flowchart box labelled Start with
+an arrow down to a circle”</i>. The shapes it returns are added to the
+canvas as real, editable items, so you can move, restyle and undo them
+like anything else. Keys are stored locally on your machine.</p>
+
 <h2>Keyboard shortcuts</h2>
 <p><b>Tools</b></p>{tools}
 <p><b>Edit &amp; arrange</b></p>{edit_keys}

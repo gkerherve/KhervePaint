@@ -79,6 +79,14 @@ into a new module and import.
   - `help.py`        — rich About dialog + in-app User Guide
                        (`Help ▸ User Guide`, F1). Keep the guide and the
                        repo `USERGUIDE.md` in sync when features change.
+  - `ai_providers.py`— AI back-ends over urllib (no deps): Claude,
+                       ChatGPT, Mistral, Ollama, Local. `chat()` and
+                       `list_models()`; keys/base URLs in QSettings.
+  - `ai_assistant.py`— `AiDock` (View ▸ AI Assistant): chat panel with
+                       provider/model combos + Refresh-models button.
+                       Parses the model's JSON shape specs and creates
+                       real, undoable items (`apply_specs`). Network runs
+                       on a `QThread`.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
