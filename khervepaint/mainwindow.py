@@ -353,7 +353,7 @@ class MainWindow(QMainWindow):
         view_menu.addAction("&Reset Zoom", self.view.zoom_reset, "Ctrl+0")
         view_menu.addSeparator()
         ai_action = self.ai_dock.toggleViewAction()
-        ai_action.setText("&AI Assistant")
+        ai_action.setText("AI &Chat")
         view_menu.addAction(ai_action)
         view_menu.addSeparator()
         theme_menu = view_menu.addMenu("&Theme")

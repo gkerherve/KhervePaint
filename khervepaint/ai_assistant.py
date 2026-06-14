@@ -15,8 +15,9 @@ the Free Software Foundation, either version 3 of the License, or
 import json
 import re
 
-from PyQt5.QtCore import QLineF, QRectF, QSettings, Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor, QPen
+from PyQt5.QtCore import (QLineF, QRectF, QSettings, QSize, Qt, QThread,
+                          pyqtSignal)
+from PyQt5.QtGui import QBrush, QColor, QFont, QPen
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
                              QDockWidget, QFormLayout, QGroupBox, QHBoxLayout,
                              QLabel, QLineEdit, QMessageBox, QPlainTextEdit,
@@ -307,49 +308,86 @@ class AiSettingsDialog(QDialog):
 
 
 # ---------------------------------------------------------------- dock
+class _ChatInput(QPlainTextEdit):
+    """Multi-line input that submits on Enter (Shift+Enter = newline)."""
+
+    submitted = pyqtSignal()
+
+    def keyPressEvent(self, event):
+        if (event.key() in (Qt.Key_Return, Qt.Key_Enter)
+                and not event.modifiers() & Qt.ShiftModifier):
+            self.submitted.emit()
+            return
+        super().keyPressEvent(event)
+
+
 class AiDock(QDockWidget):
     def __init__(self, scene, parent=None):
-        super().__init__("AI Assistant", parent)
+        super().__init__("AI Chat", parent)
         self.scene = scene
         self.setObjectName("AiAssistant")
         self._worker = None
         self._history = []
         self._settings = QSettings(*_SETTINGS)
+        self._font_pt = int(self._settings.value("ai/fontpt", 10))
 
         body = QWidget()
         layout = QVBoxLayout(body)
         layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
 
         header = QHBoxLayout()
-        self.status_label = QLabel()
-        self.status_label.setStyleSheet("color:#888;")
-        self.settings_btn = QPushButton(icons.icon("mdi.cog-outline"),
-                                        " Settings")
-        header.addWidget(self.status_label, 1)
-        header.addWidget(self.settings_btn)
+        header.setSpacing(2)
+        header.addWidget(QLabel("<b>AI Assistant</b>"))
+        self.provider_label = QLabel()
+        self.provider_label.setStyleSheet("color:#888;")
+        header.addWidget(self.provider_label, 1)
+        self.smaller_btn = self._tool("A−", "Smaller text",
+                                       lambda: self._change_font(-1))
+        self.larger_btn = self._tool("A+", "Larger text",
+                                      lambda: self._change_font(1))
+        self.help_btn = self._tool(None, "Help", self._show_help,
+                                   "mdi.help-circle-outline")
+        self.settings_btn = self._tool(None, "AI Chat settings",
+                                       self._open_settings, "mdi.cog-outline")
+        self.clear_btn = self._tool(None, "Clear chat", self._clear,
+                                    "mdi.notification-clear-all")
+        for btn in (self.smaller_btn, self.larger_btn, self.help_btn,
+                    self.settings_btn, self.clear_btn):
+            header.addWidget(btn)
         layout.addLayout(header)
 
         self.transcript = QTextBrowser()
         self.transcript.setOpenExternalLinks(True)
         layout.addWidget(self.transcript, 1)
 
-        self.input = QPlainTextEdit()
-        self.input.setPlaceholderText(
-            "Ask me to draw… e.g. “a blue flowchart box labelled Start "
-            "with an arrow to a circle below it”")
-        self.input.setFixedHeight(64)
-        layout.addWidget(self.input)
-        self.send_btn = QPushButton("Send")
-        layout.addWidget(self.send_btn)
+        input_row = QHBoxLayout()
+        self.input = _ChatInput()
+        self.input.setPlaceholderText("Ask Claude to draw…")
+        self.input.setFixedHeight(70)
+        self.send_btn = self._tool(None, "Send", self._send, "mdi.send")
+        self.send_btn.setIconSize(QSize(24, 24))
+        input_row.addWidget(self.input, 1)
+        input_row.addWidget(self.send_btn, 0, Qt.AlignBottom)
+        layout.addLayout(input_row)
 
         self.setWidget(body)
+        self.input.submitted.connect(self._send)
 
-        self.settings_btn.clicked.connect(self._open_settings)
-        self.send_btn.clicked.connect(self._send)
-
+        self._apply_font()
         self._update_status()
-        self._log("system", "Click Settings to choose a provider and enter "
-                            "your API key, then ask me to draw something.")
+        self._welcome()
+
+    def _tool(self, text, tip, slot, glyph=None):
+        btn = QToolButton()
+        if glyph:
+            btn.setIcon(icons.icon(glyph))
+        if text:
+            btn.setText(text)
+        btn.setToolTip(tip)
+        btn.setAutoRaise(True)
+        btn.clicked.connect(slot)
+        return btn
 
     # ------------------------------------------------------- settings
     def _open_settings(self):
@@ -358,9 +396,39 @@ class AiDock(QDockWidget):
 
     def _update_status(self):
         provider = self._settings.value("ai/provider", "Claude")
-        model = self._settings.value(f"ai/model/{provider}", "no model")
-        self.status_label.setText(
-            f"{providers.DISPLAY_NAMES.get(provider, provider)} · {model}")
+        self.provider_label.setText(
+            providers.DISPLAY_NAMES.get(provider, provider))
+
+    def _change_font(self, delta):
+        self._font_pt = max(7, min(28, self._font_pt + delta))
+        self._settings.setValue("ai/fontpt", self._font_pt)
+        self._apply_font()
+
+    def _apply_font(self):
+        for widget in (self.transcript, self.input):
+            font = widget.font()
+            font.setPointSize(self._font_pt)
+            widget.setFont(font)
+
+    def _welcome(self):
+        self._log("system",
+                  "Hello! I can help you build your drawing — ask me to add "
+                  "shapes, a flowchart or a diagram and I'll place them on "
+                  "the canvas. Set your provider (Anthropic, OpenAI, Mistral, "
+                  "Ollama or Local) and API key via the gear icon.")
+
+    def _show_help(self):
+        self._log("system",
+                  "Describe what to draw, e.g. “a blue box labelled Start "
+                  "with an arrow to a circle below”. Shapes are added as real, "
+                  "editable, undoable items. A−/A+ resize this text; the "
+                  "gear sets the provider/model/key; the last icon clears the "
+                  "chat.")
+
+    def _clear(self):
+        self.transcript.clear()
+        self._history = []
+        self._welcome()
 
     # ------------------------------------------------------- transcript
     def _log(self, role, text):
