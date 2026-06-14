@@ -994,6 +994,16 @@ def test_explode_then_regroup_after_delete(window):
     assert any(isinstance(i, PolygonItem) for i in s.vector_items())
 
 
+def test_generated_shape_icons(app):
+    from khervepaint import icons
+    # shapes with no Material Design glyph get a drawn icon (not blank,
+    # which would otherwise widen the toolbar by falling back to text)
+    assert not icons.shape_icon("parallelogram").isNull()
+    assert not icons.shape_icon("heptagon").isNull()
+    assert not icons.shape_icon("halfcircle").isNull()      # arc kind
+    assert icons.shape_icon("not_a_shape").isNull()
+
+
 def test_help_content(window):
     from khervepaint import help as h
     guide = h.user_guide_html()

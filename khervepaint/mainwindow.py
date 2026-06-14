@@ -120,14 +120,18 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.LeftToolBarArea, bar)
         self._tool_group = QActionGroup(self)
         for tool, glyph, label, shortcut in TOOLS:
-            self._add_tool_action(bar, tool, glyph, label, shortcut)
+            self._add_tool_action(bar, tool, icons.icon(glyph), label,
+                                  shortcut)
         bar.addSeparator()
         for tool, glyph, label in SHAPE_TOOLS:
-            self._add_tool_action(bar, tool, glyph, label, None)
+            ic = icons.icon(glyph)
+            if ic.isNull():            # no MDI glyph: draw the shape itself
+                ic = icons.shape_icon(tool, size=TOOL_ICON_SIZE.width())
+            self._add_tool_action(bar, tool, ic, label, None)
         self._tool_group.actions()[0].setChecked(True)
 
-    def _add_tool_action(self, bar, tool, glyph, label, shortcut):
-        act = QAction(icons.icon(glyph), label, self)
+    def _add_tool_action(self, bar, tool, icon, label, shortcut):
+        act = QAction(icon, label, self)
         act.setCheckable(True)
         if shortcut:
             act.setShortcut(shortcut)

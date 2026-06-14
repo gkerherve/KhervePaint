@@ -43,3 +43,34 @@ def icon(name: str, color: str = None) -> QIcon:
 def app_icon() -> QIcon:
     """Window/taskbar icon: a palette glyph in Python blue."""
     return icon("mdi.palette-outline", color="#3776ab")
+
+
+def shape_icon(kind: str, color: str = None, size: int = 24) -> QIcon:
+    """Draw a shape's own outline into an icon — used for shapes that
+    have no Material Design glyph (e.g. parallelogram, heptagon)."""
+    from PyQt5.QtCore import Qt, QRectF
+    from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap
+    from . import canvas
+
+    margin = max(2, size // 7)
+    rect = QRectF(margin, margin, size - 2 * margin, size - 2 * margin)
+    is_arc = kind in canvas.ARC_KINDS
+    if is_arc:
+        outline = canvas.arc_path(kind, rect)
+    elif kind in canvas.POLYGON_KINDS:
+        outline = canvas.polygon_for_kind(kind, rect)
+    else:
+        return QIcon()
+
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setPen(QPen(QColor(color or DEFAULT_COLOR), 1.5))
+    painter.setBrush(Qt.NoBrush)
+    if is_arc:
+        painter.drawPath(outline)
+    else:
+        painter.drawPolygon(outline)
+    painter.end()
+    return QIcon(pixmap)
