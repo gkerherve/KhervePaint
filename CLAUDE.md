@@ -96,11 +96,14 @@ Everything lives in one `QGraphicsScene`:
   - Two-point tools (`_TWO_POINT_TOOLS`): line and arrow (`ArrowItem`
     extends `LineItem` and draws a filled head).
   - Rect-defined tools (`_RECT_TOOLS`): rect, circle (square ellipse),
-    ellipse, rounded rect (`RoundedRectItem`, real `radius`), the
-    parametric polygons (triangle/diamond/pentagon/hexagon/star) via
-    one `PolygonItem` whose geometry is always a vertex list, and the
-    parametric arcs (`ArcShapeItem`: half/quarter circle on a bounding
-    rect + flip flags). All are box-resizable.
+    ellipse, rounded rect (`RoundedRectItem`, real `radius`), a large
+    set of parametric polygons via one `PolygonItem` whose geometry is
+    always a vertex list — triangle, right triangle, diamond,
+    parallelogram, trapezoid, pentagon..octagon, 5/6-point star, plus,
+    chevron, block arrow, lightning, house (see `_POLY_FRACTIONS` /
+    `_POLY_SIDES`) — and the parametric arcs (`ArcShapeItem`: half/
+    quarter circle + flip flags). All are box-resizable; every polygon
+    explodes into its edge lines for free.
   - Text (`TextItem`) edits inline on double-click.
   - `ImageItem` is a movable bitmap on the vector layer (paste); crop
     it via the right-click menu (`crop.py`).

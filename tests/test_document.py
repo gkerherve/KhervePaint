@@ -234,6 +234,39 @@ def test_polygon_set_rect_shapes():
         assert item.polygon().count() == vertices
 
 
+def test_new_polygon_shapes_vertex_counts():
+    counts = {"right_triangle": 3, "parallelogram": 4, "trapezoid": 4,
+              "heptagon": 7, "octagon": 8, "star6": 12, "plus": 12,
+              "chevron": 6, "arrow_right": 7, "lightning": 7, "house": 5}
+    for kind, n in counts.items():
+        item = PolygonItem(kind=kind)
+        item.set_rect(QRectF(0, 0, 100, 100))
+        assert item.polygon().count() == n, kind
+
+
+def test_explode_octagon(scene):
+    octa = PolygonItem(kind="octagon")
+    octa.set_rect(QRectF(0, 0, 80, 80))
+    scene.addItem(octa)
+    octa.setSelected(True)
+    scene.explode_selection()
+    lines = [i for i in scene.vector_items() if isinstance(i, LineItem)]
+    assert len(lines) == 8                       # one per edge
+
+
+def test_new_shape_roundtrips_kind(scene, tmp_path):
+    house = PolygonItem(kind="house")
+    house.set_rect(QRectF(0, 0, 60, 60))
+    scene.addItem(house)
+    path = tmp_path / "house.kpaint"
+    document.save_kpaint(scene, str(path))
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    loaded = other.vector_items()[0]
+    assert loaded.kind == "house"
+    assert loaded.polygon().count() == 5
+
+
 def test_kpaint_image_scale_rotation(scene, tmp_path):
     from khervepaint.canvas import center_origin
     from PyQt5.QtGui import QPixmap

@@ -35,9 +35,37 @@ ARROW, ROUNDRECT = "arrow", "roundrect"
 HALFCIRCLE, QUARTERCIRCLE = "halfcircle", "quartercircle"
 TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR = (
     "triangle", "diamond", "pentagon", "hexagon", "star")
+RIGHT_TRIANGLE, PARALLELOGRAM, TRAPEZOID = (
+    "right_triangle", "parallelogram", "trapezoid")
+HEPTAGON, OCTAGON, STAR6 = "heptagon", "octagon", "star6"
+PLUS, CHEVRON, ARROW_RIGHT, LIGHTNING, HOUSE = (
+    "plus", "chevron", "arrow_right", "lightning", "house")
 
-#: Parametric polygons created by dragging a bounding rect.
-POLYGON_KINDS = (TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR)
+#: Parametric polygons created by dragging a bounding rect — all of
+#: these are vertex polygons, so they explode into their edge lines.
+POLYGON_KINDS = (TRIANGLE, RIGHT_TRIANGLE, DIAMOND, PARALLELOGRAM,
+                 TRAPEZOID, PENTAGON, HEXAGON, HEPTAGON, OCTAGON, STAR,
+                 STAR6, PLUS, CHEVRON, ARROW_RIGHT, LIGHTNING, HOUSE)
+
+#: Custom polygons given as fractional (x, y) vertices within the rect.
+_POLY_FRACTIONS = {
+    TRIANGLE: [(0.5, 0), (1, 1), (0, 1)],
+    RIGHT_TRIANGLE: [(0, 0), (0, 1), (1, 1)],
+    DIAMOND: [(0.5, 0), (1, 0.5), (0.5, 1), (0, 0.5)],
+    PARALLELOGRAM: [(0.25, 0), (1, 0), (0.75, 1), (0, 1)],
+    TRAPEZOID: [(0.25, 0), (0.75, 0), (1, 1), (0, 1)],
+    PLUS: [(0.34, 0), (0.66, 0), (0.66, 0.34), (1, 0.34), (1, 0.66),
+           (0.66, 0.66), (0.66, 1), (0.34, 1), (0.34, 0.66), (0, 0.66),
+           (0, 0.34), (0.34, 0.34)],
+    CHEVRON: [(0, 0), (0.6, 0), (1, 0.5), (0.6, 1), (0, 1), (0.4, 0.5)],
+    ARROW_RIGHT: [(0, 0.3), (0.6, 0.3), (0.6, 0), (1, 0.5), (0.6, 1),
+                  (0.6, 0.7), (0, 0.7)],
+    LIGHTNING: [(0.6, 0), (0, 0.6), (0.35, 0.6), (0.15, 1), (1, 0.35),
+                (0.55, 0.35), (0.75, 0)],
+    HOUSE: [(0.5, 0), (1, 0.45), (1, 1), (0, 1), (0, 0.45)],
+}
+#: Regular polygons by number of sides.
+_POLY_SIDES = {PENTAGON: 5, HEXAGON: 6, HEPTAGON: 7, OCTAGON: 8}
 #: Parametric arc shapes created by dragging a bounding rect.
 ARC_KINDS = (HALFCIRCLE, QUARTERCIRCLE)
 #: Tools defined by two points (drag start -> end).
@@ -182,23 +210,24 @@ class ArrowItem(LineItem):
 
 def polygon_for_kind(kind: str, rect: QRectF) -> QPolygonF:
     """Vertices of a parametric polygon *kind* inscribed in *rect*."""
+    left, top = rect.left(), rect.top()
+    w, h = rect.width(), rect.height()
     cx, cy = rect.center().x(), rect.center().y()
-    rx, ry = rect.width() / 2, rect.height() / 2
-    if kind == TRIANGLE:
-        pts = [(cx, rect.top()), (rect.right(), rect.bottom()),
-               (rect.left(), rect.bottom())]
-    elif kind == DIAMOND:
-        pts = [(cx, rect.top()), (rect.right(), cy),
-               (cx, rect.bottom()), (rect.left(), cy)]
-    elif kind == STAR:
+    rx, ry = w / 2, h / 2
+
+    if kind in _POLY_FRACTIONS:
+        pts = [(left + fx * w, top + fy * h)
+               for fx, fy in _POLY_FRACTIONS[kind]]
+    elif kind in (STAR, STAR6):
+        points = 5 if kind == STAR else 6
         pts = []
-        for i in range(10):
-            ang = -math.pi / 2 + i * math.pi / 5
+        for i in range(points * 2):
+            ang = -math.pi / 2 + i * math.pi / points
             scale = 1.0 if i % 2 == 0 else 0.4
             pts.append((cx + rx * scale * math.cos(ang),
                         cy + ry * scale * math.sin(ang)))
-    else:
-        sides = 5 if kind == PENTAGON else 6
+    else:                                   # regular polygon
+        sides = _POLY_SIDES.get(kind, 6)
         pts = []
         for i in range(sides):
             ang = -math.pi / 2 + i * 2 * math.pi / sides

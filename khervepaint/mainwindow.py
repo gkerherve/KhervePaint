@@ -20,13 +20,17 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
 
 from . import APP_NAME, __version__, document, icons, svgio
 from .undo import SnapshotCommand
-from .canvas import (ARROW, BUCKET, CIRCLE, DIAMOND, ELLIPSE, HALFCIRCLE,
-                     HEXAGON, LINE, PENCIL, PENTAGON, POINTER, QUARTERCIRCLE,
-                     RECT, ROUNDRECT, STAR, TEXT, TRIANGLE, ImageItem,
+from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEVRON, CIRCLE, DIAMOND,
+                     ELLIPSE, HALFCIRCLE, HEPTAGON, HEXAGON, HOUSE, LIGHTNING,
+                     LINE, OCTAGON, PARALLELOGRAM, PENCIL, PENTAGON, PLUS,
+                     POINTER, QUARTERCIRCLE, RECT, RIGHT_TRIANGLE, ROUNDRECT,
+                     STAR, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      PaintScene, PaintView)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
+#: The left tool column holds many shapes, so its icons are smaller.
+TOOL_ICON_SIZE = QSize(24, 24)
 
 #: Custom clipboard MIME carrying serialised KhervePaint items.
 MIME_ITEMS = "application/x-khervepaint-items"
@@ -48,14 +52,25 @@ TOOLS = [
     (TEXT, "mdi.format-text", "Text", "T"),
 ]
 
-#: Extra shapes gathered under one dropdown: (tool id, mdi icon, label).
+#: Extra shapes shown as their own tool buttons: (tool id, mdi icon, label).
 SHAPE_TOOLS = [
     (ROUNDRECT, "mdi.rounded-corner", "Rounded rectangle"),
     (TRIANGLE, "mdi.triangle-outline", "Triangle"),
+    (RIGHT_TRIANGLE, "mdi.vector-triangle", "Right triangle"),
     (DIAMOND, "mdi.rhombus-outline", "Diamond"),
+    (PARALLELOGRAM, "mdi.vector-parallelogram", "Parallelogram"),
+    (TRAPEZOID, "mdi.vector-polygon", "Trapezoid"),
     (PENTAGON, "mdi.pentagon-outline", "Pentagon"),
     (HEXAGON, "mdi.hexagon-outline", "Hexagon"),
-    (STAR, "mdi.star-outline", "Star"),
+    (HEPTAGON, "mdi.septagon-outline", "Heptagon"),
+    (OCTAGON, "mdi.octagon-outline", "Octagon"),
+    (STAR, "mdi.star-outline", "Star (5-point)"),
+    (STAR6, "mdi.hexagram-outline", "Star (6-point)"),
+    (PLUS, "mdi.plus", "Cross / plus"),
+    (CHEVRON, "mdi.chevron-right", "Chevron"),
+    (ARROW_RIGHT, "mdi.arrow-right-bold-outline", "Block arrow"),
+    (LIGHTNING, "mdi.lightning-bolt-outline", "Lightning bolt"),
+    (HOUSE, "mdi.home-outline", "House"),
     (HALFCIRCLE, "mdi.circle-half-full", "Half circle"),
     (QUARTERCIRCLE, "mdi.circle-slice-2", "Quarter circle"),
 ]
@@ -100,7 +115,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------ chrome
     def _build_tool_bar(self):
         bar = QToolBar("Tools")
-        bar.setIconSize(ICON_SIZE)
+        bar.setIconSize(TOOL_ICON_SIZE)
         bar.setMovable(False)
         self.addToolBar(Qt.LeftToolBarArea, bar)
         self._tool_group = QActionGroup(self)

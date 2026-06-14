@@ -48,8 +48,11 @@ rectangle/ellipse. **Double-click** a shape to **rotate** it about its
 own centre. Right-click for the context menu (edit properties,
 duplicate, order, group).
 
-The **Shapes** dropdown includes rounded rectangle, triangle, diamond,
-pentagon, hexagon, star and **half / quarter circles**.
+The tool column includes a wide set of shapes — rounded rectangle,
+triangle, right triangle, diamond, parallelogram, trapezoid,
+pentagon, hexagon, heptagon, octagon, 5- and 6-point stars, cross,
+chevron, block arrow, lightning bolt, house, and half / quarter
+circles. Every polygon shape can be **exploded** into its edge lines.
 
 **Explode** (Ctrl+Shift+E, or the right-click menu) breaks any shape's
 outline into its separate segments — straight edges become lines and
