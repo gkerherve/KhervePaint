@@ -994,6 +994,18 @@ def test_explode_then_regroup_after_delete(window):
     assert any(isinstance(i, PolygonItem) for i in s.vector_items())
 
 
+def test_help_content(window):
+    from khervepaint import help as h
+    guide = h.user_guide_html()
+    for token in ("User Guide", "Tools", "ACS", "Ctrl+Z", "Bucket",
+                  "Explode", "Drawing Size", "Crop", "Undo"):
+        assert token in guide
+    about = h.about_html()
+    assert "KhervePaint" in about and "GPL-3.0" in about
+    dlg = h.UserGuideDialog(window)        # builds without error
+    assert dlg.windowTitle()
+
+
 def test_recent_files_list(window):
     window._clear_recent()
     window._add_recent("/docs/first.svg")

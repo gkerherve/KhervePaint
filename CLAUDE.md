@@ -76,6 +76,9 @@ into a new module and import.
                        width with px viewBox).
   - `undo.py`        — `SnapshotCommand`: whole-document snapshot
                        undo/redo (see Undo / redo policy).
+  - `help.py`        — rich About dialog + in-app User Guide
+                       (`Help ▸ User Guide`, F1). Keep the guide and the
+                       repo `USERGUIDE.md` in sync when features change.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 

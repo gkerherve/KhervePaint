@@ -302,6 +302,8 @@ class MainWindow(QMainWindow):
             theme_menu.addAction(act)
 
         help_menu = m.addMenu("&Help")
+        help_menu.addAction("&User Guide", self._user_guide, "F1")
+        help_menu.addSeparator()
         help_menu.addAction("&About", self._about)
 
     # ------------------------------------------------------------ state
@@ -647,8 +649,9 @@ class MainWindow(QMainWindow):
             event.ignore()
 
     def _about(self):
-        QMessageBox.about(
-            self, f"About {APP_NAME}",
-            f"<b>{APP_NAME}</b> v{__version__}<br>"
-            "Hybrid raster + vector drawing app in the Kherve family."
-            "<br><br>GPL-3.0 — Gwilherm Kerherve")
+        from . import help as help_dialogs
+        help_dialogs.show_about(self)
+
+    def _user_guide(self):
+        from . import help as help_dialogs
+        help_dialogs.show_user_guide(self)

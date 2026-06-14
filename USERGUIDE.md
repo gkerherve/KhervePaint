@@ -1,0 +1,153 @@
+# KhervePaint — User Guide
+
+A hybrid **raster + vector** drawing app for figures, diagrams and quick
+image edits. This guide takes you from drawing your first shape to
+exporting a publication-ready figure.
+
+> The same guide is built into the app: **Help ▸ User Guide** (or press
+> **F1**).
+
+---
+
+## 1. The canvas
+
+A drawing has two layers in one canvas:
+
+- **Raster layer** — a bitmap. *Open* a PNG to load it here, or fill into
+  it with the bucket. It is stored inside your document.
+- **Vector layer** — shapes, lines, arrows, text, freehand pencil strokes
+  and pasted images drawn on top. These stay fully editable.
+
+The white rectangle is the drawing area; the faint grid around it is a
+guide and never appears in exports.
+
+## 2. Tools
+
+Pick a tool from the left column. The **pointer** selects; every other
+tool draws.
+
+| Key | Tool |
+| --- | --- |
+| V | Pointer — select, move, resize, rotate |
+| P | Pencil — freehand vector stroke |
+| B | Bucket — fill an enclosed region |
+| L | Line |
+| A | Arrow |
+| R | Rectangle |
+| C | Circle |
+| E | Ellipse |
+| T | Text |
+
+Below the basic tools is the full set of **shapes**: rounded rectangle,
+triangle, right triangle, diamond, parallelogram, trapezoid, pentagon,
+hexagon, heptagon, octagon, 5- and 6-point stars, cross, chevron, block
+arrow, lightning bolt, house, and half / quarter circles. Click one,
+then drag on the canvas to draw it.
+
+## 3. Colours, width and fill
+
+On the top toolbar: click the **stroke** swatch (outline colour) or the
+**fill** swatch to choose colours, toggle **Fill new shapes** to give new
+shapes a fill, and set the line **Width**. These apply to the next thing
+you draw; to recolour an existing item, use its properties (below).
+
+## 4. Selecting, moving, resizing, rotating
+
+- **Select** with the pointer: click an item, or drag a rubber-band box
+  around several.
+- **Move**: drag the item.
+- **Resize**: blue handles appear on a selected item — drag a line's
+  endpoints, a polygon's vertices, or a box's corners.
+- **Rotate**: **double-click** the item and drag the green knob; it turns
+  about its own centre.
+
+## 5. Right-click: properties & more
+
+Right-click any item for its menu: **Edit properties…**, Duplicate,
+Delete, Flip, Bring to front / Send to back, Group / Ungroup, Explode,
+and (for images) Crop.
+
+The **properties dialog** edits everything about an item — position,
+rotation, opacity, stroke and fill, the exact geometry, and for text the
+content and font. Shapes can also carry a **text label** drawn centred
+inside them (set it in the Label section).
+
+## 6. Arrange: group, order, mirror, explode
+
+- **Group** (Ctrl+G) several items so they move/resize/rotate/flip as
+  one; **Ungroup** (Ctrl+Shift+G) to split them.
+- **Flip** horizontally / vertically (Ctrl+Shift+H / Ctrl+Shift+J).
+- **Explode** (Ctrl+Shift+E) breaks a shape's outline into its separate
+  edges — delete or edit one side, then regroup the rest.
+- **Bring to front / Send to back** from the right-click menu.
+
+## 7. Bucket fill
+
+Choose the bucket (B), set the fill colour, and click inside an area
+walled off by shape outlines. The toolbar selector chooses whether the
+fill is painted into the **raster** layer or becomes an **editable vector
+path** behind the shapes.
+
+## 8. Images
+
+Paste a screenshot or copied image with **Ctrl+V** — it drops in as a
+movable picture. To **crop** it, right-click → *Crop image*, drag the
+frame handles, then press **Enter** to apply (or **Esc** to cancel).
+
+## 9. Grid & snap
+
+The **Divisions** box sets how many grid cells span the canvas — a higher
+number gives a finer grid. Toggle the grid and snapping from the toolbar
+or the View menu. Snapping keeps shapes aligned as you draw and move them
+(the pencil stays freehand).
+
+## 10. Drawing size & publication figures
+
+**File ▸ Drawing Size** sets the canvas in **pixels, inches or
+millimetres** at a chosen **DPI**. Presets include **ACS single column
+(3.25 in)** and **double column (7.0 in)** at 300 dpi, plus A4, US Letter
+and slides — or enter a custom size, or **Fit to drawing** to shrink the
+canvas around your artwork. Exports then carry the true physical size
+(PNG embeds the DPI, PDF pages are the figure's inch size, SVG sets its
+width in inches).
+
+## 11. Undo / redo
+
+**Ctrl+Z** undoes and **Ctrl+Y** redoes *everything* — drawing, moving,
+resizing, rotating, properties, grouping, cropping, fills and canvas
+resizes.
+
+## 12. Saving, opening & exporting
+
+- **Save** writes **editable SVG** by default (also offered: `.kpaint`,
+  the lossless native format). Re-opening an SVG brings every shape back
+  editable; an imported external SVG is even broken into editable items
+  you can ungroup.
+- **Open** reads `.svg`, `.kpaint` or a `.png` image. Recent files are
+  under **File ▸ Open Recent**.
+- **Export** (Ctrl+E) writes a flattened **PNG** or single-page **PDF**
+  at the drawing's physical size.
+
+## 13. View & themes
+
+Zoom with **Ctrl + mouse wheel**, reset with **Ctrl+0**. Pick a colour
+theme under **View ▸ Theme**.
+
+## Keyboard shortcuts
+
+**Tools:** V pointer · P pencil · B bucket · L line · A arrow · R rect ·
+C circle · E ellipse · T text
+
+**Edit & arrange:** Ctrl+Z/Y undo/redo · Ctrl+C/V/X copy/paste/cut ·
+Ctrl+D duplicate · Ctrl+A select all · Delete · Ctrl+G / Ctrl+Shift+G
+group/ungroup · Ctrl+Shift+E explode · Ctrl+Shift+H / Ctrl+Shift+J flip
+
+**File:** Ctrl+N/O/S new/open/save · Ctrl+Shift+S save as ·
+Ctrl+Shift+P drawing size · Ctrl+E export · Ctrl+Q quit
+
+**View:** Ctrl+wheel zoom · Ctrl+0 reset zoom · Ctrl+' grid ·
+Ctrl+Shift+' snap · F1 user guide
+
+---
+
+KhervePaint · GPL-3.0 · <https://github.com/gkerherve/KhervePaint>
