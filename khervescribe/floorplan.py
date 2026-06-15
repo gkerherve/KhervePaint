@@ -429,6 +429,10 @@ def build_washing_machine(w, h):
     ]
 
 
+#: The page width represents this much real space (mm), so a whole room
+#: fits the drawing — a 480 mm chair is then ~1/10 of the page.
+REFERENCE_MM = 4800.0
+
 #: Real-world plan size (width_mm, depth_mm) for each element.
 SIZES = {
     "wall": (2000, 150), "door": (900, 900), "double_door": (1800, 900),

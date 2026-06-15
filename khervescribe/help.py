@@ -205,10 +205,10 @@ cancels.</p>
 <p>The <b>Grid (mm)</b> box sets the physical distance between grid lines
 in millimetres (using the drawing's DPI) — a smaller value gives a finer
 grid. Toggle the grid, snapping and <b>Infinite paper</b> from the
-toolbar or the View menu. Infinite paper extends the grid across the
-whole view with no fixed page edge (the page still bounds what you
-export). Snapping keeps shapes aligned as you draw and move them (the
-pencil stays freehand).</p>
+toolbar or the View menu. Infinite paper (<b>on by default</b>) extends
+the grid and a white background across the whole view with no fixed page
+edge (the page still bounds what you export). Snapping keeps shapes
+aligned as you draw and move them (the pencil stays freehand).</p>
 
 <h2>10 · Object library</h2>
 <p>Reuse a drawing across files. Select one or more items and choose
@@ -240,7 +240,8 @@ direction.</p>
 
 <h2>10b · Room layout (floor plans)</h2>
 <p>The <b>Room layout</b> dropdown drops ready-made <b>top-view</b> plan
-symbols where you click, at realistic sizes: <b>walls &amp; openings</b>
+symbols where you click, scaled so a whole room fits the page (the page
+width is about 4.8 m, so a chair is ~1/10 of it): <b>walls &amp; openings</b>
 (wall, door, double door, window, opening, stairs), <b>bedroom</b>
 (beds, wardrobe, nightstand, chest), <b>living &amp; dining</b> (table,
 chair, sofa, armchair, coffee table, TV unit, bookshelf), <b>kitchen</b>

@@ -83,7 +83,12 @@ into a new module and import.
                        `PaintScene._place_symbol(module, name, center)` builds
                        native items via `ai_assistant._spec_to_item`, grouped,
                        on click — used by both `place_plan_element` and
-                       `place_elec_element`.
+                       `place_elec_element`. Symbols are sized as a fraction
+                       of the **page** (scale = sceneRect width /
+                       `module.REFERENCE_MM`), so a whole room/circuit fits
+                       the drawing — e.g. a 480 mm chair on floorplan's
+                       4800 mm reference is ~1/10 of the page (NOT mm→dpi,
+                       which made real furniture far bigger than the page).
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
@@ -303,7 +308,9 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   Explorer**, or insert a saved object — folders shown as nested
   sub-menus. Top toolbar = file ops + undo/redo + stroke/fill colour,
   width, grid, arrange (incl. front/forward/backward/back order icons). Grid spacing is set in **mm** (converted via `scene.dpi`);
-  an **Infinite paper** toggle fills the view with grid. The line
+  an **Infinite paper** toggle fills the view with grid (default **on**;
+  `PaintView.apply_scroll_bounds` then also paints the whole canvas white,
+  not the themed surround). The line
   **width** is a dropdown of thin-to-thick line swatches
   (`LINE_WIDTHS`, drawn by `icons.line_width_icon` in the current stroke
   colour), not a numeric spinner.

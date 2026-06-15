@@ -553,7 +553,7 @@ class PaintScene(QGraphicsScene):
         self.grid_mm = 1.0
         self.snap_enabled = True
         self.show_grid = True
-        self.infinite = False     # infinite paper: grid fills the view
+        self.infinite = True      # infinite paper by default (grid fills view)
         self.dpi = 96             # pixels per inch, for physical export size
 
         self.raster_item = QGraphicsPixmapItem()
@@ -1164,11 +1164,18 @@ class PaintScene(QGraphicsScene):
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
-        and place them centred on *center* (grouped if multi-part)."""
+        and place them centred on *center* (grouped if multi-part).
+
+        Symbols are sized as a fraction of the PAGE, not in absolute mm —
+        the page width represents `module.REFERENCE_MM` of real space, so a
+        whole room (or circuit) fits the drawing (e.g. a 480 mm chair on a
+        4.8 m reference is ~1/10 of the page)."""
         from .ai_assistant import _spec_to_item
         w_mm, h_mm = module.size_mm(name)
-        w = w_mm / 25.4 * self.dpi
-        h = h_mm / 25.4 * self.dpi
+        ref = getattr(module, "REFERENCE_MM", 4800.0)
+        scale = (self.sceneRect().width() or 1) / ref
+        w = w_mm * scale
+        h = h_mm * scale
         items = [it for it in (_spec_to_item(s)
                                for s in module.build_specs(name, w, h))
                  if it is not None]
@@ -1527,12 +1534,15 @@ class PaintView(QGraphicsView):
 
     def apply_scroll_bounds(self):
         """Let the view scroll across a large empty area when the scene
-        is in infinite-paper mode; otherwise follow the page rect."""
+        is in infinite-paper mode; otherwise follow the page rect. In
+        infinite mode the whole canvas is white (no themed surround)."""
         if getattr(self.scene(), "infinite", False):
             m = 100000
             self.setSceneRect(QRectF(-m, -m, 2 * m, 2 * m))
+            self.setBackgroundBrush(QBrush(Qt.white))
         else:
             self.setSceneRect(QRectF())   # follow the scene's page rect
+            self.setBackgroundBrush(QBrush())   # back to the theme surround
 
     def mouseMoveEvent(self, event):
         self.cursor_moved.emit(self.mapToScene(event.pos()))

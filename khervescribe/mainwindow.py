@@ -150,6 +150,7 @@ class MainWindow(QMainWindow):
         self._build_options_bar()
         self._build_menus()
         self._build_status_zoom()
+        self.view.apply_scroll_bounds()     # honour infinite-paper default
         self._update_title()
 
     # ------------------------------------------------------------ chrome

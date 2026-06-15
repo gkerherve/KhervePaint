@@ -134,8 +134,9 @@ right-click → *Crop image*, drag the frame handles, then **double-click**
 The **Grid (mm)** box sets the physical distance between grid lines in
 millimetres (using the drawing's DPI) — a smaller value gives a finer
 grid. Toggle the grid, snapping and **Infinite paper** from the toolbar
-or the View menu. Infinite paper extends the grid across the whole view
-with no fixed page edge (the page still bounds what you export).
+or the View menu. Infinite paper (**on by default**) extends the grid and
+a white background across the whole view with no fixed page edge, so you
+can draw and scroll freely (the page still bounds what you export).
 Snapping keeps shapes aligned as you draw and move them (the pencil
 stays freehand).
 
@@ -182,7 +183,9 @@ other shape.
 ## 10b. Room layout (floor plans)
 
 The **Room layout** dropdown (left toolbar) drops ready-made **top-view**
-plan symbols where you click, drawn at realistic real-world sizes:
+plan symbols where you click. They're scaled so a **whole room fits the
+page** — the page width represents about 4.8 m, so a chair is roughly
+a tenth of it — keeping all the furniture in proportion:
 
 - **Walls & openings** — wall, door (with swing), double door, window,
   opening, stairs.

@@ -411,6 +411,10 @@ def build_smoke_detector(w, h):
     ]
 
 
+#: The page width represents this much real space (mm); symbols are sized
+#: as a fraction of the page so components/installation markers fit on it.
+REFERENCE_MM = 600.0
+
 SIZES = {
     "resistor": (24, 10), "capacitor": (20, 14),
     "polarized_capacitor": (20, 14), "inductor": (28, 10), "diode": (22, 12),

@@ -991,7 +991,10 @@ def test_floorplan_place_centres_and_groups(scene):
     assert len(bed) == 1
     br = bed[0].sceneBoundingRect()
     assert abs(br.center().x() - 1000) < 2 and abs(br.center().y() - 1000) < 2
-    assert abs(br.width() - 1500 / 25.4 * 300) < 5    # real-world bed width
+    # sized as a fraction of the page: 1500 mm on the 4.8 m reference
+    from khervescribe import floorplan
+    expect = 1500 * scene.sceneRect().width() / floorplan.REFERENCE_MM
+    assert abs(br.width() - expect) < 5
 
 
 def test_chem_fixed_length_and_angle(scene):
