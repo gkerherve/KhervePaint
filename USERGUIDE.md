@@ -167,12 +167,13 @@ resizes.
 
 ## 13. Saving, opening & exporting
 
-- **Save** writes **editable SVG** by default (also offered: `.kscribe`,
-  the lossless native format). Re-opening an SVG brings every shape back
-  editable; an imported external SVG is even broken into editable items
-  you can ungroup.
-- **Open** reads `.svg`, `.kscribe` or a `.png` image. Recent files are
-  under **File ▸ Open Recent**.
+- **Save** writes a standard, **editable SVG** — the native format, fully
+  SVG-compatible so it opens in any SVG viewer. Re-opening it brings every
+  shape back editable; an imported external SVG is even broken into
+  editable items you can ungroup.
+- **Open** reads `.svg` or a `.png` image (older `.kscribe`/`.kpaint`
+  files still open via *All files*). Recent files are under **File ▸ Open
+  Recent**.
 - **Export** (Ctrl+E) writes a flattened **PNG** or single-page **PDF**
   at the drawing's physical size.
 

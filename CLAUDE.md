@@ -217,16 +217,21 @@ Everything lives in one `QGraphicsScene`:
 
 ## Document format
 
-**SVG is the default save/open format** (`svgio.py`): Save writes
-editable, standard SVG (one element per native item, raster embedded
-as `<image>`, grid settings + polygon kind under a private `kp:`
-namespace) and Open parses SVG back into editable items. Opening an
-external SVG breaks it into native items — `<g>` → `GroupItem`
-(ungroupable), primitives → their items, `<path>` / scaled-or-sheared
-elements → `PathItem`. Save also offers `.kscribe`; Export (Ctrl+E)
-writes flattened PNG/PDF.
+**SVG is the one native save/open format** (`svgio.py`): Save writes a
+standard, fully SVG-compatible file (one element per native item, raster
+embedded as `<image>`, grid settings + polygon kind + dim style under a
+private `kp:` namespace that other viewers ignore) and Open parses SVG
+back into editable items. Opening an external SVG breaks it into native
+items — `<g>` → `GroupItem` (ungroupable), primitives → their items,
+`<path>` / scaled-or-sheared elements → `PathItem`. Export (Ctrl+E)
+writes flattened PNG/PDF. Save As offers **only `.svg`**; the older
+`.kscribe`/`.kpaint` JSON files still *open* (via *All files*) but are no
+longer offered for saving.
 
-`.kscribe` is the JSON native format: `{"format": "kscribe", "version":
+The JSON serialisation in `document.py` (`scene_to_dict`/`dict_to_scene`)
+is still the in-memory snapshot format that powers **undo/redo**, and
+remains the on-disk shape of legacy `.kscribe`/`.kpaint` files:
+`{"format": "kscribe", "version":
 1, "width", "height", "grid": {"size", "show", "snap"}, "raster":
 "<base64 PNG>", "items": [...]}`. Each item dict has `"type"`
 (`line|arrow|rect|roundrect|ellipse|polygon|path|text|image|group`),
@@ -303,9 +308,12 @@ the action is undoable.
 
 ## Persistence policy
 
-**All item properties must round-trip through `.kscribe`.** When
-adding a property, update `item_to_dict()` and `item_from_dict()` in
-`document.py` together, and extend the round-trip test in `tests/`.
+**All item properties must round-trip through both the JSON snapshot
+(`document.py`, which powers undo) and the SVG file format (`svgio.py`,
+the only on-disk native format).** When adding a property, update
+`item_to_dict()`/`item_from_dict()` in `document.py` *and* the
+write/read in `svgio.py` together, and extend the round-trip tests in
+`tests/` (cover both formats).
 
 ## Commit / push policy
 

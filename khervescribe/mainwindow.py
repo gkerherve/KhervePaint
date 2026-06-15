@@ -926,9 +926,9 @@ class MainWindow(QMainWindow):
             return
         path, _ = QFileDialog.getOpenFileName(
             self, "Open", "",
-            "All supported (*.svg *.kscribe *.png);;SVG image (*.svg);;"
-            "KherveScribe document (*.kscribe);;PNG image (*.png);;"
-            "All files (*)")          # old .kpaint still open via All files
+            "All supported (*.svg *.png);;SVG image (*.svg);;"
+            "PNG image (*.png);;"
+            "All files (*)")          # old .kscribe/.kpaint via All files
         if not path:
             return
         self._load_document(path)
@@ -1035,13 +1035,14 @@ class MainWindow(QMainWindow):
         self.view.zoom_reset()
 
     def save_file_as(self):
-        path, chosen = QFileDialog.getSaveFileName(
-            self, "Save As", "",
-            "SVG image (*.svg);;KherveScribe document (*.kscribe)")
+        # SVG is the native format: a standard, fully SVG-compatible file
+        # that round-trips as editable items here and opens anywhere.
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save As", "", "SVG image (*.svg)")
         if not path:
             return
-        if Path(path).suffix.lower() not in (".svg", ".kscribe", ".kpaint"):
-            path += ".kscribe" if "kscribe" in chosen else ".svg"
+        if Path(path).suffix.lower() != ".svg":
+            path += ".svg"
         self._path = path
         self.save_file()
 

@@ -236,13 +236,13 @@ fills and canvas resizes.</p>
 
 <h2>13 · Saving, opening &amp; exporting</h2>
 <ul>
-  <li><b>Save</b> writes <b>editable SVG</b> by default (also offered:
-      <code>.kscribe</code>, the lossless native format). Re-opening an SVG
+  <li><b>Save</b> writes a standard, <b>editable SVG</b> — the native
+      format, fully SVG-compatible so it opens anywhere. Re-opening it
       brings every shape back editable; an imported external SVG is even
       broken into editable items you can ungroup.</li>
-  <li><b>Open</b> reads <code>.svg</code>, <code>.kscribe</code> or a
-      <code>.png</code> image (old <code>.kpaint</code> files still open).
-      Recent files are under <b>File ▸ Open
+  <li><b>Open</b> reads <code>.svg</code> or a <code>.png</code> image
+      (older <code>.kscribe</code>/<code>.kpaint</code> files still open
+      via <i>All files</i>). Recent files are under <b>File ▸ Open
       Recent</b>.</li>
   <li><b>Export</b> (Ctrl+E) writes a flattened <b>PNG</b> or single-page
       <b>PDF</b> at the drawing's physical size.</li>
