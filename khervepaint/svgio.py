@@ -74,14 +74,22 @@ def _pixmap_data_uri(pixmap: QPixmap) -> str:
 
 
 def _transform_attr(item) -> str:
+    # Scaled items (incl. resized groups) are emitted as the exact
+    # transform matrix, which encodes the centre transform-origin. A bare
+    # scale(s) ignores that origin, so the loader — which bakes scaled
+    # geometry — would shift the item by origin·(1−s). Rotation-only and
+    # translation stay human-readable: the loader rebuilds those about the
+    # centre itself, so the simple form round-trips exactly.
+    if abs(item.scale() - 1) > _EPS:
+        m = (item.sceneTransform() if item.parentItem() is None
+             else item.itemTransform(item.parentItem()))
+        return _matrix_attr(m)
     parts = []
     pos = item.pos()
     if abs(pos.x()) > _EPS or abs(pos.y()) > _EPS:
         parts.append(f"translate({pos.x():g},{pos.y():g})")
     if abs(item.rotation()) > _EPS:
         parts.append(f"rotate({item.rotation():g})")
-    if abs(item.scale() - 1) > _EPS:
-        parts.append(f"scale({item.scale():g})")
     return " ".join(parts)
 
 
@@ -577,7 +585,10 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene):
         for child in el:
             sub = _parse_element(child, total, style, scene)
             if sub is not None:
-                sub.setParentItem(group)
+                # addToGroup (not setParentItem) so the group's cached
+                # bounding rect is correct — otherwise its scale/rotate
+                # origin and sceneBoundingRect are empty after load.
+                group.addToGroup(sub)
         return group if group.childItems() else None
 
     if tag == "image" and el.get(_kp("role")) == "raster":

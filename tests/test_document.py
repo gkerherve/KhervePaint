@@ -185,6 +185,78 @@ def test_ungroup_restores_items(scene):
     assert len(scene.vector_items()) == 4
 
 
+def test_group_preserves_child_positions(scene):
+    # Grouping must not snap children into the grid (they kept their pos).
+    scene.dpi = 25.4; scene.grid_mm = 20; scene.snap_enabled = True
+    r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(37, 51); scene.addItem(r1)
+    r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(115, 93); scene.addItem(r2)
+    before = [r1.scenePos(), r2.scenePos()]
+    r1.setSelected(True); r2.setSelected(True)
+    scene.group_selection()
+    assert r1.scenePos() == before[0]
+    assert r2.scenePos() == before[1]
+
+
+def test_group_resize_anchors_opposite_corner(scene):
+    from khervepaint.handles import SelectionHandles, RESIZE
+    scene.dpi = 25.4; scene.grid_mm = 20; scene.snap_enabled = True
+    r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(40, 40); scene.addItem(r1)
+    r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(120, 100); scene.addItem(r2)
+    r1.setSelected(True); r2.setSelected(True)
+    scene.group_selection()
+    g = scene.vector_items()[0]
+    br = g.sceneBoundingRect()
+    nw = br.topLeft()
+    h = SelectionHandles(scene, g, RESIZE)
+    assert h.kind == "scale"
+    h.begin("se", br.bottomRight())             # drag the SE corner out
+    h.drag("se", br.bottomRight() + QPointF(60, 40))
+    h.end()
+    br2 = g.sceneBoundingRect()
+    # the opposite (NW) corner stays put; the group only grows
+    assert abs(br2.topLeft().x() - nw.x()) <= 1
+    assert abs(br2.topLeft().y() - nw.y()) <= 1
+    assert br2.width() > br.width()
+    assert br2.height() > br.height()
+
+
+def _scaled_group(scene):
+    from khervepaint.handles import SelectionHandles, RESIZE
+    scene.dpi = 25.4; scene.grid_mm = 20
+    r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(40, 40); scene.addItem(r1)
+    r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(120, 100); scene.addItem(r2)
+    r1.setSelected(True); r2.setSelected(True); scene.group_selection()
+    g = scene.vector_items()[0]
+    br0 = g.sceneBoundingRect()
+    h = SelectionHandles(scene, g, RESIZE)
+    h.begin("se", br0.bottomRight())
+    h.drag("se", br0.bottomRight() + QPointF(60, 40))
+    h.end()
+    return g.sceneBoundingRect()
+
+
+def test_scaled_group_roundtrips_kpaint(scene):
+    target = _scaled_group(scene)
+    other = PaintScene()
+    document.dict_to_scene(document.scene_to_dict(scene), other)
+    got = other.vector_items()[0].sceneBoundingRect()
+    assert all(abs(a - b) <= 1 for a, b in zip(target.getRect(),
+                                               got.getRect()))
+
+
+def test_scaled_group_roundtrips_svg(scene, tmp_path):
+    from khervepaint import svgio
+    target = _scaled_group(scene)
+    path = tmp_path / "scaled_group.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene()
+    svgio.load_svg(other, str(path))
+    got = other.vector_items()[0].sceneBoundingRect()
+    # SVG bakes scaled geometry; allow a small rounding tolerance
+    assert all(abs(a - b) <= 2 for a, b in zip(target.getRect(),
+                                               got.getRect()))
+
+
 def test_snap(scene):
     scene.dpi = 25.4                   # 1 mm == 1 px, for an easy check
     scene.grid_mm = 20                 # -> 20 px spacing

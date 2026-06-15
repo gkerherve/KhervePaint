@@ -197,13 +197,24 @@ class SelectionHandles:
     # ------------------------------------------------------------ drag
     def begin(self, role, scene_pos):
         self.item.setSelected(True)
-        if self.kind in ("rotate", "scale"):
+        if self.kind == "rotate":
             center_origin(self.item)
             self._center = self.item.mapToScene(
                 self.item.transformOriginPoint())
-        if self.kind == "scale":
+        elif self.kind == "scale":
+            # Anchor the corner opposite the one being dragged, so the
+            # item grows/shrinks from that fixed point (a proper box
+            # resize) rather than ballooning about its centre.
+            center_origin(self.item)
+            self._origin = self.item.transformOriginPoint()
+            br = self.item.boundingRect()
+            corners = {"nw": br.topLeft(), "ne": br.topRight(),
+                       "se": br.bottomRight(), "sw": br.bottomLeft()}
+            opposite = {"nw": "se", "ne": "sw", "se": "nw", "sw": "ne"}
+            self._anchor_local = corners[opposite.get(role, "nw")]
+            self._anchor_scene = self.item.mapToScene(self._anchor_local)
             self._scale_base = self.item.scale() or 1.0
-            self._scale_dist = max(_dist(scene_pos, self._center), 1.0)
+            self._scale_dist = max(_dist(scene_pos, self._anchor_scene), 1.0)
 
     def drag(self, role, scene_pos):
         snapped = self.scene.snap(scene_pos) \
@@ -244,8 +255,19 @@ class SelectionHandles:
         self.item.setRotation(angle)
 
     def _scale(self, scene_pos):
-        factor = _dist(scene_pos, self._center) / self._scale_dist
-        self.item.setScale(max(self._scale_base * factor, 0.05))
+        factor = _dist(scene_pos, self._anchor_scene) / self._scale_dist
+        s_new = max(self._scale_base * factor, 0.05)
+        self.item.setScale(s_new)
+        # Reposition so the anchored corner keeps its scene position:
+        # scene(p) = pos + origin + R·S·(p - origin)  (Qt's item transform).
+        lin = QTransform()
+        lin.rotate(self.item.rotation())
+        lin.scale(s_new, s_new)
+        vec = lin.map(self._anchor_local - self._origin)
+        was_snap = self.scene.snap_enabled
+        self.scene.snap_enabled = False        # setPos must not re-snap here
+        self.item.setPos(self._anchor_scene - self._origin - vec)
+        self.scene.snap_enabled = was_snap
 
     def _drag_line(self, role, local):
         ln = self.item.line()

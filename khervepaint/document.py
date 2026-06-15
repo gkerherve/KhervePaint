@@ -224,7 +224,12 @@ def item_from_dict(d: dict):
         item = GroupItem()
         for child_dict in d.get("children", []):
             child = item_from_dict(child_dict)
-            child.setParentItem(item)
+            # addToGroup (not setParentItem) so the group's cached
+            # bounding rect is updated — otherwise it stays empty and the
+            # group's centre/scale origin and sceneBoundingRect are wrong
+            # after a load or undo. Safe to snap-free here: the group is
+            # still detached from any scene.
+            item.addToGroup(child)
     else:
         raise ValueError(f"unknown item type: {kind!r}")
     _apply_label(item, d)

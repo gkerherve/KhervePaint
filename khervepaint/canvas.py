@@ -534,12 +534,20 @@ class PaintScene(QGraphicsScene):
             return
         group = GroupItem()
         self.addItem(group)
+        # Reparenting must not snap: addToGroup repositions each child
+        # into group coords, and snapping that would shift them.
+        was_snap = self.snap_enabled
+        self.snap_enabled = False
         for item in items:
             group.addToGroup(item)
+        self.snap_enabled = was_snap
+        self.clearSelection()
         group.setSelected(True)
         self.changed_by_user.emit()
 
     def ungroup_selection(self):
+        was_snap = self.snap_enabled
+        self.snap_enabled = False
         for item in self.selectedItems():
             if isinstance(item, QGraphicsItemGroup):
                 children = item.childItems()
@@ -547,6 +555,7 @@ class PaintScene(QGraphicsScene):
                 for child in children:
                     child.setFlags(_ITEM_FLAGS)
                     child.setSelected(True)
+        self.snap_enabled = was_snap
         self.changed_by_user.emit()
 
     def delete_selection(self):
