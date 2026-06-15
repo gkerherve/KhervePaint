@@ -33,6 +33,7 @@ from . import chemistry
 POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
 BUCKET = "bucket"
+ERASER, PICKER = "eraser", "picker"
 ARROW, ROUNDRECT = "arrow", "roundrect"
 DIMENSION = "dimension"
 HALFCIRCLE, QUARTERCIRCLE = "halfcircle", "quartercircle"
@@ -523,6 +524,8 @@ class PaintScene(QGraphicsScene):
     """One scene holding the raster layer plus all vector items."""
 
     changed_by_user = pyqtSignal()
+    #: emitted after the colour-picker samples a colour into the pen.
+    color_picked = pyqtSignal()
 
     def __init__(self, width: int = 800, height: int = 600, parent=None):
         super().__init__(parent)
@@ -542,6 +545,7 @@ class PaintScene(QGraphicsScene):
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
         self._chain_preview = None        # rubber-band segment to the cursor
+        self._erase_last = None           # previous eraser point while dragging
 
         # The grid is specified as a physical distance in millimetres
         # between adjacent lines; the pixel spacing is derived from the
@@ -919,12 +923,18 @@ class PaintScene(QGraphicsScene):
             fill.bucket_fill(self, event.scenePos(), self.fill_color,
                              vector=self.bucket_vector)
             return
+        if self.tool == PICKER:                     # eyedropper: one click
+            self._pick_color(event.scenePos())
+            return
 
         pos = self._tool_pos(event.scenePos())
         self._drawing = True
         self._start = pos
 
-        if self.tool == PENCIL:
+        if self.tool == ERASER:
+            self._erase_last = event.scenePos()
+            self._erase(event.scenePos(), event.scenePos())
+        elif self.tool == PENCIL:
             self.pencil_begin(event.scenePos())
         elif self.tool in _TWO_POINT_TOOLS:
             cls = {ARROW: ArrowItem, DIMENSION: DimensionItem}.get(
@@ -972,6 +982,10 @@ class PaintScene(QGraphicsScene):
             return
         if not self._drawing:
             super().mouseMoveEvent(event)
+            return
+        if self.tool == ERASER:
+            self._erase(self._erase_last, event.scenePos())
+            self._erase_last = event.scenePos()
             return
         if self.tool == PENCIL:
             self.pencil_extend(event.scenePos())
@@ -1108,6 +1122,34 @@ class PaintScene(QGraphicsScene):
         item.setSelected(True)
         self.changed_by_user.emit()
 
+    # ------------------------------------------------------------ paint tools
+    def _erase(self, p1: QPointF, p2: QPointF):
+        """Erase the raster layer to white along p1->p2 (MS-Paint eraser)."""
+        pixmap = self.raster_item.pixmap()
+        if pixmap.isNull():
+            return
+        painter = QPainter(pixmap)
+        pen = QPen(Qt.white, max(self.pen.widthF() * 4, 12))
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        painter.setPen(pen)
+        painter.drawLine(p1, p2)
+        painter.end()
+        self.raster_item.setPixmap(pixmap)
+
+    def _pick_color(self, pos: QPointF):
+        """Colour picker / eyedropper: set the stroke colour to the colour
+        under the cursor (raster + vector, as drawn)."""
+        from PyQt5.QtGui import QImage
+        img = QImage(1, 1, QImage.Format_ARGB32)
+        img.fill(Qt.white)
+        painter = QPainter(img)
+        self.render(painter, QRectF(0, 0, 1, 1),
+                    QRectF(pos.x(), pos.y(), 1, 1))
+        painter.end()
+        self.pen.setColor(QColor(img.pixel(0, 0)))
+        self.color_picked.emit()
+
     # ------------------------------------------------ symbol libraries (plan/elec)
     def place_plan_element(self, name: str, center: QPointF):
         """Drop a top-view room-layout element (walls/furniture/fittings),
@@ -1164,6 +1206,10 @@ class PaintScene(QGraphicsScene):
                     self.changed_by_user.emit()
             return
         self._drawing = False
+        if self.tool == ERASER:
+            self._erase_last = None
+            self.changed_by_user.emit()         # raster change is undoable
+            return
         if self.tool == PENCIL:
             self.pencil_end()
             return

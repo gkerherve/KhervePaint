@@ -942,6 +942,29 @@ def test_floorplan_all_elements_build():
             assert n in floorplan.SIZES and n in floorplan.LABELS
 
 
+def test_eraser_clears_raster_to_white(scene):
+    from khervescribe.canvas import ERASER
+    from PyQt5.QtGui import QPixmap
+    pm = QPixmap(200, 200)
+    pm.fill(Qt.black)
+    scene.raster_item.setPixmap(pm)
+    scene.tool = ERASER
+    scene._erase_last = QPointF(50, 50)
+    scene._erase(QPointF(50, 50), QPointF(150, 50))      # erase a stripe
+    img = scene.raster_item.pixmap().toImage()
+    assert QColor(img.pixel(100, 50)).lightness() > 200  # erased -> white
+    assert QColor(img.pixel(100, 150)).lightness() < 50  # untouched -> black
+
+
+def test_colour_picker_sets_stroke(scene):
+    r = RectItem(QRectF(20, 20, 120, 120))
+    r.setBrush(QBrush(QColor("#1188ff")))
+    r.setPen(QPen(QColor("#1188ff"), 1))
+    scene.addItem(r)
+    scene._pick_color(QPointF(80, 80))
+    assert scene.pen.color().name() == "#1188ff"
+
+
 def test_electrical_all_elements_build_and_place(scene):
     from khervescribe import electrical
     for name in electrical.SIZES:

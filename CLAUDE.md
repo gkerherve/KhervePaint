@@ -269,8 +269,10 @@ position, geometry, pen/brush, opacity, rotation; groups nest
 ## UI conventions
 
 - Single canvas window; left toolbar column = tools (exclusive
-  checkable group). Direct buttons (pointer/pencil/bucket/line/arrow/
-  text) plus four shape **dropdown** buttons (`SHAPE_GROUPS`:
+  checkable group). Direct buttons (pointer/pencil/eraser/colour-picker/
+  bucket/line/arrow/text — eraser paints the raster white, colour-picker
+  samples the rendered pixel into the stroke pen) plus four shape
+  **dropdown** buttons (`SHAPE_GROUPS`:
   Rectangles, Ellipses & arcs, Polygons, Stars & symbols) — each a
   `QToolButton` menu that remembers the last-picked shape. The
   **ruler/dimension** is its own dropdown (`DIM_ORIENTATIONS` /
@@ -319,7 +321,6 @@ position, geometry, pen/brush, opacity, rotation; groups nest
 
 ## Roadmap
 
-- Eraser and colour picker for the raster layer.
 - Layers panel.
 - Copy/paste of vector items across documents.
 

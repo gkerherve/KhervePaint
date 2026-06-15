@@ -66,6 +66,8 @@ def user_guide_html() -> str:
     tools = _shortcut_rows([
         ("V", "Pointer — select, move, resize, rotate"),
         ("P", "Pencil — freehand vector stroke"),
+        ("X", "Eraser — rub out the raster layer (to white)"),
+        ("K", "Colour picker — sample a colour into the stroke"),
         ("B", "Bucket — fill an enclosed region"),
         ("L", "Line"), ("A", "Arrow"),
         ("M", "Dimension — measure &amp; label a distance (mm)"),

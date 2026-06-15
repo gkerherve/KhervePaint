@@ -24,7 +24,8 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
 
 from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
-from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEM_ATOM, CHEM_BENZENE,
+from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
+                     CHEM_BENZENE,
                      CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE, CHEM_DOUBLE,
                      CHEM_CHAIN, CHEM_HASH, CHEM_HBOND, CHEM_SINGLE,
                      CHEM_TRIPLE, CHEM_WEDGE, CHEVRON,
@@ -55,6 +56,8 @@ MAX_RECENT = 10
 DIRECT_TOOLS = [
     (POINTER, "mdi.cursor-default-outline", "Pointer", "V"),
     (PENCIL, "mdi.pencil", "Pencil", "P"),
+    (ERASER, "mdi.eraser", "Eraser (raster)", "X"),
+    (PICKER, "mdi.eyedropper-variant", "Colour picker", "K"),
     (BUCKET, "mdi.format-color-fill", "Bucket fill", "B"),
     (LINE, "mdi.vector-line", "Line", "L"),
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
@@ -140,6 +143,7 @@ class MainWindow(QMainWindow):
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
         self.view.item_context.connect(self._show_item_menu)
         self.view.content_dropped.connect(self._on_drop)
+        self.scene.color_picked.connect(self._refresh_color_buttons)
 
         self._build_tool_bar()
         self._build_ai_dock()           # before the options bar (toggle button)
