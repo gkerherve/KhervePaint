@@ -221,27 +221,73 @@ def test_group_preserves_child_positions(scene):
     assert r2.scenePos() == before[1]
 
 
-def test_group_resize_anchors_opposite_corner(scene):
-    from khervepaint.handles import SelectionHandles, RESIZE
-    scene.dpi = 25.4; scene.grid_mm = 20; scene.snap_enabled = True
+def _two_rect_group(scene):
+    scene.snap_enabled = False
     r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(40, 40); scene.addItem(r1)
     r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(120, 100); scene.addItem(r2)
     r1.setSelected(True); r2.setSelected(True)
     scene.group_selection()
-    g = scene.vector_items()[0]
+    return scene.vector_items()[0]
+
+
+def test_group_resize_anchors_opposite_corner(scene):
+    from khervepaint.handles import SelectionHandles, RESIZE
+    g = _two_rect_group(scene)
     br = g.sceneBoundingRect()
-    nw = br.topLeft()
     h = SelectionHandles(scene, g, RESIZE)
-    assert h.kind == "scale"
+    assert h.kind == "gbox"                      # 8 handles for X/Y resize
     h.begin("se", br.bottomRight())             # drag the SE corner out
     h.drag("se", br.bottomRight() + QPointF(60, 40))
     h.end()
     br2 = g.sceneBoundingRect()
     # the opposite (NW) corner stays put; the group only grows
-    assert abs(br2.topLeft().x() - nw.x()) <= 1
-    assert abs(br2.topLeft().y() - nw.y()) <= 1
-    assert br2.width() > br.width()
-    assert br2.height() > br.height()
+    assert abs(br2.topLeft().x() - br.topLeft().x()) <= 1
+    assert abs(br2.topLeft().y() - br.topLeft().y()) <= 1
+    assert br2.width() > br.width() and br2.height() > br.height()
+
+
+def test_group_side_handles_resize_one_axis(scene):
+    from khervepaint.handles import SelectionHandles, RESIZE
+    # East handle: stretch X only — top, height and left stay; width grows.
+    g = _two_rect_group(scene)
+    br = g.sceneBoundingRect()
+    h = SelectionHandles(scene, g, RESIZE)
+    e = next(x for x in h.handles if x.role == "e")
+    h.begin("e", e.scenePos()); h.drag("e", e.scenePos() + QPointF(100, 0))
+    h.end()
+    br2 = g.sceneBoundingRect()
+    assert abs(br2.left() - br.left()) <= 1
+    assert abs(br2.height() - br.height()) <= 1   # Y untouched
+    assert br2.width() > br.width() + 50
+
+    # South handle on a fresh group: stretch Y only.
+    scene.clearSelection()
+    g2 = _two_rect_group(scene)
+    br = g2.sceneBoundingRect()
+    h2 = SelectionHandles(scene, g2, RESIZE)
+    s = next(x for x in h2.handles if x.role == "s")
+    h2.begin("s", s.scenePos()); h2.drag("s", s.scenePos() + QPointF(0, 80))
+    h2.end()
+    br2 = g2.sceneBoundingRect()
+    assert abs(br2.top() - br.top()) <= 1
+    assert abs(br2.width() - br.width()) <= 1     # X untouched
+    assert br2.height() > br.height() + 40
+
+
+def test_group_nonuniform_resize_roundtrips(scene):
+    from khervepaint.handles import SelectionHandles, RESIZE
+    g = _two_rect_group(scene)
+    h = SelectionHandles(scene, g, RESIZE)
+    e = next(x for x in h.handles if x.role == "e")
+    h.begin("e", e.scenePos()); h.drag("e", e.scenePos() + QPointF(120, 0))
+    h.end()
+    h.remove()
+    b0 = [round(v, 1) for v in g.sceneBoundingRect().getRect()]
+    other = PaintScene()
+    document.dict_to_scene(document.scene_to_dict(scene), other)
+    b1 = [round(v, 1) for v in
+          other.vector_items()[0].sceneBoundingRect().getRect()]
+    assert b0 == b1                              # exact in .kpaint
 
 
 def test_group_handles_are_scene_level(scene):

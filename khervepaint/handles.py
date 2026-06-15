@@ -117,6 +117,8 @@ class _RotateHandle(Handle, QGraphicsEllipseItem):
 def _kind_of(item, mode: str) -> str:
     if mode == ROTATE:
         return "rotate"
+    if isinstance(item, GroupItem):
+        return "gbox"           # 8 handles: corners + sides (X/Y-only resize)
     if isinstance(item, LineItem):
         return "line"
     if isinstance(item, PolygonItem):
@@ -170,7 +172,7 @@ class SelectionHandles:
         elif self.kind == "polygon":
             count = self.item.polygon().count()
             self.handles = [self._rect_handle(i) for i in range(count)]
-        elif self.kind in ("box", "image"):
+        elif self.kind in ("box", "image", "gbox"):
             self.handles = [self._rect_handle(r, _BOX_CURSORS[r])
                             for r in _BOX_CURSORS]
         else:                       # scale
@@ -242,6 +244,13 @@ class SelectionHandles:
             self._anchor_scene = self.item.mapToScene(self._anchor_local)
             self._scale_base = self.item.scale() or 1.0
             self._scale_dist = max(_dist(scene_pos, self._anchor_scene), 1.0)
+        elif self.kind == "gbox":
+            # Group resize: capture the base local->scene map and the
+            # group's own transform; _resize_gbox folds a non-uniform
+            # scale (X-only / Y-only / both) into that transform.
+            self._g_inv0 = self.item.sceneTransform().inverted()[0]
+            self._tf0 = self.item.transform()
+            self._br = self.item.boundingRect()
 
     def drag(self, role, scene_pos):
         snapped = self.scene.snap(scene_pos) \
@@ -259,6 +268,8 @@ class SelectionHandles:
             self._drag_box(role, local)
         elif self.kind == "image":
             self._drag_image(role, snapped)
+        elif self.kind == "gbox":
+            self._resize_gbox(role, snapped)
         self.reposition()
 
     def end(self):
@@ -295,6 +306,40 @@ class SelectionHandles:
         self.scene.snap_enabled = False        # setPos must not re-snap here
         self.item.setPos(self._anchor_scene - self._origin - vec)
         self.scene.snap_enabled = was_snap
+
+    def _resize_gbox(self, role, scene_pos):
+        """Resize a group by folding a non-uniform scale into its
+        transform, about the side/corner opposite the dragged handle —
+        side handles scale X-only or Y-only, corners scale both."""
+        br = self._br
+        corners = {
+            "nw": br.topLeft(), "ne": br.topRight(),
+            "se": br.bottomRight(), "sw": br.bottomLeft(),
+            "n": QPointF(br.center().x(), br.top()),
+            "s": QPointF(br.center().x(), br.bottom()),
+            "e": QPointF(br.right(), br.center().y()),
+            "w": QPointF(br.left(), br.center().y()),
+        }
+        opposite = {"nw": "se", "ne": "sw", "se": "nw", "sw": "ne",
+                    "n": "s", "s": "n", "e": "w", "w": "e"}
+        anchor, moving = corners[opposite[role]], corners[role]
+        cur = self._g_inv0.map(scene_pos)          # cursor in group-local
+        sx = sy = 1.0
+        if "e" in role or "w" in role:
+            d = moving.x() - anchor.x()
+            if abs(d) > 1e-6:
+                sx = (cur.x() - anchor.x()) / d
+        if "n" in role or "s" in role:
+            d = moving.y() - anchor.y()
+            if abs(d) > 1e-6:
+                sy = (cur.y() - anchor.y()) / d
+        sx = max(sx, 0.05) if sx >= 0 else min(sx, -0.05)
+        sy = max(sy, 0.05) if sy >= 0 else min(sy, -0.05)
+        scale = QTransform()
+        scale.translate(anchor.x(), anchor.y())
+        scale.scale(sx, sy)
+        scale.translate(-anchor.x(), -anchor.y())
+        self.item.setTransform(scale * self._tf0)  # scale in local frame
 
     def _drag_line(self, role, local):
         ln = self.item.line()

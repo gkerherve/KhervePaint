@@ -154,7 +154,9 @@ existing item use its properties (below).</p>
       box around several.</li>
   <li><b>Move</b>: drag the item.</li>
   <li><b>Resize</b>: blue handles appear on a selected item — drag a
-      line's endpoints, a polygon's vertices, or a box's corners.</li>
+      line's endpoints, a polygon's vertices, or a box's corners. A
+      <b>group</b> shows eight handles: corners resize both ways, while
+      the <b>side-middle</b> handles stretch it in X only or Y only.</li>
   <li><b>Rotate</b>: <b>double-click</b> the item and drag the green knob;
       it turns about its own centre.</li>
 </ul>

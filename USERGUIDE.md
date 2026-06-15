@@ -80,7 +80,9 @@ its properties (below).
   around several.
 - **Move**: drag the item.
 - **Resize**: blue handles appear on a selected item — drag a line's
-  endpoints, a polygon's vertices, or a box's corners.
+  endpoints, a polygon's vertices, or a box's corners. A **group** shows
+  eight handles: corners resize both ways, while the **side-middle**
+  handles stretch it in **X only** or **Y only**.
 - **Rotate**: **double-click** the item and drag the green knob; it turns
   about its own centre.
 

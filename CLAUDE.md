@@ -175,8 +175,12 @@ Everything lives in one `QGraphicsScene`:
   *multi-*selection visible, which handles alone don't).
 - **Selection handles** (`handles.py`) — selecting one item shows
   resize handles (line/arrow endpoints, polygon vertices, rect/ellipse
-  bounding box, or uniform-scale corners for path/image/text/group);
-  double-clicking enters rotate mode (a knob spins it about its
+  bounding box, uniform-scale corners for path/image/text, or — for a
+  **group** (`gbox`) — eight corner+side handles that resize it in X
+  and/or Y by folding a non-uniform scale into the group's `transform()`
+  about the opposite handle; that transform round-trips exactly in
+  `.kpaint` via a `"matrix"` field and is baked into children on SVG
+  load). Double-clicking enters rotate mode (a knob spins it about its
   centre). The scene owns one `SelectionHandles`; handles are
   `Handle`-marked, rebuilt on pointer mouse-release, dropped when
   selection changes, and filtered out of all serialisation and

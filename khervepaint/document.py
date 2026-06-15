@@ -193,10 +193,15 @@ def item_to_dict(item) -> dict:
                 "italic": item.font().italic(), **common}
     if isinstance(item, GroupItem):
         from .handles import Handle
-        return {"type": "group",
-                "children": [item_to_dict(c) for c in item.childItems()
-                             if not isinstance(c, Handle)],
-                **common}
+        d = {"type": "group",
+             "children": [item_to_dict(c) for c in item.childItems()
+                          if not isinstance(c, Handle)],
+             **common}
+        tf = item.transform()
+        if not tf.isIdentity():       # non-uniform (X/Y-only) group resize
+            d["matrix"] = [tf.m11(), tf.m12(), tf.m21(), tf.m22(),
+                           tf.dx(), tf.dy()]
+        return d
     raise ValueError(f"unserialisable item: {type(item).__name__}")
 
 
@@ -271,6 +276,9 @@ def item_from_dict(d: dict):
         center_origin(item)      # rotate/scale about centre as it saved
         item.setRotation(d.get("rotation", 0.0))
         item.setScale(d.get("scale", 1.0))
+        if "matrix" in d:        # group X/Y-only resize transform
+            m = d["matrix"]
+            item.setTransform(QTransform(m[0], m[1], m[2], m[3], m[4], m[5]))
     return item
 
 

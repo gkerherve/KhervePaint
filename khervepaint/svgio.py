@@ -80,7 +80,7 @@ def _transform_attr(item) -> str:
     # geometry — would shift the item by origin·(1−s). Rotation-only and
     # translation stay human-readable: the loader rebuilds those about the
     # centre itself, so the simple form round-trips exactly.
-    if abs(item.scale() - 1) > _EPS:
+    if abs(item.scale() - 1) > _EPS or not item.transform().isIdentity():
         m = (item.sceneTransform() if item.parentItem() is None
              else item.itemTransform(item.parentItem()))
         return _matrix_attr(m)
