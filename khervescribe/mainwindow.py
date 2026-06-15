@@ -26,7 +26,8 @@ from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
 from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEM_ATOM, CHEM_BENZENE,
                      CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE, CHEM_DOUBLE,
-                     CHEM_HASH, CHEM_SINGLE, CHEM_TRIPLE, CHEM_WEDGE, CHEVRON,
+                     CHEM_HASH, CHEM_HBOND, CHEM_SINGLE, CHEM_TRIPLE,
+                     CHEM_WEDGE, CHEVRON,
                      CIRCLE, DIAMOND, DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
@@ -340,7 +341,8 @@ class MainWindow(QMainWindow):
                             (CHEM_DOUBLE, "Double bond"),
                             (CHEM_TRIPLE, "Triple bond"),
                             (CHEM_WEDGE, "Wedge (up)"),
-                            (CHEM_HASH, "Hash (down)")):
+                            (CHEM_HASH, "Hash (down)"),
+                            (CHEM_HBOND, "Hydrogen bond (dashed)")):
             self._add_grouped_tool(menu, tool, label)
         menu.addSection("Rings")
         for tool, label in ((CHEM_BENZENE, "Benzene (aromatic)"),
@@ -548,8 +550,12 @@ class MainWindow(QMainWindow):
         bar.addSeparator()
         ai_toggle = self.ai_dock.toggleViewAction()   # show/hide chat panel
         ai_toggle.setIcon(icons.icon("mdi.robot-outline"))
+        ai_toggle.setText("AI Chat")
         ai_toggle.setToolTip("Show / hide the AI Assistant panel")
         bar.addAction(ai_toggle)
+        ai_btn = bar.widgetForAction(ai_toggle)       # label it so it's clear
+        if ai_btn is not None:
+            ai_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self._refresh_color_buttons()
 

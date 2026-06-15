@@ -441,8 +441,11 @@ class AiDock(QDockWidget):
                                        self._open_settings, "mdi.cog-outline")
         self.clear_btn = self._tool(None, "Clear chat", self._clear,
                                     "mdi.notification-clear-all")
+        self.hide_btn = self._tool(None, "Hide this panel "
+                                   "(re-open from the AI Chat toolbar button)",
+                                   self.hide, "mdi.close")
         for btn in (self.smaller_btn, self.larger_btn, self.help_btn,
-                    self.settings_btn, self.clear_btn):
+                    self.settings_btn, self.clear_btn, self.hide_btn):
             header.addWidget(btn)
         layout.addLayout(header)
 

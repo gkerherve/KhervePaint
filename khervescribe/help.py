@@ -225,7 +225,8 @@ mirrors your folders as nested sub-menus.</p>
 <h2>10a · Chemistry tools</h2>
 <p>The <b>Chemistry</b> dropdown (left toolbar) draws structures as
 ordinary editable shapes: drag <b>single/double/triple</b> bonds, a solid
-<b>wedge</b> or a <b>hash</b> bond; click to drop a <b>benzene</b> ring
+<b>wedge</b>, a <b>hash</b> bond or a dashed <b>hydrogen bond</b>; click
+to drop a <b>benzene</b> ring
 (with aromatic circle), <b>cyclohexane</b> or <b>cyclopentane</b>; or pick
 an <b>atom/group label</b> (C, H, O, N, OH, CH₃…) and click to place it.</p>
 

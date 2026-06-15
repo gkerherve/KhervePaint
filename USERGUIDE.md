@@ -159,7 +159,8 @@ The **Chemistry** dropdown (left toolbar) draws chemical structures as
 ordinary editable shapes:
 
 - **Bonds** — drag to draw a **single**, **double** or **triple** bond,
-  a solid **wedge** (coming forward) or a **hash** bond (going back).
+  a solid **wedge** (coming forward), a **hash** bond (going back) or a
+  dashed **hydrogen bond** (the dotted connectors between atoms).
 - **Rings** — click to drop a **benzene** ring (hexagon with the
   aromatic inner circle), **cyclohexane** or **cyclopentane**.
 - **Atom / group label** — pick a symbol (C, H, O, N, OH, CH₃…) then

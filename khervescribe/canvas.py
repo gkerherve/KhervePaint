@@ -46,11 +46,12 @@ PLUS, CHEVRON, ARROW_RIGHT, LIGHTNING, HOUSE = (
 # Chemistry tools.
 CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE, CHEM_HASH = (
     "chem_single", "chem_double", "chem_triple", "chem_wedge", "chem_hash")
+CHEM_HBOND = "chem_hbond"
 CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE = (
     "chem_benzene", "chem_cyclohexane", "chem_cyclopentane")
 CHEM_ATOM = "chem_atom"
 _CHEM_BOND_TOOLS = (CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE,
-                    CHEM_HASH)
+                    CHEM_HASH, CHEM_HBOND)
 _CHEM_RING_TOOLS = (CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE)
 _CHEM_PLACE_TOOLS = _CHEM_RING_TOOLS + (CHEM_ATOM,)   # placed on a click
 _CHEM_TOOLS = _CHEM_BOND_TOOLS + _CHEM_PLACE_TOOLS

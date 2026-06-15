@@ -886,6 +886,24 @@ def test_chem_bond_roundtrips_svg(scene, tmp_path):
     assert isinstance(other.vector_items()[0], PathItem)
 
 
+def test_chem_hydrogen_bond_dashes_roundtrip(scene, tmp_path):
+    # The dashed H-bond is built from segments so the dashes are geometry
+    # and survive the SVG round-trip (no reliance on pen dash style).
+    from khervescribe import svgio
+    from khervescribe.canvas import CHEM_HBOND
+    scene.tool = CHEM_HBOND
+    b = scene._new_chem_bond(QPointF(0, 0))
+    scene._update_chem_bond(b, QPointF(0, 0), QPointF(120, 0))
+    scene.addItem(b)
+    n = b.path().elementCount()
+    assert n > 6                                  # several dash segments
+    path = tmp_path / "hbond.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene()
+    svgio.load_svg(other, str(path))
+    assert other.vector_items()[0].path().elementCount() == n
+
+
 def _scene_br(item):
     r = item.sceneBoundingRect()
     return [round(v, 2) for v in (r.x(), r.y(), r.width(), r.height())]

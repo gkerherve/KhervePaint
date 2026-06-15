@@ -56,6 +56,18 @@ def bond_path(kind: str, p1: QPointF, p2: QPointF, gap: float) -> QPainterPath:
                         p1.y() + (p2.y() - p1.y()) * t)
             w = perp * (gap * 0.4 + gap * 1.4 * t)   # widens toward p2
             path.moveTo(c - w); path.lineTo(c + w)
+    elif kind == "hbond":
+        # Hydrogen bond: a dashed line built from short segments, so the
+        # dashes are geometry and survive an SVG round-trip (no pen dash).
+        length = QLineF(p1, p2).length()
+        unit = QPointF((p2.x() - p1.x()) / length, (p2.y() - p1.y()) / length)
+        dash, space = max(gap * 1.4, 4.0), max(gap, 3.0)
+        d = 0.0
+        while d < length:
+            a = p1 + unit * d
+            b = p1 + unit * min(d + dash, length)
+            path.moveTo(a); path.lineTo(b)
+            d += dash + space
     return path
 
 
