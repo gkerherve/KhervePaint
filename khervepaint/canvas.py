@@ -563,10 +563,14 @@ class PaintScene(QGraphicsScene):
 
     # ------------------------------------------------------------ grid
     @property
-    def grid_size(self) -> int:
-        """Pixel spacing between grid lines, derived from the physical
-        grid distance (mm) and the canvas dpi."""
-        return max(1, round(self.grid_mm / 25.4 * self.dpi))
+    def grid_size(self) -> float:
+        """Exact pixel spacing between grid lines, from the physical grid
+        distance (mm) and the canvas dpi. Kept as a float (NOT rounded to
+        whole pixels): a rounded spacing makes snapped points miss true
+        millimetre positions, so a measured dimension drifts — e.g. a
+        1 mm grid at 300 dpi is 11.81 px, and rounding to 12 px turned a
+        10 mm line into 10.2 mm."""
+        return max(1e-6, self.grid_mm / 25.4 * self.dpi)
 
     # ------------------------------------------------------------ snapping
     def snap(self, pos: QPointF) -> QPointF:
@@ -1064,12 +1068,12 @@ class PaintView(QGraphicsView):
         if area.isEmpty():
             return
         painter.setPen(QPen(QColor(120, 144, 168, 70), 0))
-        x = int(area.left()) - int(area.left()) % g
+        x = math.floor(area.left() / g) * g     # g is a float (exact mm)
         while x <= area.right():
             painter.drawLine(QPointF(x, area.top()),
                              QPointF(x, area.bottom()))
             x += g
-        y = int(area.top()) - int(area.top()) % g
+        y = math.floor(area.top() / g) * g
         while y <= area.bottom():
             painter.drawLine(QPointF(area.left(), y),
                              QPointF(area.right(), y))

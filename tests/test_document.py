@@ -129,6 +129,30 @@ def test_grid_size_derived_from_mm():
     assert scene.grid_size == 5
 
 
+def test_grid_size_is_not_rounded_to_whole_pixels():
+    # A 1 mm grid at 300 dpi is 11.81 px; rounding it to 12 px made
+    # snapped points miss true mm, so a 10 mm dimension read 10.2 mm.
+    scene = PaintScene(800, 600)
+    scene.dpi = 300
+    scene.grid_mm = 1.0
+    assert scene.grid_size == pytest.approx(1.0 / 25.4 * 300)   # ~11.81, exact
+
+
+def test_dimension_on_snapped_grid_reads_exact_mm():
+    from khervepaint.canvas import DimensionItem
+    scene = PaintScene(2000, 1500)
+    scene.dpi = 300
+    scene.grid_mm = 1.0
+    scene.snap_enabled = True
+    p1 = scene.snap(QPointF(100.3, 100.0))
+    p2 = scene.snap(QPointF(p1.x() + 118.0, 100.0))   # ~10 mm to the right
+    dim = DimensionItem()
+    dim.setLine(QLineF(p1, p2))
+    scene.addItem(dim)
+    assert dim.length_mm() == pytest.approx(10.0, abs=1e-6)
+    assert dim._label_text() == "10.0 mm"
+
+
 def test_legacy_pixel_grid_loads(scene, tmp_path):
     import json
     # An old .kpaint stored the grid as a pixel "size".
@@ -140,7 +164,7 @@ def test_legacy_pixel_grid_loads(scene, tmp_path):
     document.load_kpaint(other, str(path))
     # 20 px at 96 dpi -> mm, and that mm yields 20 px spacing back.
     assert other.grid_mm == pytest.approx(20 / 96 * 25.4)
-    assert other.grid_size == 20
+    assert other.grid_size == pytest.approx(20)
 
 
 def test_legacy_divisions_grid_loads(scene, tmp_path):
@@ -153,7 +177,7 @@ def test_legacy_divisions_grid_loads(scene, tmp_path):
     path.write_text(json.dumps(legacy), encoding="utf-8")
     other = PaintScene(10, 10)
     document.load_kpaint(other, str(path))
-    assert other.grid_size == 20          # 800 / 40, same spacing as before
+    assert other.grid_size == pytest.approx(20)   # 800 / 40, same spacing
 
 
 def test_roundtrip_group(scene, tmp_path):
@@ -659,6 +683,7 @@ def test_pdf_export(scene, tmp_path):
 
 
 def test_line_resize_handles(scene):
+    scene.snap_enabled = False                # test drag mechanics, not snap
     line = LineItem(QLineF(0, 0, 100, 50))
     scene.addItem(line)
     line.setSelected(True)
@@ -699,6 +724,7 @@ def test_box_resize_all_shapes(scene):
 
 
 def test_box_resize_handle(scene):
+    scene.snap_enabled = False                # test drag mechanics, not snap
     rect = RectItem(QRectF(0, 0, 40, 40))
     scene.addItem(rect)
     rect.setSelected(True)
@@ -712,6 +738,7 @@ def test_box_resize_handle(scene):
 
 def test_polygon_vertex_handle(scene):
     from PyQt5.QtGui import QPolygonF
+    scene.snap_enabled = False                # test drag mechanics, not snap
     tri = PolygonItem(
         QPolygonF([QPointF(0, 0), QPointF(40, 0), QPointF(20, 40)]),
         kind="triangle")
