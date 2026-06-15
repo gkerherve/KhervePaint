@@ -232,8 +232,10 @@ fills and canvas resizes.</p>
 </ul>
 
 <h2>14 · View &amp; themes</h2>
-<p>Zoom with <b>Ctrl + mouse wheel</b>, reset with <b>Ctrl+0</b>. Pick a
-colour theme under <b>View ▸ Theme</b>.</p>
+<p>Zoom with <b>Ctrl + mouse wheel</b>, the <b>View ▸ Zoom</b> menu, or
+the zoom controls at the <b>bottom-right of the status bar</b> — a slider
+with −/+ buttons and a percentage you can click to snap back to 100%
+(also <b>Ctrl+0</b>). Pick a colour theme under <b>View ▸ Theme</b>.</p>
 
 <h2>15 · AI assistant</h2>
 <p>Open <b>View ▸ AI Assistant</b> for a chat panel that can draw for

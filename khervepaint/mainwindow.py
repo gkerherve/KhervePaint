@@ -9,6 +9,7 @@ the Free Software Foundation, either version 3 of the License, or
 """
 
 import json
+import math
 from pathlib import Path
 
 from PyQt5.QtCore import QMimeData, QRectF, QSettings, QSize, Qt, QUrl
@@ -16,7 +17,8 @@ from PyQt5.QtGui import QColor, QDesktopServices, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QDoubleSpinBox, QFileDialog,
                              QInputDialog, QLabel, QMainWindow, QMenu,
-                             QMessageBox, QToolBar, QToolButton, QUndoStack)
+                             QMessageBox, QSlider, QToolBar, QToolButton,
+                             QUndoStack)
 
 from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
@@ -128,7 +130,7 @@ class MainWindow(QMainWindow):
         self._build_options_bar()
         self._build_ai_dock()
         self._build_menus()
-        self.statusBar()
+        self._build_status_zoom()
         self._update_title()
 
     # ------------------------------------------------------------ chrome
@@ -204,6 +206,53 @@ class MainWindow(QMainWindow):
         button.setIcon(act.icon())
         act.setChecked(True)
         self._set_tool(act.data())
+
+    # ------------------------------------------------------------ status zoom
+    _ZOOM_STEPS = 1000              # slider resolution (log scale)
+
+    def _build_status_zoom(self):
+        """Zoom controls at the bottom-right of the status bar: a −/+
+        pair, a log-scaled slider and a clickable percentage (reset)."""
+        bar = self.statusBar()
+        out_btn = QToolButton(); out_btn.setText("−"); out_btn.setAutoRaise(True)
+        out_btn.setToolTip("Zoom out")
+        out_btn.clicked.connect(lambda: self.view.zoom(1 / 1.25))
+
+        self._zoom_slider = QSlider(Qt.Horizontal)
+        self._zoom_slider.setRange(0, self._ZOOM_STEPS)
+        self._zoom_slider.setFixedWidth(150)
+        self._zoom_slider.setToolTip("Zoom")
+        self._zoom_slider.valueChanged.connect(
+            lambda v: self.view.set_zoom(self._slider_to_zoom(v)))
+
+        in_btn = QToolButton(); in_btn.setText("+"); in_btn.setAutoRaise(True)
+        in_btn.setToolTip("Zoom in")
+        in_btn.clicked.connect(lambda: self.view.zoom(1.25))
+
+        self._zoom_label = QToolButton(); self._zoom_label.setAutoRaise(True)
+        self._zoom_label.setToolTip("Reset to 100%")
+        self._zoom_label.setMinimumWidth(46)
+        self._zoom_label.clicked.connect(self.view.zoom_reset)
+
+        for w in (out_btn, self._zoom_slider, in_btn, self._zoom_label):
+            bar.addPermanentWidget(w)
+        self.view.zoom_changed.connect(self._sync_zoom_controls)
+        self._sync_zoom_controls(self.view.current_zoom())
+
+    def _slider_to_zoom(self, value: int) -> float:
+        lo, hi = self.view.MIN_ZOOM, self.view.MAX_ZOOM
+        return lo * (hi / lo) ** (value / self._ZOOM_STEPS)
+
+    def _zoom_to_slider(self, zoom: float) -> int:
+        lo, hi = self.view.MIN_ZOOM, self.view.MAX_ZOOM
+        zoom = max(lo, min(hi, zoom))
+        return round(self._ZOOM_STEPS * math.log(zoom / lo) / math.log(hi / lo))
+
+    def _sync_zoom_controls(self, zoom: float):
+        self._zoom_slider.blockSignals(True)
+        self._zoom_slider.setValue(self._zoom_to_slider(zoom))
+        self._zoom_slider.blockSignals(False)
+        self._zoom_label.setText(f"{round(zoom * 100)}%")
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

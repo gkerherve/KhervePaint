@@ -231,7 +231,11 @@ position, geometry, pen/brush, opacity, rotation; groups nest
 - Select an item to get resize handles; **double-click to rotate** it
   about its centre. Right-click for the context menu (which includes
   Edit properties… for the full per-item editor).
-- Status bar shows the cursor position in canvas coordinates.
+- Status bar shows the cursor position in canvas coordinates (left) and
+  zoom controls bottom-right: −/+ buttons, a log-scaled `QSlider` and a
+  clickable percentage that resets to 100%. The view exposes
+  `set_zoom`/`current_zoom`/`MIN_ZOOM`/`MAX_ZOOM` and a `zoom_changed`
+  signal that keeps the slider/label in sync with wheel and menu zoom.
 - **Window style**: Fusion as default; themes shared with the family
   (View > Theme).
 

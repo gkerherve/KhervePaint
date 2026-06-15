@@ -160,8 +160,10 @@ resizes.
 
 ## 14. View & themes
 
-Zoom with **Ctrl + mouse wheel**, reset with **Ctrl+0**. Pick a colour
-theme under **View ▸ Theme**.
+Zoom with **Ctrl + mouse wheel**, the **View ▸ Zoom** menu, or the zoom
+controls at the **bottom-right of the status bar** — a slider with −/+
+buttons and a percentage you can click to snap back to 100% (also
+**Ctrl+0**). Pick a colour theme under **View ▸ Theme**.
 
 ## 15. AI assistant
 

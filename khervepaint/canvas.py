@@ -982,6 +982,10 @@ class PaintView(QGraphicsView):
     cursor_moved = pyqtSignal(QPointF)
     #: (top-level item, global QPoint) when an item is right-clicked.
     item_context = pyqtSignal(object, object)
+    #: emitted with the new zoom factor (1.0 == 100%) whenever it changes.
+    zoom_changed = pyqtSignal(float)
+
+    MIN_ZOOM, MAX_ZOOM = 0.1, 16.0
 
     def __init__(self, scene: PaintScene, parent=None):
         super().__init__(scene, parent)
@@ -1076,11 +1080,23 @@ class PaintView(QGraphicsView):
 
     def zoom(self, factor: float):
         current = self.transform().m11()
-        if 0.1 <= current * factor <= 16:
+        if self.MIN_ZOOM <= current * factor <= self.MAX_ZOOM:
             self.scale(factor, factor)
+            self.zoom_changed.emit(self.transform().m11())
+
+    def set_zoom(self, scale: float):
+        """Set the absolute zoom factor (1.0 == 100%), clamped."""
+        scale = max(self.MIN_ZOOM, min(self.MAX_ZOOM, scale))
+        self.resetTransform()
+        self.scale(scale, scale)
+        self.zoom_changed.emit(scale)
+
+    def current_zoom(self) -> float:
+        return self.transform().m11()
 
     def zoom_reset(self):
         self.resetTransform()
+        self.zoom_changed.emit(1.0)
 
     def apply_scroll_bounds(self):
         """Let the view scroll across a large empty area when the scene
