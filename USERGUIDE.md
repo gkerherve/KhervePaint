@@ -102,10 +102,13 @@ frame handles, then **double-click** (or press **Enter**) to apply —
 
 ## 9. Grid & snap
 
-The **Divisions** box sets how many grid cells span the canvas — a higher
-number gives a finer grid. Toggle the grid and snapping from the toolbar
-or the View menu. Snapping keeps shapes aligned as you draw and move them
-(the pencil stays freehand).
+The **Grid (mm)** box sets the physical distance between grid lines in
+millimetres (using the drawing's DPI) — a smaller value gives a finer
+grid. Toggle the grid, snapping and **Infinite paper** from the toolbar
+or the View menu. Infinite paper extends the grid across the whole view
+with no fixed page edge (the page still bounds what you export).
+Snapping keeps shapes aligned as you draw and move them (the pencil
+stays freehand).
 
 ## 10. Drawing size & publication figures
 

@@ -103,26 +103,30 @@ def test_roundtrip_items(scene, tmp_path):
 
 
 def test_roundtrip_grid_settings(scene, tmp_path):
-    scene.grid_divisions = 35
+    scene.grid_mm = 3.5
     scene.show_grid = False
     scene.snap_enabled = False
+    scene.infinite = True
     path = tmp_path / "grid.kpaint"
     document.save_kpaint(scene, str(path))
 
     other = PaintScene(10, 10)
     document.load_kpaint(other, str(path))
-    assert other.grid_divisions == 35
+    assert other.grid_mm == 3.5
     assert other.show_grid is False
     assert other.snap_enabled is False
+    assert other.infinite is True
 
 
-def test_grid_size_derived_from_divisions():
+def test_grid_size_derived_from_mm():
     scene = PaintScene(800, 600)
-    scene.grid_divisions = 40
-    assert scene.grid_size == 20          # 800 / 40
-    scene.grid_divisions = 80
-    assert scene.grid_size == 10          # more divisions -> finer
-    assert scene.grid_size < 20
+    scene.dpi = 25.4                      # 1 mm == 1 px, for an easy check
+    scene.grid_mm = 20
+    assert scene.grid_size == 20
+    scene.grid_mm = 10
+    assert scene.grid_size == 10          # smaller mm -> finer
+    scene.grid_mm = 5
+    assert scene.grid_size == 5
 
 
 def test_legacy_pixel_grid_loads(scene, tmp_path):
@@ -134,7 +138,22 @@ def test_legacy_pixel_grid_loads(scene, tmp_path):
     path.write_text(json.dumps(legacy), encoding="utf-8")
     other = PaintScene(10, 10)
     document.load_kpaint(other, str(path))
-    assert other.grid_divisions == 40     # 800 / 20
+    # 20 px at 96 dpi -> mm, and that mm yields 20 px spacing back.
+    assert other.grid_mm == pytest.approx(20 / 96 * 25.4)
+    assert other.grid_size == 20
+
+
+def test_legacy_divisions_grid_loads(scene, tmp_path):
+    import json
+    # A v3 .kpaint stored the grid as divisions across the canvas width.
+    legacy = {"format": "kpaint", "version": 3, "width": 800, "height": 600,
+              "grid": {"divisions": 40, "show": True, "snap": True},
+              "items": []}
+    path = tmp_path / "legacy_div.kpaint"
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+    other = PaintScene(10, 10)
+    document.load_kpaint(other, str(path))
+    assert other.grid_size == 20          # 800 / 40, same spacing as before
 
 
 def test_roundtrip_group(scene, tmp_path):
@@ -167,7 +186,8 @@ def test_ungroup_restores_items(scene):
 
 
 def test_snap(scene):
-    scene.grid_divisions = 20          # 400px wide / 20 -> 20px spacing
+    scene.dpi = 25.4                   # 1 mm == 1 px, for an easy check
+    scene.grid_mm = 20                 # -> 20 px spacing
     assert scene.snap(QPointF(27, 51)) == QPointF(20, 60)
     assert scene.snap(QPointF(-9, 10)) == QPointF(0, 20)
 
@@ -295,7 +315,8 @@ def test_kpaint_image_scale_rotation(scene, tmp_path):
 def test_image_resize_snaps_to_grid(scene):
     from khervepaint.handles import SelectionHandles, RESIZE
     from PyQt5.QtGui import QPixmap
-    scene.grid_divisions = 20                       # 400px / 20 -> 20px grid
+    scene.dpi = 25.4                                 # 1 mm == 1 px
+    scene.grid_mm = 20                               # -> 20px grid
     scene.snap_enabled = True
     pm = QPixmap(40, 40)
     pm.fill(QColor("#777777"))
@@ -368,16 +389,18 @@ def test_svg_native_roundtrip(scene, tmp_path):
 
 def test_svg_grid_metadata_roundtrip(scene, tmp_path):
     from khervepaint import svgio
-    scene.grid_divisions = 25
+    scene.grid_mm = 2.5
     scene.show_grid = False
     scene.snap_enabled = False
+    scene.infinite = True
     path = tmp_path / "grid.svg"
     svgio.save_svg(scene, str(path))
     other = PaintScene(10, 10)
     svgio.load_svg(other, str(path))
-    assert other.grid_divisions == 25
+    assert other.grid_mm == 2.5
     assert other.show_grid is False
     assert other.snap_enabled is False
+    assert other.infinite is True
 
 
 def _scene_br(item):

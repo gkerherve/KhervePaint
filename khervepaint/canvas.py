@@ -407,12 +407,13 @@ class PaintScene(QGraphicsScene):
         self.fill_enabled = False
         self.bucket_vector = False        # bucket output: raster vs vector
 
-        # The grid is specified as a number of divisions across the
-        # canvas width; the pixel spacing is derived (see grid_size).
-        # Bigger number -> more, finer cells.
-        self.grid_divisions = 40
+        # The grid is specified as a physical distance in millimetres
+        # between adjacent lines; the pixel spacing is derived from the
+        # canvas dpi (see grid_size). Smaller mm -> finer cells.
+        self.grid_mm = 0.5
         self.snap_enabled = True
         self.show_grid = True
+        self.infinite = False     # infinite paper: grid fills the view
         self.dpi = 96             # pixels per inch, for physical export size
 
         self.raster_item = QGraphicsPixmapItem()
@@ -503,10 +504,9 @@ class PaintScene(QGraphicsScene):
     # ------------------------------------------------------------ grid
     @property
     def grid_size(self) -> int:
-        """Pixel spacing between grid lines, derived from the number of
-        divisions across the canvas width."""
-        width = self.sceneRect().width() or 1
-        return max(1, round(width / max(self.grid_divisions, 1)))
+        """Pixel spacing between grid lines, derived from the physical
+        grid distance (mm) and the canvas dpi."""
+        return max(1, round(self.grid_mm / 25.4 * self.dpi))
 
     # ------------------------------------------------------------ snapping
     def snap(self, pos: QPointF) -> QPointF:
@@ -979,7 +979,10 @@ class PaintView(QGraphicsView):
         if not getattr(scene, "show_grid", False):
             return
         g = scene.grid_size
-        area = rect.intersected(scene.sceneRect())
+        # Infinite paper: the grid fills the whole exposed view; finite
+        # paper clips it to the page and draws the page border.
+        infinite = getattr(scene, "infinite", False)
+        area = rect if infinite else rect.intersected(scene.sceneRect())
         if area.isEmpty():
             return
         painter.setPen(QPen(QColor(120, 144, 168, 70), 0))
@@ -993,8 +996,9 @@ class PaintView(QGraphicsView):
             painter.drawLine(QPointF(area.left(), y),
                              QPointF(area.right(), y))
             y += g
-        painter.setPen(QPen(QColor(120, 144, 168, 160), 0))
-        painter.drawRect(scene.sceneRect())
+        if not infinite:
+            painter.setPen(QPen(QColor(120, 144, 168, 160), 0))
+            painter.drawRect(scene.sceneRect())
 
     # ------------------------------------------------------------ zoom
     def wheelEvent(self, event):
@@ -1010,6 +1014,15 @@ class PaintView(QGraphicsView):
 
     def zoom_reset(self):
         self.resetTransform()
+
+    def apply_scroll_bounds(self):
+        """Let the view scroll across a large empty area when the scene
+        is in infinite-paper mode; otherwise follow the page rect."""
+        if getattr(self.scene(), "infinite", False):
+            m = 100000
+            self.setSceneRect(QRectF(-m, -m, 2 * m, 2 * m))
+        else:
+            self.setSceneRect(QRectF())   # follow the scene's page rect
 
     def mouseMoveEvent(self, event):
         self.cursor_moved.emit(self.mapToScene(event.pos()))

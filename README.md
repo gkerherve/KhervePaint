@@ -92,8 +92,9 @@ selected shapes in place.
 Shapes can hold a **centred text label** (set it in the shape's
 properties), and images can be **cropped** — right-click an image →
 *Crop image*, drag the handles, then Enter to apply (Esc cancels). The
-grid control sets the number of **divisions** across the canvas, so a
-higher number means a finer grid.
+**Grid (mm)** control sets the physical distance between grid lines in
+millimetres (smaller means finer), and the **Infinite paper** toggle
+lets the grid fill the whole view with no fixed page edge.
 
 **File ▸ Drawing Size** sets the canvas in **px, inches or mm** at a
 chosen **DPI** — with publication presets including **ACS single column

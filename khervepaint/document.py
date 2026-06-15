@@ -29,7 +29,7 @@ from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
                      PolygonItem, RectItem, RoundedRectItem, TextItem,
                      center_origin)
 
-FORMAT_VERSION = 3
+FORMAT_VERSION = 4
 
 
 # ---------------------------------------------------------------- pens
@@ -266,8 +266,8 @@ def scene_to_dict(scene: PaintScene) -> dict:
     return {"format": "kpaint", "version": FORMAT_VERSION,
             "width": int(rect.width()), "height": int(rect.height()),
             "dpi": getattr(scene, "dpi", 96),
-            "grid": {"divisions": scene.grid_divisions,
-                     "show": scene.show_grid, "snap": scene.snap_enabled},
+            "grid": {"mm": scene.grid_mm, "show": scene.show_grid,
+                     "snap": scene.snap_enabled, "infinite": scene.infinite},
             "raster": _pixmap_to_b64(scene.raster_item.pixmap()),
             "items": [item_to_dict(i) for i in scene.vector_items()]}
 
@@ -279,13 +279,16 @@ def dict_to_scene(data: dict, scene: PaintScene):
     scene.new_document(width, data.get("height", 600))
     scene.dpi = data.get("dpi", 96)
     grid = data.get("grid", {})
-    if "divisions" in grid:
-        scene.grid_divisions = grid["divisions"]
+    if "mm" in grid:
+        scene.grid_mm = float(grid["mm"])
+    elif "divisions" in grid:     # legacy: grid was divisions across width
+        px = (width or 1) / max(grid["divisions"], 1)
+        scene.grid_mm = px / scene.dpi * 25.4
     elif "size" in grid:          # legacy: grid was a pixel spacing
-        scene.grid_divisions = max(2, round((width or 1) /
-                                            max(grid["size"], 1)))
+        scene.grid_mm = float(grid["size"]) / scene.dpi * 25.4
     scene.show_grid = grid.get("show", True)
     scene.snap_enabled = grid.get("snap", True)
+    scene.infinite = grid.get("infinite", False)
     if data.get("raster"):
         scene.set_raster_pixmap(_pixmap_from_b64(data["raster"]))
     for item_dict in data.get("items", []):

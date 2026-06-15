@@ -276,9 +276,10 @@ def save_svg(scene: PaintScene, path: str):
     root.set("height", f"{h / dpi:g}in")
     root.set("viewBox", f"0 0 {w} {h}")
     root.set(_kp("dpi"), str(dpi))
-    root.set(_kp("grid-divisions"), str(scene.grid_divisions))
+    root.set(_kp("grid-mm"), f"{scene.grid_mm:g}")
     root.set(_kp("grid-show"), "1" if scene.show_grid else "0")
     root.set(_kp("grid-snap"), "1" if scene.snap_enabled else "0")
+    root.set(_kp("infinite"), "1" if scene.infinite else "0")
 
     raster = scene.raster_item.pixmap()
     if not raster.isNull():
@@ -619,15 +620,20 @@ def load_svg(scene: PaintScene, path: str):
     if dpi is not None:
         scene.dpi = int(float(dpi))
 
-    divisions = root.get(_kp("grid-divisions"))
-    legacy = root.get(_kp("grid-size"))
-    if divisions is not None:
-        scene.grid_divisions = int(float(divisions))
-    elif legacy is not None:      # legacy: grid was a pixel spacing
-        scene.grid_divisions = max(2, round(width / max(float(legacy), 1)))
-    if divisions is not None or legacy is not None:
+    grid_mm = root.get(_kp("grid-mm"))
+    divisions = root.get(_kp("grid-divisions"))   # legacy: divisions/width
+    legacy = root.get(_kp("grid-size"))           # legacy: pixel spacing
+    if grid_mm is not None:
+        scene.grid_mm = float(grid_mm)
+    elif divisions is not None:
+        px = width / max(int(float(divisions)), 1)
+        scene.grid_mm = px / scene.dpi * 25.4
+    elif legacy is not None:
+        scene.grid_mm = float(legacy) / scene.dpi * 25.4
+    if grid_mm is not None or divisions is not None or legacy is not None:
         scene.show_grid = root.get(_kp("grid-show"), "1") == "1"
         scene.snap_enabled = root.get(_kp("grid-snap"), "1") == "1"
+        scene.infinite = root.get(_kp("infinite"), "0") == "1"
 
     base = {"fill": "#000000", "stroke": "none"}
     z = 0

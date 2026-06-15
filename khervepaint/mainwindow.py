@@ -14,9 +14,9 @@ from pathlib import Path
 from PyQt5.QtCore import QMimeData, QSettings, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
-                             QColorDialog, QFileDialog, QLabel, QMainWindow,
-                             QMenu, QMessageBox, QSpinBox, QToolBar,
-                             QToolButton, QUndoStack)
+                             QColorDialog, QDoubleSpinBox, QFileDialog, QLabel,
+                             QMainWindow, QMenu, QMessageBox, QSpinBox,
+                             QToolBar, QToolButton, QUndoStack)
 
 from . import APP_NAME, __version__, document, icons, svgio
 from .undo import SnapshotCommand
@@ -271,14 +271,25 @@ class MainWindow(QMainWindow):
         self._snap_act.toggled.connect(self._set_snap)
         bar.addAction(self._snap_act)
 
-        bar.addWidget(QLabel(" Divisions "))
-        self._grid_spin = QSpinBox()
-        self._grid_spin.setRange(2, 200)
-        self._grid_spin.setValue(self.scene.grid_divisions)
+        self._infinite_act = QAction(
+            icons.icon("mdi.infinity"), "Infinite paper", self)
+        self._infinite_act.setCheckable(True)
+        self._infinite_act.setChecked(self.scene.infinite)
+        self._infinite_act.setToolTip(
+            "Infinite paper — grid fills the view, no fixed page edge")
+        self._infinite_act.toggled.connect(self._set_infinite)
+        bar.addAction(self._infinite_act)
+
+        bar.addWidget(QLabel(" Grid (mm) "))
+        self._grid_spin = QDoubleSpinBox()
+        self._grid_spin.setRange(0.1, 100.0)
+        self._grid_spin.setDecimals(1)
+        self._grid_spin.setSingleStep(0.5)
+        self._grid_spin.setValue(self.scene.grid_mm)
         self._grid_spin.setToolTip(
-            "Grid divisions across the canvas — higher means more, "
-            "finer cells")
-        self._grid_spin.valueChanged.connect(self._set_grid_divisions)
+            "Distance between grid lines in millimetres "
+            "(smaller means finer cells)")
+        self._grid_spin.valueChanged.connect(self._set_grid_mm)
         bar.addWidget(self._grid_spin)
         bar.addSeparator()
 
@@ -348,6 +359,7 @@ class MainWindow(QMainWindow):
         view_menu = m.addMenu("&View")
         view_menu.addAction(self._grid_act)
         view_menu.addAction(self._snap_act)
+        view_menu.addAction(self._infinite_act)
         view_menu.addSeparator()
         view_menu.addAction("Zoom &In", lambda: self.view.zoom(1.25),
                             QKeySequence.ZoomIn)
@@ -429,8 +441,13 @@ class MainWindow(QMainWindow):
     def _set_snap(self, snap: bool):
         self.scene.snap_enabled = snap
 
-    def _set_grid_divisions(self, divisions: int):
-        self.scene.grid_divisions = divisions
+    def _set_grid_mm(self, mm: float):
+        self.scene.grid_mm = mm
+        self.view.viewport().update()
+
+    def _set_infinite(self, on: bool):
+        self.scene.infinite = on
+        self.view.apply_scroll_bounds()
         self.view.viewport().update()
 
     def _select_all(self):
@@ -693,7 +710,9 @@ class MainWindow(QMainWindow):
     def _sync_grid_controls(self):
         self._grid_act.setChecked(self.scene.show_grid)
         self._snap_act.setChecked(self.scene.snap_enabled)
-        self._grid_spin.setValue(self.scene.grid_divisions)
+        self._infinite_act.setChecked(self.scene.infinite)
+        self._grid_spin.setValue(self.scene.grid_mm)
+        self.view.apply_scroll_bounds()
 
     def export_file(self):
         # Flattened raster exports; editable SVG is handled by Save.
