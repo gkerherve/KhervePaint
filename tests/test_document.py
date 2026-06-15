@@ -577,6 +577,20 @@ def test_svg_native_roundtrip(scene, tmp_path):
     assert other.sceneRect().width() == 400
 
 
+def test_ai_chat_hides_code_even_when_truncated():
+    from khervepaint.ai_assistant import prose_only, extract_specs
+    truncated = ('Here is the wall design!\n\n```json\n[\n'
+                 '{"shape":"rect","x":1,"y":2,"w":3,"h":4}')
+    assert prose_only(truncated) == "Here is the wall design!"
+    assert "shape" not in prose_only(truncated)
+    assert len(extract_specs(truncated)) == 1        # shapes still parsed
+    # closed fence, bare array, and pure prose
+    assert prose_only('Done.\n```json\n[{"shape":"rect"}]\n```') == "Done."
+    assert prose_only('Box:\n[{"shape":"rect","x":0,"y":0,"w":5,"h":5}]') \
+        == "Box:"
+    assert prose_only("Just a question?") == "Just a question?"
+
+
 def test_svg_use_resolves_defs(tmp_path):
     # Inkscape/matplotlib exports render ticks, markers and text via
     # <use href="#id"> referencing <defs>; these were dropped before.

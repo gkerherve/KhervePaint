@@ -61,6 +61,23 @@ Keep coordinates within the canvas."""
 
 
 # ---------------------------------------------------------------- specs
+def prose_only(reply: str) -> str:
+    """The human-readable part of a reply, with the drawing code removed.
+
+    Cuts at the first code fence or JSON array start, so it also hides the
+    code when the reply is *truncated* (a cut-off ```json block has no
+    closing fence, which a simple ```...``` strip would miss — that's how
+    raw JSON used to leak into the chat)."""
+    cut = None
+    fence = reply.find("```")
+    if fence != -1:
+        cut = fence
+    m = re.search(r"\[\s*\{", reply)          # a bare (unfenced) spec array
+    if m and (cut is None or m.start() < cut):
+        cut = m.start()
+    return (reply[:cut] if cut is not None else reply).strip()
+
+
 def extract_specs(text: str):
     """Pull a JSON array of shape specs out of an assistant reply.
 
@@ -495,8 +512,7 @@ class AiDock(QDockWidget):
                 if msg.get("role") == "user":
                     self._log("you", msg.get("content", ""))
                 elif msg.get("role") == "assistant":
-                    prose = re.sub(r"```.*?```", "", msg.get("content", ""),
-                                   flags=re.DOTALL).strip()
+                    prose = prose_only(msg.get("content", ""))
                     self._log("ai", prose or "(shapes)")
         else:
             self._welcome()
@@ -639,8 +655,8 @@ class AiDock(QDockWidget):
         self._history.append({"role": "assistant", "content": reply})
         self._save_history()
         specs = extract_specs(reply)
-        # Show only the prose, never the raw JSON block.
-        prose = re.sub(r"```.*?```", "", reply, flags=re.DOTALL).strip()
+        # Show only the prose, never the raw JSON block (even if truncated).
+        prose = prose_only(reply)
         if specs:
             created = apply_specs(self.scene, specs)
             self._log("ai", prose or "Done.")
