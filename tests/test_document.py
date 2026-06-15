@@ -931,6 +931,31 @@ def test_chem_atom_snaps_to_bond_end(scene):
     assert abs(cc.x() - 900) < 1 and abs(cc.y() - 900) < 1
 
 
+def test_floorplan_all_elements_build():
+    from khervescribe import floorplan
+    for name in floorplan.SIZES:                  # every element builds specs
+        specs = floorplan.build_specs(name, 120.0, 90.0)
+        assert isinstance(specs, list) and specs
+        assert all("shape" in s for s in specs)
+    for _title, names in floorplan.CATEGORIES:    # menu wiring is complete
+        for n in names:
+            assert n in floorplan.SIZES and n in floorplan.LABELS
+
+
+def test_floorplan_place_centres_and_groups(scene):
+    scene.dpi = 300
+    scene.snap_enabled = False
+    scene.place_plan_element("wall", QPointF(500, 500))       # single item
+    scene.place_plan_element("double_bed", QPointF(1000, 1000))  # group
+    items = scene.vector_items()
+    assert len(items) == 2
+    bed = [i for i in items if isinstance(i, GroupItem)]
+    assert len(bed) == 1
+    br = bed[0].sceneBoundingRect()
+    assert abs(br.center().x() - 1000) < 2 and abs(br.center().y() - 1000) < 2
+    assert abs(br.width() - 1500 / 25.4 * 300) < 5    # real-world bed width
+
+
 def test_chem_fixed_length_and_angle(scene):
     import math
     start = QPointF(100, 100)

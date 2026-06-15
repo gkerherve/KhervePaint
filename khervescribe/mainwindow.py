@@ -31,9 +31,9 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEM_ATOM, CHEM_BENZENE,
                      CIRCLE, DIAMOND, DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
-                     RIGHT_TRIANGLE, ROUNDRECT, STAR, STAR6, TEXT, TRAPEZOID,
-                     TRIANGLE, ImageItem, PaintScene, PaintView)
-from . import chemistry
+                     PLAN_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR, STAR6, TEXT,
+                     TRAPEZOID, TRIANGLE, ImageItem, PaintScene, PaintView)
+from . import chemistry, floorplan
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -166,6 +166,7 @@ class MainWindow(QMainWindow):
         self._add_tool_action(bar, TEXT, icons.icon("mdi.format-text"),
                               "Text", "T")
         self._build_chemistry_dropdown(bar)
+        self._build_roomplan_dropdown(bar)
         bar.addSeparator()
         self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
@@ -368,12 +369,39 @@ class MainWindow(QMainWindow):
 
     def _set_chem_atom(self, symbol):
         self.scene.chem_atom = symbol
+        self._activate_placement_tool(CHEM_ATOM)
+
+    def _activate_placement_tool(self, tool):
+        """Activate a non-checkable placement tool, clearing the lit tool."""
         checked = self._tool_group.checkedAction()
         if checked is not None:
             self._tool_group.setExclusive(False)
             checked.setChecked(False)
             self._tool_group.setExclusive(True)
-        self._set_tool(CHEM_ATOM)
+        self._set_tool(tool)
+
+    # ------------------------------------------------------------ room layout
+    def _build_roomplan_dropdown(self, bar):
+        """Dropdown of top-view room-layout elements (walls, doors, windows
+        and furniture), grouped by room; picking one places it on click."""
+        button = QToolButton()
+        button.setPopupMode(QToolButton.InstantPopup)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setIcon(icons.icon("mdi.floor-plan"))
+        button.setToolTip("Room layout — walls, doors, furniture (top view)")
+        menu = QMenu(button)
+        for title, names in floorplan.CATEGORIES:
+            menu.addSection(title)
+            for name in names:
+                menu.addAction(
+                    floorplan.LABELS[name],
+                    lambda _=False, n=name: self._set_plan_element(n))
+        button.setMenu(menu)
+        bar.addWidget(button)
+
+    def _set_plan_element(self, name):
+        self.scene.plan_element = name
+        self._activate_placement_tool(PLAN_PLACE)
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

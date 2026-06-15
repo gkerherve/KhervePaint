@@ -177,6 +177,23 @@ steps**, so structures stay tidy — you just click the direction.
 Everything is a normal item — restyle, move, group and save like any
 other shape.
 
+## 10b. Room layout (floor plans)
+
+The **Room layout** dropdown (left toolbar) drops ready-made **top-view**
+plan symbols where you click, drawn at realistic real-world sizes:
+
+- **Walls & openings** — wall, door (with swing), double door, window,
+  opening, stairs.
+- **Bedroom** — single/double bed, wardrobe, nightstand, chest of drawers.
+- **Living & dining** — dining table, chair, sofa, armchair, coffee
+  table, TV unit, bookshelf.
+- **Kitchen** — counter, sink, stove/hob, fridge, island, dishwasher.
+- **Bathroom & utility** — toilet, basin, bathtub, shower, washing machine.
+
+Each piece is a normal grouped item — move, rotate, resize and recolour
+it, ungroup to tweak parts, or save your own arrangements as **objects**
+(Section 10) for reuse. Snapping keeps everything aligned to the grid.
+
 ## 11. Drawing size & publication figures
 
 New documents open at the **ACS single-column** figure size (3.25 in ≈

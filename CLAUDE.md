@@ -71,6 +71,12 @@ into a new module and import.
                        (single/double/triple/hash), wedge polygon, ring
                        polygons, atom-label list. `canvas` builds native
                        items from these (no item classes here, so no cycle).
+  - `floorplan.py`   — top-view room-layout elements: `build_<name>(w,h)`
+                       returns shape specs (AI/example format) for walls,
+                       doors, windows, furniture, kitchen & bathroom
+                       fittings; `SIZES` (mm), `LABELS`, `CATEGORIES`.
+                       `PaintScene.place_plan_element` builds native items
+                       via `ai_assistant._spec_to_item`, grouped, on click.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
@@ -278,7 +284,9 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   snaps onto a nearby bond end via `_nearest_bond_end`, so e.g. a C=O is a
   double bond + an O dropped on its tip). Bonds
   snap to a **fixed length + 30° angle** (`scene.chem_fixed` default True,
-  `bond_length_mm`, `PaintScene._chem_constrain`). The
+  `bond_length_mm`, `PaintScene._chem_constrain`). A **Room layout**
+  dropdown (`PLAN_PLACE` tool, `floorplan.py`) click-places top-view
+  walls/doors/furniture (grouped, real-world mm sizes) by category. The
   column ends with an **Objects** dropdown (the reusable-object/template
   library, see `library.py`): save the selection, open the **Template
   Explorer**, or insert a saved object — folders shown as nested

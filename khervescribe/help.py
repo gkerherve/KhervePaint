@@ -236,6 +236,17 @@ bond with an O dropped on its tip.
 Bonds snap to a uniform length and 30° angles, so you just click the
 direction.</p>
 
+<h2>10b · Room layout (floor plans)</h2>
+<p>The <b>Room layout</b> dropdown drops ready-made <b>top-view</b> plan
+symbols where you click, at realistic sizes: <b>walls &amp; openings</b>
+(wall, door, double door, window, opening, stairs), <b>bedroom</b>
+(beds, wardrobe, nightstand, chest), <b>living &amp; dining</b> (table,
+chair, sofa, armchair, coffee table, TV unit, bookshelf), <b>kitchen</b>
+(counter, sink, stove, fridge, island, dishwasher) and <b>bathroom</b>
+(toilet, basin, bathtub, shower, washing machine). Each is a grouped,
+editable item — move, rotate, resize, ungroup, or save arrangements as
+objects.</p>
+
 <h2>11 · Drawing size &amp; publication figures</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size
 (3.25 in ≈ 82.6 mm) at 300 dpi. <b>File ▸ Drawing Size</b> sets the
