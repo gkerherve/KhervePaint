@@ -353,6 +353,10 @@ def build_context_menu(window, item) -> QMenu:
                    lambda: window.scene.mirror_selection(False))
     menu.addAction(icons.icon("mdi.arrange-bring-to-front"), "Bring to front",
                    lambda: window.reorder_item(item, "front"))
+    menu.addAction(icons.icon("mdi.arrange-bring-forward"), "Bring forward",
+                   lambda: window.reorder_item(item, "forward"))
+    menu.addAction(icons.icon("mdi.arrange-send-backward"), "Send backward",
+                   lambda: window.reorder_item(item, "backward"))
     menu.addAction(icons.icon("mdi.arrange-send-to-back"), "Send to back",
                    lambda: window.reorder_item(item, "back"))
     menu.addSeparator()

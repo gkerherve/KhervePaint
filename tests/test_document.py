@@ -290,6 +290,38 @@ def test_group_nonuniform_resize_roundtrips(scene):
     assert b0 == b1                              # exact in .kpaint
 
 
+def test_group_preserves_stacking(scene):
+    # Grouping must keep which item is in front (the bug: selection order,
+    # not stacking order, decided child z, so a part jumped behind).
+    from khervepaint.handles import Handle
+    bot = RectItem(QRectF(0, 0, 50, 50)); bot.setPos(0, 0); scene.addItem(bot)
+    top = RectItem(QRectF(0, 0, 50, 50)); top.setPos(10, 10)
+    scene.addItem(top)                       # added later -> on top
+    bot.setSelected(True); top.setSelected(True)
+    scene.group_selection()
+    g = scene.vector_items()[0]
+    kids = [c for c in g.childItems() if not isinstance(c, Handle)]
+    ztop = next(c.zValue() for c in kids if c.pos() == QPointF(10, 10))
+    zbot = next(c.zValue() for c in kids if c.pos() == QPointF(0, 0))
+    assert ztop > zbot
+
+
+def test_reorder_four_modes(window):
+    s = window.scene
+    a = RectItem(QRectF(0, 0, 10, 10)); s.addItem(a)
+    b = RectItem(QRectF(0, 0, 10, 10)); s.addItem(b)
+    c = RectItem(QRectF(0, 0, 10, 10)); s.addItem(c)   # stacking a,b,c
+    window.reorder_item(a, "forward")
+    it = s.vector_items()
+    assert it.index(b) < it.index(a) < it.index(c)     # one step up
+    window.reorder_item(c, "back")
+    assert s.vector_items()[0] is c                     # to the very back
+    window.reorder_item(a, "front")
+    assert s.vector_items()[-1] is a                    # to the very front
+    window.reorder_item(a, "backward")
+    assert s.vector_items()[-1] is not a                # one step down
+
+
 def test_group_handles_are_scene_level(scene):
     # A QGraphicsItemGroup intercepts its children's mouse events, so a
     # group's handles must NOT be its children (or they'd be dead) — they

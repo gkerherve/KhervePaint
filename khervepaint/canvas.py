@@ -609,9 +609,13 @@ class PaintScene(QGraphicsScene):
 
     def vector_items(self):
         """Top-level vector items, bottom to top (excludes the raster and
-        any scene-level selection handles)."""
+        any scene-level selection handles). `items()` is top-first, so
+        reverse before the (stable) z-sort — otherwise items sharing a z
+        come back top-first, contradicting the documented order."""
         from .handles import Handle
-        return [i for i in sorted(self.items(), key=lambda i: i.zValue())
+        ordered = list(self.items())[::-1]            # bottom-to-top
+        ordered.sort(key=lambda i: i.zValue())        # stable: honour z
+        return [i for i in ordered
                 if i is not self.raster_item and i.parentItem() is None
                 and not isinstance(i, Handle)]
 
@@ -647,16 +651,23 @@ class PaintScene(QGraphicsScene):
 
     # ------------------------------------------------------------ grouping
     def group_selection(self):
-        items = [i for i in self.selectedItems() if i.parentItem() is None]
-        if len(items) < 2:
+        selected = {i for i in self.selectedItems()
+                    if i.parentItem() is None}
+        if len(selected) < 2:
             return
+        # Add children in their CURRENT stacking order (bottom to top) and
+        # give them sequential z, so the group keeps which item is in
+        # front — selectedItems() order is arbitrary, which previously
+        # let a later child cover earlier ones after grouping.
+        ordered = [i for i in reversed(self.items()) if i in selected]
         group = GroupItem()
         self.addItem(group)
         # Reparenting must not snap: addToGroup repositions each child
         # into group coords, and snapping that would shift them.
         was_snap = self.snap_enabled
         self.snap_enabled = False
-        for item in items:
+        for z, item in enumerate(ordered):
+            item.setZValue(z)
             group.addToGroup(item)
         self.snap_enabled = was_snap
         self.clearSelection()

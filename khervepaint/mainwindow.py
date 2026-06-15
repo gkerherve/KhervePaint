@@ -511,6 +511,18 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("Flip &Vertical",
                             lambda: self.scene.mirror_selection(False),
                             "Ctrl+Shift+J")
+        edit_menu.addSeparator()
+        arrange = edit_menu.addMenu("&Arrange")
+        arrange.addAction("Bring to &Front",
+                          lambda: self._reorder_selection("front"),
+                          "Ctrl+Shift+]")
+        arrange.addAction("Bring F&orward",
+                          lambda: self._reorder_selection("forward"), "Ctrl+]")
+        arrange.addAction("Send &Backward",
+                          lambda: self._reorder_selection("backward"), "Ctrl+[")
+        arrange.addAction("Send to Bac&k",
+                          lambda: self._reorder_selection("back"),
+                          "Ctrl+Shift+[")
 
         view_menu = m.addMenu("&View")
         view_menu.addAction(self._grid_act)
@@ -825,13 +837,32 @@ class MainWindow(QMainWindow):
             "— Esc to cancel")
 
     def reorder_item(self, item, where: str):
-        """Move *item* in front of / behind every other vector item."""
-        others = [i for i in self.scene.vector_items() if i is not item]
-        if not others:
+        """Restack *item*: to front/back, or one step forward/backward.
+        z values are first normalised to 0..n-1 in current stacking order
+        so a single step is reliable even when items share a z."""
+        items = self.scene.vector_items()      # bottom-to-top (z ascending)
+        if item not in items or len(items) < 2:
             return
-        zs = [i.zValue() for i in others]
-        item.setZValue(max(zs) + 1 if where == "front" else min(zs) - 1)
+        for idx, it in enumerate(items):
+            it.setZValue(idx)
+        i, n = items.index(item), len(items)
+        if where == "front":
+            item.setZValue(n)
+        elif where == "back":
+            item.setZValue(-1)
+        elif where == "forward" and i < n - 1:
+            item.setZValue(i + 1); items[i + 1].setZValue(i)
+        elif where == "backward" and i > 0:
+            item.setZValue(i - 1); items[i - 1].setZValue(i)
+        else:
+            return
         self.scene.changed_by_user.emit()
+
+    def _reorder_selection(self, where: str):
+        """Restack the selected top-level item (menu/shortcut entry point)."""
+        items = self._selected_top_items()
+        if len(items) == 1:
+            self.reorder_item(items[0], where)
 
     def pick_stroke_color(self):
         color = QColorDialog.getColor(self.scene.pen.color(), self,

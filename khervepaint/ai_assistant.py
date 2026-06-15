@@ -201,7 +201,13 @@ def _spec_to_item(spec):
 
 
 def apply_specs(scene, specs):
-    """Create items from *specs* and add them (selected) to the scene."""
+    """Create items from *specs* and add them (selected) to the scene.
+
+    Items are stacked in spec order (first at the back, last in front) and
+    placed above anything already on the canvas, so the layering the model
+    intends is preserved — and survives grouping."""
+    existing = [i.zValue() for i in scene.vector_items()]
+    base = (max(existing) + 1) if existing else 0
     items = []
     for spec in specs:
         try:
@@ -210,6 +216,7 @@ def apply_specs(scene, specs):
             item = None
         if item is not None:
             scene.addItem(item)
+            item.setZValue(base + len(items))
             items.append(item)
     if items:
         scene.clearSelection()
