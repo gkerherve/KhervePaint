@@ -270,7 +270,9 @@ with −/+ buttons and a percentage you can click to snap back to 100%
 
 <h2>15 · AI assistant</h2>
 <p>Open the chat panel with the <b>AI Assistant</b> button on the top
-toolbar (or <b>View ▸ AI Chat</b>) — the same button hides/shows it.
+toolbar (or <b>View ▸ AI Chat</b>). The <b>arrow on the panel's left
+edge</b> collapses it to a thin strip (click again to expand); the
+toolbar button hides/shows it entirely.
 Choose a provider — <b>Claude, ChatGPT, Mistral, Ollama</b> or a
 <b>Local</b> endpoint — enter its API key (Ollama/Local need only a base
 URL), and press <b>Refresh</b> to list that provider's models. Then ask

@@ -211,7 +211,9 @@ buttons and a percentage you can click to snap back to 100% (also
 ## 15. AI assistant
 
 Open the chat panel with the **AI Assistant** button on the top toolbar
-(or **View ▸ AI Chat**) — the same button **hides/shows** the panel.
+(or **View ▸ AI Chat**). Use the **arrow on the panel's left edge** to
+**collapse it to a thin strip** and click it again to expand — or the
+toolbar button to hide/show it entirely.
 Choose a provider — **Claude, ChatGPT, Mistral, Ollama** or a **Local**
 endpoint — enter its API key (Ollama/Local need only a base URL), and
 press **Refresh** to list that provider's models. Then ask in plain

@@ -20,9 +20,9 @@ from PyQt5.QtCore import (QLineF, QRectF, QSettings, QSize, Qt, QThread,
 from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QPixmap, QTextCursor
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
                              QDockWidget, QFormLayout, QGroupBox, QHBoxLayout,
-                             QLabel, QLineEdit, QMessageBox, QPlainTextEdit,
-                             QPushButton, QTextBrowser, QToolButton,
-                             QVBoxLayout, QWidget)
+                             QLabel, QLineEdit, QMainWindow, QMessageBox,
+                             QPlainTextEdit, QPushButton, QSizePolicy,
+                             QTextBrowser, QToolButton, QVBoxLayout, QWidget)
 
 from . import ai_providers as providers
 from . import icons
@@ -420,7 +420,7 @@ class AiDock(QDockWidget):
         self._settings = QSettings(*_SETTINGS)
         self._font_pt = int(self._settings.value("ai/fontpt", 10))
 
-        body = QWidget()
+        self.body = body = QWidget()
         layout = QVBoxLayout(body)
         layout.setContentsMargins(6, 6, 6, 6)
         layout.setSpacing(4)
@@ -441,11 +441,8 @@ class AiDock(QDockWidget):
                                        self._open_settings, "mdi.cog-outline")
         self.clear_btn = self._tool(None, "Clear chat", self._clear,
                                     "mdi.notification-clear-all")
-        self.hide_btn = self._tool(None, "Hide this panel "
-                                   "(re-open from the AI Chat toolbar button)",
-                                   self.hide, "mdi.close")
         for btn in (self.smaller_btn, self.larger_btn, self.help_btn,
-                    self.settings_btn, self.clear_btn, self.hide_btn):
+                    self.settings_btn, self.clear_btn):
             header.addWidget(btn)
         layout.addLayout(header)
 
@@ -485,7 +482,25 @@ class AiDock(QDockWidget):
         input_row.addWidget(self.send_btn, 0, Qt.AlignBottom)
         layout.addLayout(input_row)
 
-        self.setWidget(body)
+        # A thin collapse strip on the LEFT edge: click to fold the panel
+        # to a sliver and click again to expand it (like a sidebar).
+        outer = QWidget()
+        row = QHBoxLayout(outer)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(0)
+        self._collapsed = False
+        self._expanded_w = 360
+        self.collapse_btn = QToolButton()
+        self.collapse_btn.setAutoRaise(True)
+        self.collapse_btn.setArrowType(Qt.RightArrow)
+        self.collapse_btn.setToolTip("Collapse the chat panel")
+        self.collapse_btn.setFixedWidth(16)
+        self.collapse_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        self.collapse_btn.clicked.connect(self._toggle_collapse)
+        row.addWidget(self.collapse_btn)
+        row.addWidget(body, 1)
+        self.setWidget(outer)
+
         self.input.submitted.connect(self._send)
         self.input.history_prev.connect(self._history_prev)
         self.input.history_next.connect(self._history_next)
@@ -494,6 +509,26 @@ class AiDock(QDockWidget):
         self._apply_font()
         self._update_status()
         self._load_history()
+
+    def _toggle_collapse(self):
+        """Fold the panel to a thin edge strip, or expand it back."""
+        main = self.parent() if isinstance(self.parent(), QMainWindow) else None
+        if not self._collapsed:
+            self._expanded_w = max(self.width(), 220)
+            self.body.setVisible(False)
+            self.collapse_btn.setArrowType(Qt.LeftArrow)
+            self.collapse_btn.setToolTip("Expand the chat panel")
+            self.setFixedWidth(self.collapse_btn.width() + 6)
+            self._collapsed = True
+        else:
+            self.setMinimumWidth(0)
+            self.setMaximumWidth(16777215)
+            self.body.setVisible(True)
+            self.collapse_btn.setArrowType(Qt.RightArrow)
+            self.collapse_btn.setToolTip("Collapse the chat panel")
+            self._collapsed = False
+            if main is not None:
+                main.resizeDocks([self], [self._expanded_w], Qt.Horizontal)
 
     def _tool(self, text, tip, slot, glyph=None):
         btn = QToolButton()
