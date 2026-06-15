@@ -43,7 +43,12 @@ The **Dimension** tool (M) drags out a measured line with arrowheads at
 both ends and a label showing the distance in **millimetres** (using the
 drawing's DPI). The label updates live as you drag and whenever you move
 its endpoints, so it doubles as a ruler. It is a normal editable, saved
-item — change its colour/width like any line.
+item — change its colour/width like any line. Its **style** is editable
+in the properties dialog (right-click ▸ *Edit properties…*): swap the
+end caps between **arrows, ticks, dots or none**, add perpendicular
+**extension (witness) lines**, make the line **dashed**, and set the
+label's **unit** (mm/cm/in), **decimals** and an optional
+**prefix/suffix** (e.g. Ø, ±).
 
 Related **shapes** are grouped under four dropdown buttons — click the
 small arrow to pick one (the button then remembers it), then drag on the

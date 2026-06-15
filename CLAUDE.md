@@ -132,10 +132,13 @@ Everything lives in one `QGraphicsScene`:
   on creation and while being moved with the pointer:
   - Two-point tools (`_TWO_POINT_TOOLS`): line, arrow (`ArrowItem`
     extends `LineItem` and draws a filled head) and dimension
-    (`DimensionItem` extends `LineItem`: double arrowheads + a live
-    length label in **mm**, derived from `scene.dpi`; edited via its
+    (`DimensionItem` extends `LineItem`: a live length label plus a
+    configurable style — end caps (`cap_style`: arrows/ticks/dots/none),
+    optional `extension` witness lines, solid/`dash` line, and label
+    `unit` (mm/cm/in)/`decimals`/`prefix`/`suffix`, all edited in the
+    properties dialog. Length derives from `scene.dpi`; edited via its
     endpoints like a line, serialised as type `dimension` / SVG
-    `kp:kind="dimension"`).
+    `kp:kind="dimension"` with `kp:dim-*` style attrs).
   - Rect-defined tools (`_RECT_TOOLS`): rect, circle (square ellipse),
     ellipse, rounded rect (`RoundedRectItem`, real `radius`), a large
     set of parametric polygons via one `PolygonItem` whose geometry is

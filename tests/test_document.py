@@ -339,6 +339,42 @@ def test_dimension_roundtrips(scene, tmp_path):
     assert abs(d3.length_mm() - 25.4) < 0.1
 
 
+def test_dimension_label_format():
+    from khervepaint.canvas import DimensionItem
+    scene = PaintScene(2000, 1500); scene.dpi = 300
+    d = DimensionItem(QLineF(0, 0, 118.110236, 0))   # 10 mm at 300 dpi
+    scene.addItem(d)
+    assert d._label_text() == "10.0 mm"              # defaults
+    d.unit = "cm"; d.decimals = 2; d.prefix = "Ø"; d.suffix = " max"
+    assert d._label_text() == "Ø1.00 cm max"
+    d.unit = "in"; d.decimals = 3; d.prefix = ""; d.suffix = ""
+    assert d._label_text() == f"{10 / 25.4:.3f} in"
+
+
+def test_dimension_style_roundtrips(scene, tmp_path):
+    from khervepaint.canvas import DimensionItem
+    from khervepaint import svgio
+    scene.dpi = 300
+    d = DimensionItem(QLineF(0, 0, 300, 0))
+    d.cap_style = "ticks"; d.extension = True; d.dash = True
+    d.unit = "cm"; d.decimals = 2; d.prefix = "Ø"; d.suffix = " max"
+    scene.addItem(d)
+
+    def check(item):
+        assert item.cap_style == "ticks" and item.extension is True
+        assert item.dash is True and item.unit == "cm"
+        assert item.decimals == 2 and item.prefix == "Ø"
+        assert item.suffix == " max"
+
+    other = PaintScene(); document.dict_to_scene(document.scene_to_dict(scene),
+                                                 other)
+    check(other.vector_items()[0])                   # kpaint
+    path = tmp_path / "dimstyle.svg"
+    svgio.save_svg(scene, str(path))
+    other2 = PaintScene(); svgio.load_svg(other2, str(path))
+    check(other2.vector_items()[0])                  # svg
+
+
 def test_snap(scene):
     scene.dpi = 25.4                   # 1 mm == 1 px, for an easy check
     scene.grid_mm = 20                 # -> 20 px spacing

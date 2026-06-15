@@ -29,7 +29,7 @@ from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 4
+FORMAT_VERSION = 5
 
 
 # ---------------------------------------------------------------- pens
@@ -110,6 +110,23 @@ def cmds_to_painterpath(cmds: list) -> QPainterPath:
 
 
 # ---------------------------------------------------------------- items
+def _dimension_to_dict(item) -> dict:
+    """The style fields that distinguish a dimension from a plain line."""
+    return {"capStyle": item.cap_style, "extension": item.extension,
+            "dash": item.dash, "unit": item.unit, "decimals": item.decimals,
+            "prefix": item.prefix, "suffix": item.suffix}
+
+
+def _apply_dimension(item, d):
+    item.cap_style = d.get("capStyle", "arrows")
+    item.extension = d.get("extension", False)
+    item.dash = d.get("dash", False)
+    item.unit = d.get("unit", "mm")
+    item.decimals = d.get("decimals", 1)
+    item.prefix = d.get("prefix", "")
+    item.suffix = d.get("suffix", "")
+
+
 def item_to_dict(item) -> dict:
     pos = {"x": item.pos().x(), "y": item.pos().y()}
     common = {"pos": pos, "opacity": item.opacity(),
@@ -119,7 +136,7 @@ def item_to_dict(item) -> dict:
         ln = item.line()
         return {"type": "dimension", "pen": _pen_to_dict(item.pen()),
                 "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
-                **common}
+                **_dimension_to_dict(item), **common}
     if isinstance(item, ArrowItem):
         ln = item.line()
         return {"type": "arrow", "pen": _pen_to_dict(item.pen()),
@@ -190,6 +207,8 @@ def item_from_dict(d: dict):
             kind, LineItem)
         item = cls(QLineF(d["x1"], d["y1"], d["x2"], d["y2"]))
         item.setPen(_pen_from_dict(d.get("pen", {})))
+        if kind == "dimension":
+            _apply_dimension(item, d)
     elif kind in ("rect", "ellipse"):
         cls = RectItem if kind == "rect" else EllipseItem
         item = cls(QRectF(d["x"], d["y"], d["w"], d["h"]))

@@ -131,7 +131,11 @@ draw.</p>
 arrowheads at both ends and a label showing the distance in
 <b>millimetres</b> (using the drawing's DPI). The label updates live as
 you drag or move its endpoints, so it doubles as a ruler, and it saves
-like any other line.</p>
+like any other line. Its <b>style</b> is editable in the properties
+dialog (right-click ▸ <i>Edit properties…</i>): end caps
+(<b>arrows, ticks, dots or none</b>), optional <b>extension lines</b>,
+a <b>dashed</b> line, and the label's <b>unit</b> (mm/cm/in),
+<b>decimals</b> and an optional <b>prefix/suffix</b> (e.g. Ø, ±).</p>
 
 <h2>3 · Colours, width and fill</h2>
 <p>On the top toolbar: click the <b>stroke</b> swatch (outline colour) or

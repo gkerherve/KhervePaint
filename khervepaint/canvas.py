@@ -209,13 +209,34 @@ class ArrowItem(LineItem):
         painter.drawPolygon(self._head_polygon())
 
 
+#: Conversion from millimetres to each supported display unit.
+_UNIT_PER_MM = {"mm": 1.0, "cm": 0.1, "in": 1.0 / 25.4}
+#: Selectable end-cap styles for a dimension line.
+DIM_CAPS = ("arrows", "ticks", "dots", "none")
+
+
 class DimensionItem(LineItem):
-    """A measured line: arrowheads at both ends and a length label in mm
-    (derived from the scene dpi). Edited like a line via its endpoints;
-    the label updates live as the endpoints move."""
+    """A measured line with configurable style: end caps (arrows / ticks /
+    dots / none), optional perpendicular extension lines, a solid or
+    dashed line, and a length label whose unit, decimals and prefix/suffix
+    are all adjustable (length derived from the scene dpi). Edited like a
+    line via its endpoints; the label updates live as the endpoints move."""
 
     HEAD = 10
-    _LABEL_PAD = 60         # boundingRect slack for arrows + label text
+    TICK = 7               # half-length of a tick slash
+    DOT_R = 4              # dot-cap radius
+    EXT = 14              # half-length of an extension (witness) line
+    _LABEL_PAD = 60        # boundingRect slack for caps + label text
+
+    # Style defaults live at class level (immutable), so an unstyled
+    # dimension carries no per-instance state until something is set.
+    cap_style = "arrows"   # one of DIM_CAPS
+    extension = False      # draw perpendicular witness lines at the ends
+    dash = False           # dashed dimension + extension lines
+    unit = "mm"            # mm | cm | in
+    decimals = 1
+    prefix = ""
+    suffix = ""
 
     def boundingRect(self):
         extra = self.HEAD + self.pen().widthF() + self._LABEL_PAD
@@ -226,8 +247,17 @@ class DimensionItem(LineItem):
         dpi = getattr(scene, "dpi", 96) if scene is not None else 96
         return self.line().length() / max(dpi, 1) * 25.4
 
+    def length_in_unit(self) -> float:
+        return self.length_mm() * _UNIT_PER_MM.get(self.unit, 1.0)
+
     def _label_text(self) -> str:
-        return f"{self.length_mm():.1f} mm"
+        value = f"{self.length_in_unit():.{self.decimals}f}"
+        return f"{self.prefix}{value} {self.unit}{self.suffix}"
+
+    def _line_pen(self) -> QPen:
+        pen = QPen(self.pen())
+        pen.setStyle(Qt.DashLine if self.dash else Qt.SolidLine)
+        return pen
 
     def _head(self, tip: QPointF, other: QPointF) -> QPolygonF:
         angle = math.atan2(tip.y() - other.y(), tip.x() - other.x())
@@ -237,31 +267,53 @@ class DimensionItem(LineItem):
                               math.sin(angle + math.pi / 7) * self.HEAD)
         return QPolygonF([tip, left, right])
 
+    def _draw_caps(self, painter, ln, angle, color):
+        width = self.pen().widthF()
+        if self.cap_style == "arrows":
+            painter.setPen(QPen(color, width))
+            painter.setBrush(QBrush(color))
+            painter.drawPolygon(self._head(ln.p2(), ln.p1()))
+            painter.drawPolygon(self._head(ln.p1(), ln.p2()))
+        elif self.cap_style == "ticks":
+            painter.setPen(QPen(color, max(width, 1)))
+            d = QPointF(math.cos(angle + math.pi / 4),
+                        math.sin(angle + math.pi / 4)) * self.TICK
+            for p in (ln.p1(), ln.p2()):
+                painter.drawLine(p - d, p + d)
+        elif self.cap_style == "dots":
+            painter.setPen(QPen(color, width))
+            painter.setBrush(QBrush(color))
+            for p in (ln.p1(), ln.p2()):
+                painter.drawEllipse(p, self.DOT_R, self.DOT_R)
+
     def paint(self, painter, option, widget=None):
-        super().paint(painter, option, widget)        # the line itself
         ln = self.line()
         if ln.length() < 1:
             return
         color = self.pen().color()
-        painter.setPen(QPen(color, self.pen().widthF()))
-        painter.setBrush(QBrush(color))
-        painter.drawPolygon(self._head(ln.p2(), ln.p1()))
-        painter.drawPolygon(self._head(ln.p1(), ln.p2()))
-        # length label, offset just off the line at its midpoint
         angle = math.atan2(ln.dy(), ln.dx())
+        perp = QPointF(math.sin(angle), -math.cos(angle))
+
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(self._line_pen())
+        painter.drawLine(ln)                           # the measured line
+        if self.extension:
+            for p in (ln.p1(), ln.p2()):
+                painter.drawLine(p - perp * self.EXT, p + perp * self.EXT)
+        self._draw_caps(painter, ln, angle, color)
+
+        # length label, offset just off the line at its midpoint
         mid = QPointF((ln.x1() + ln.x2()) / 2, (ln.y1() + ln.y2()) / 2)
-        off = QPointF(math.sin(angle), -math.cos(angle)) * 14
+        tp = mid + perp * 14
         painter.save()
-        font = QFont("Segoe UI", 10)
-        painter.setFont(font)
+        painter.setFont(QFont("Segoe UI", 10))
         painter.setPen(QPen(color))
         painter.setBrush(Qt.NoBrush)
         text = self._label_text()
         fm = painter.fontMetrics()
-        w = fm.horizontalAdvance(text)
-        tp = mid + off
-        painter.drawText(QPointF(tp.x() - w / 2,
-                                 tp.y() + fm.ascent() / 2 - 1), text)
+        painter.drawText(
+            QPointF(tp.x() - fm.horizontalAdvance(text) / 2,
+                    tp.y() + fm.ascent() / 2 - 1), text)
         painter.restore()
 
 

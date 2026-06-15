@@ -153,6 +153,15 @@ def _item_to_element(parent, item):
         el.set("x1", f"{ln.x1():g}"); el.set("y1", f"{ln.y1():g}")
         el.set("x2", f"{ln.x2():g}"); el.set("y2", f"{ln.y2():g}")
         el.set(_kp("kind"), "dimension")
+        el.set(_kp("dim-cap"), item.cap_style)
+        el.set(_kp("dim-ext"), "1" if item.extension else "0")
+        el.set(_kp("dim-dash"), "1" if item.dash else "0")
+        el.set(_kp("dim-unit"), item.unit)
+        el.set(_kp("dim-decimals"), str(item.decimals))
+        if item.prefix:
+            el.set(_kp("dim-prefix"), item.prefix)
+        if item.suffix:
+            el.set(_kp("dim-suffix"), item.suffix)
         _set_stroke(el, item.pen())
     elif isinstance(item, ArrowItem):
         ln = item.line()
@@ -443,6 +452,17 @@ def _baked_path(local_path: QPainterPath, total: QTransform, style: dict):
     return item
 
 
+def _read_dim_style(item, el):
+    """Restore a DimensionItem's style from its kp: attributes."""
+    item.cap_style = el.get(_kp("dim-cap"), "arrows")
+    item.extension = el.get(_kp("dim-ext"), "0") == "1"
+    item.dash = el.get(_kp("dim-dash"), "0") == "1"
+    item.unit = el.get(_kp("dim-unit"), "mm")
+    item.decimals = int(float(el.get(_kp("dim-decimals"), "1")))
+    item.prefix = el.get(_kp("dim-prefix"), "")
+    item.suffix = el.get(_kp("dim-suffix"), "")
+
+
 def _build_leaf(el, total: QTransform, style: dict):
     tag = _localname(el.tag)
     dx, dy, deg, simple = _decompose(total)
@@ -454,6 +474,8 @@ def _build_leaf(el, total: QTransform, style: dict):
             el.get(_kp("kind")), LineItem)
         if simple:
             item = cls(line)
+            if cls is DimensionItem:
+                _read_dim_style(item, el)
             return _finalise(_styled(item, style, fill=False), total, style)
         path = QPainterPath(line.p1()); path.lineTo(line.p2())
         return _baked_path(path, total, style)

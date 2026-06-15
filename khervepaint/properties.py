@@ -16,16 +16,17 @@ the Free Software Foundation, either version 3 of the License, or
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor, QFont, QIcon, QPen, QPixmap
-from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QDialog,
+from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog,
                              QDialogButtonBox, QDoubleSpinBox, QFontComboBox,
-                             QFormLayout, QGroupBox, QLabel, QMenu,
+                             QFormLayout, QGroupBox, QLabel, QLineEdit, QMenu,
                              QPlainTextEdit, QSpinBox, QToolButton,
                              QVBoxLayout)
 
 from . import icons
-from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
-                     ImageItem, LabelMixin, LineItem, PathItem, PolygonItem,
-                     RectItem, RoundedRectItem, TextItem, center_origin)
+from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
+                     GroupItem, ImageItem, LabelMixin, LineItem, PathItem,
+                     PolygonItem, RectItem, RoundedRectItem, TextItem,
+                     center_origin)
 
 #: Shapes whose outline can be exploded into edge segments.
 _EXPLODABLE = (PolygonItem, RectItem, EllipseItem, RoundedRectItem,
@@ -91,6 +92,8 @@ class PropertiesDialog(QDialog):
         if isinstance(item, _HAS_FILL):
             self._build_fill(layout)
         self._build_geometry(layout)
+        if isinstance(item, DimensionItem):
+            self._build_dimension(layout)
         if isinstance(item, TextItem):
             self._build_text(layout)
         if isinstance(item, LabelMixin):
@@ -171,6 +174,33 @@ class PropertiesDialog(QDialog):
             form.addRow(QLabel(f"{item.polygon().count()} vertices "
                                f"({item.kind})"))
 
+    def _build_dimension(self, layout):
+        form = self._section(layout, "Dimension style")
+        item = self.item
+        self.dim_cap = QComboBox()
+        self.dim_cap.addItems(["arrows", "ticks", "dots", "none"])
+        self.dim_cap.setCurrentText(item.cap_style)
+        self.dim_ext = QCheckBox("Extension (witness) lines")
+        self.dim_ext.setChecked(item.extension)
+        self.dim_dash = QCheckBox("Dashed line")
+        self.dim_dash.setChecked(item.dash)
+        self.dim_unit = QComboBox()
+        self.dim_unit.addItems(["mm", "cm", "in"])
+        self.dim_unit.setCurrentText(item.unit)
+        self.dim_decimals = QSpinBox()
+        self.dim_decimals.setRange(0, 4)
+        self.dim_decimals.setValue(item.decimals)
+        self.dim_prefix = QLineEdit(item.prefix)
+        self.dim_prefix.setPlaceholderText("e.g. Ø, ±")
+        self.dim_suffix = QLineEdit(item.suffix)
+        form.addRow("End caps", self.dim_cap)
+        form.addRow(self.dim_ext)
+        form.addRow(self.dim_dash)
+        form.addRow("Unit", self.dim_unit)
+        form.addRow("Decimals", self.dim_decimals)
+        form.addRow("Prefix", self.dim_prefix)
+        form.addRow("Suffix", self.dim_suffix)
+
     def _build_text(self, layout):
         form = self._section(layout, "Text")
         self.text = QPlainTextEdit(self.item.toPlainText())
@@ -241,6 +271,8 @@ class PropertiesDialog(QDialog):
                           else QBrush(Qt.NoBrush))
 
         self._apply_geometry()
+        if isinstance(item, DimensionItem):
+            self._apply_dimension()
         if isinstance(item, TextItem):
             self._apply_text()
         if isinstance(item, LabelMixin):
@@ -268,6 +300,17 @@ class PropertiesDialog(QDialog):
         elif isinstance(item, (RectItem, EllipseItem)):
             item.setRect(QRectF(self.rx.value(), self.ry.value(),
                                 self.rw.value(), self.rh.value()))
+
+    def _apply_dimension(self):
+        item = self.item
+        item.cap_style = self.dim_cap.currentText()
+        item.extension = self.dim_ext.isChecked()
+        item.dash = self.dim_dash.isChecked()
+        item.unit = self.dim_unit.currentText()
+        item.decimals = self.dim_decimals.value()
+        item.prefix = self.dim_prefix.text()
+        item.suffix = self.dim_suffix.text()
+        item.update()
 
     def _apply_text(self):
         item = self.item
