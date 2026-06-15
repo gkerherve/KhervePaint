@@ -130,8 +130,12 @@ Everything lives in one `QGraphicsScene`:
 - **Vector tools** create `QGraphicsItem` subclasses defined in
   `canvas.py` that mix in `SnapMixin`, so items snap to the grid both
   on creation and while being moved with the pointer:
-  - Two-point tools (`_TWO_POINT_TOOLS`): line and arrow (`ArrowItem`
-    extends `LineItem` and draws a filled head).
+  - Two-point tools (`_TWO_POINT_TOOLS`): line, arrow (`ArrowItem`
+    extends `LineItem` and draws a filled head) and dimension
+    (`DimensionItem` extends `LineItem`: double arrowheads + a live
+    length label in **mm**, derived from `scene.dpi`; edited via its
+    endpoints like a line, serialised as type `dimension` / SVG
+    `kp:kind="dimension"`).
   - Rect-defined tools (`_RECT_TOOLS`): rect, circle (square ellipse),
     ellipse, rounded rect (`RoundedRectItem`, real `radius`), a large
     set of parametric polygons via one `PolygonItem` whose geometry is

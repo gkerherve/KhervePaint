@@ -32,6 +32,7 @@ POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
 BUCKET = "bucket"
 ARROW, ROUNDRECT = "arrow", "roundrect"
+DIMENSION = "dimension"
 HALFCIRCLE, QUARTERCIRCLE = "halfcircle", "quartercircle"
 TRIANGLE, DIAMOND, PENTAGON, HEXAGON, STAR = (
     "triangle", "diamond", "pentagon", "hexagon", "star")
@@ -69,7 +70,7 @@ _POLY_SIDES = {PENTAGON: 5, HEXAGON: 6, HEPTAGON: 7, OCTAGON: 8}
 #: Parametric arc shapes created by dragging a bounding rect.
 ARC_KINDS = (HALFCIRCLE, QUARTERCIRCLE)
 #: Tools defined by two points (drag start -> end).
-_TWO_POINT_TOOLS = (LINE, ARROW)
+_TWO_POINT_TOOLS = (LINE, ARROW, DIMENSION)
 #: Tools defined by a dragged bounding rect.
 _RECT_TOOLS = (RECT, CIRCLE, ELLIPSE, ROUNDRECT) + POLYGON_KINDS + ARC_KINDS
 #: Tools that rubber-band a new vector item between press and release.
@@ -206,6 +207,62 @@ class ArrowItem(LineItem):
         painter.setPen(QPen(self.pen().color(), self.pen().widthF()))
         painter.setBrush(QBrush(self.pen().color()))
         painter.drawPolygon(self._head_polygon())
+
+
+class DimensionItem(LineItem):
+    """A measured line: arrowheads at both ends and a length label in mm
+    (derived from the scene dpi). Edited like a line via its endpoints;
+    the label updates live as the endpoints move."""
+
+    HEAD = 10
+    _LABEL_PAD = 60         # boundingRect slack for arrows + label text
+
+    def boundingRect(self):
+        extra = self.HEAD + self.pen().widthF() + self._LABEL_PAD
+        return super().boundingRect().adjusted(-extra, -extra, extra, extra)
+
+    def length_mm(self) -> float:
+        scene = self.scene()
+        dpi = getattr(scene, "dpi", 96) if scene is not None else 96
+        return self.line().length() / max(dpi, 1) * 25.4
+
+    def _label_text(self) -> str:
+        return f"{self.length_mm():.1f} mm"
+
+    def _head(self, tip: QPointF, other: QPointF) -> QPolygonF:
+        angle = math.atan2(tip.y() - other.y(), tip.x() - other.x())
+        left = tip - QPointF(math.cos(angle - math.pi / 7) * self.HEAD,
+                             math.sin(angle - math.pi / 7) * self.HEAD)
+        right = tip - QPointF(math.cos(angle + math.pi / 7) * self.HEAD,
+                              math.sin(angle + math.pi / 7) * self.HEAD)
+        return QPolygonF([tip, left, right])
+
+    def paint(self, painter, option, widget=None):
+        super().paint(painter, option, widget)        # the line itself
+        ln = self.line()
+        if ln.length() < 1:
+            return
+        color = self.pen().color()
+        painter.setPen(QPen(color, self.pen().widthF()))
+        painter.setBrush(QBrush(color))
+        painter.drawPolygon(self._head(ln.p2(), ln.p1()))
+        painter.drawPolygon(self._head(ln.p1(), ln.p2()))
+        # length label, offset just off the line at its midpoint
+        angle = math.atan2(ln.dy(), ln.dx())
+        mid = QPointF((ln.x1() + ln.x2()) / 2, (ln.y1() + ln.y2()) / 2)
+        off = QPointF(math.sin(angle), -math.cos(angle)) * 14
+        painter.save()
+        font = QFont("Segoe UI", 10)
+        painter.setFont(font)
+        painter.setPen(QPen(color))
+        painter.setBrush(Qt.NoBrush)
+        text = self._label_text()
+        fm = painter.fontMetrics()
+        w = fm.horizontalAdvance(text)
+        tp = mid + off
+        painter.drawText(QPointF(tp.x() - w / 2,
+                                 tp.y() + fm.ascent() / 2 - 1), text)
+        painter.restore()
 
 
 def polygon_for_kind(kind: str, rect: QRectF) -> QPolygonF:
@@ -732,7 +789,8 @@ class PaintScene(QGraphicsScene):
         if self.tool == PENCIL:
             self.pencil_begin(event.scenePos())
         elif self.tool in _TWO_POINT_TOOLS:
-            cls = ArrowItem if self.tool == ARROW else LineItem
+            cls = {ARROW: ArrowItem, DIMENSION: DimensionItem}.get(
+                self.tool, LineItem)
             self._temp_item = cls(QLineF(pos, pos))
             self._temp_item.setPen(self.pen)
             self.addItem(self._temp_item)

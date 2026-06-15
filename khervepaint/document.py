@@ -24,10 +24,10 @@ from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
                          QTransform)
 from PyQt5.QtSvg import QSvgGenerator
 
-from .canvas import (ArcShapeItem, ArrowItem, EllipseItem, GroupItem,
-                     ImageItem, LabelMixin, LineItem, PaintScene, PathItem,
-                     PolygonItem, RectItem, RoundedRectItem, TextItem,
-                     center_origin)
+from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
+                     GroupItem, ImageItem, LabelMixin, LineItem, PaintScene,
+                     PathItem, PolygonItem, RectItem, RoundedRectItem,
+                     TextItem, center_origin)
 
 FORMAT_VERSION = 4
 
@@ -115,6 +115,11 @@ def item_to_dict(item) -> dict:
     common = {"pos": pos, "opacity": item.opacity(),
               "rotation": item.rotation(), "z": item.zValue(),
               "scale": item.scale()}
+    if isinstance(item, DimensionItem):
+        ln = item.line()
+        return {"type": "dimension", "pen": _pen_to_dict(item.pen()),
+                "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
+                **common}
     if isinstance(item, ArrowItem):
         ln = item.line()
         return {"type": "arrow", "pen": _pen_to_dict(item.pen()),
@@ -180,8 +185,9 @@ def item_to_dict(item) -> dict:
 
 def item_from_dict(d: dict):
     kind = d.get("type")
-    if kind in ("line", "arrow"):
-        cls = ArrowItem if kind == "arrow" else LineItem
+    if kind in ("line", "arrow", "dimension"):
+        cls = {"arrow": ArrowItem, "dimension": DimensionItem}.get(
+            kind, LineItem)
         item = cls(QLineF(d["x1"], d["y1"], d["x2"], d["y2"]))
         item.setPen(_pen_from_dict(d.get("pen", {})))
     elif kind in ("rect", "ellipse"):

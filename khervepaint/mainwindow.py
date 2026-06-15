@@ -21,11 +21,11 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
 from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
 from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEVRON, CIRCLE, DIAMOND,
-                     ELLIPSE, HALFCIRCLE, HEPTAGON, HEXAGON, HOUSE, LIGHTNING,
-                     LINE, OCTAGON, PARALLELOGRAM, PENCIL, PENTAGON, PLUS,
-                     POINTER, QUARTERCIRCLE, RECT, RIGHT_TRIANGLE, ROUNDRECT,
-                     STAR, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
-                     PaintScene, PaintView)
+                     DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON, HEXAGON, HOUSE,
+                     LIGHTNING, LINE, OCTAGON, PARALLELOGRAM, PENCIL, PENTAGON,
+                     PLUS, POINTER, QUARTERCIRCLE, RECT, RIGHT_TRIANGLE,
+                     ROUNDRECT, STAR, STAR6, TEXT, TRAPEZOID, TRIANGLE,
+                     ImageItem, PaintScene, PaintView)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -49,6 +49,7 @@ DIRECT_TOOLS = [
     (BUCKET, "mdi.format-color-fill", "Bucket fill", "B"),
     (LINE, "mdi.vector-line", "Line", "L"),
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
+    (DIMENSION, "mdi.ruler", "Dimension / measure", "M"),
 ]
 
 #: Shapes grouped into dropdown buttons: (button tooltip, [(tool, icon,

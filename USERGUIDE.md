@@ -33,10 +33,17 @@ tool draws.
 | B | Bucket — fill an enclosed region |
 | L | Line |
 | A | Arrow |
+| M | Dimension — measure & label a distance |
 | R | Rectangle |
 | C | Circle |
 | E | Ellipse |
 | T | Text |
+
+The **Dimension** tool (M) drags out a measured line with arrowheads at
+both ends and a label showing the distance in **millimetres** (using the
+drawing's DPI). The label updates live as you drag and whenever you move
+its endpoints, so it doubles as a ruler. It is a normal editable, saved
+item — change its colour/width like any line.
 
 Related **shapes** are grouped under four dropdown buttons — click the
 small arrow to pick one (the button then remembers it), then drag on the

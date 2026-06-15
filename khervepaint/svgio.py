@@ -33,10 +33,10 @@ from PyQt5.QtCore import QBuffer, QByteArray, QLineF, QPointF, QRectF, Qt
 from PyQt5.QtGui import (QBrush, QColor, QFont, QPainterPath, QPen, QPixmap,
                          QPolygonF, QTransform)
 
-from .canvas import (ARC_KINDS, ArcShapeItem, ArrowItem, EllipseItem,
-                     GroupItem, ImageItem, LabelMixin, LineItem, PaintScene,
-                     PathItem, PolygonItem, RectItem, RoundedRectItem,
-                     TextItem, center_origin)
+from .canvas import (ARC_KINDS, ArcShapeItem, ArrowItem, DimensionItem,
+                     EllipseItem, GroupItem, ImageItem, LabelMixin, LineItem,
+                     PaintScene, PathItem, PolygonItem, RectItem,
+                     RoundedRectItem, TextItem, center_origin)
 from .document import cmds_to_painterpath, painterpath_to_cmds
 
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -147,7 +147,14 @@ def _item_to_element(parent, item):
                 _item_to_element(g, child)
         return g
 
-    if isinstance(item, ArrowItem):
+    if isinstance(item, DimensionItem):
+        ln = item.line()
+        el = ET.SubElement(parent, _svg("line"))
+        el.set("x1", f"{ln.x1():g}"); el.set("y1", f"{ln.y1():g}")
+        el.set("x2", f"{ln.x2():g}"); el.set("y2", f"{ln.y2():g}")
+        el.set(_kp("kind"), "dimension")
+        _set_stroke(el, item.pen())
+    elif isinstance(item, ArrowItem):
         ln = item.line()
         el = ET.SubElement(parent, _svg("line"))
         el.set("x1", f"{ln.x1():g}"); el.set("y1", f"{ln.y1():g}")
@@ -443,7 +450,8 @@ def _build_leaf(el, total: QTransform, style: dict):
     if tag == "line":
         line = QLineF(float(el.get("x1", 0)), float(el.get("y1", 0)),
                       float(el.get("x2", 0)), float(el.get("y2", 0)))
-        cls = ArrowItem if el.get(_kp("kind")) == "arrow" else LineItem
+        cls = {"arrow": ArrowItem, "dimension": DimensionItem}.get(
+            el.get(_kp("kind")), LineItem)
         if simple:
             item = cls(line)
             return _finalise(_styled(item, style, fill=False), total, style)

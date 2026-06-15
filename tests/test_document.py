@@ -257,6 +257,37 @@ def test_scaled_group_roundtrips_svg(scene, tmp_path):
                                                got.getRect()))
 
 
+def test_dimension_length_mm():
+    from khervepaint.canvas import DimensionItem
+    scene = PaintScene(800, 600); scene.dpi = 300
+    d = DimensionItem(QLineF(0, 0, 300, 0))     # 300 px = 1 in = 25.4 mm
+    scene.addItem(d)
+    assert abs(d.length_mm() - 25.4) < 0.1
+    longer = DimensionItem(QLineF(0, 0, 600, 0)); scene.addItem(longer)
+    assert longer.length_mm() > d.length_mm()    # longer line -> larger mm
+
+
+def test_dimension_roundtrips(scene, tmp_path):
+    from khervepaint.canvas import DimensionItem
+    from khervepaint import svgio
+    scene.dpi = 300
+    scene.addItem(DimensionItem(QLineF(0, 0, 300, 0)))
+    # kpaint
+    other = PaintScene(800, 600); other.dpi = 300
+    document.dict_to_scene(document.scene_to_dict(scene), other)
+    d2 = other.vector_items()[0]
+    assert isinstance(d2, DimensionItem)
+    assert abs(d2.length_mm() - 25.4) < 0.1
+    # svg
+    path = tmp_path / "dim.svg"
+    svgio.save_svg(scene, str(path))
+    other2 = PaintScene()
+    svgio.load_svg(other2, str(path))
+    d3 = other2.vector_items()[0]
+    assert isinstance(d3, DimensionItem)
+    assert abs(d3.length_mm() - 25.4) < 0.1
+
+
 def test_snap(scene):
     scene.dpi = 25.4                   # 1 mm == 1 px, for an easy check
     scene.grid_mm = 20                 # -> 20 px spacing
