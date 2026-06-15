@@ -339,6 +339,26 @@ def test_dimension_roundtrips(scene, tmp_path):
     assert abs(d3.length_mm() - 25.4) < 0.1
 
 
+def test_dimension_orientation_constraint(scene):
+    scene._start = QPointF(10, 10)
+    scene.dim_orientation = "horizontal"
+    assert scene._dim_constrain(QPointF(50, 80)) == QPointF(50, 10)   # Δx only
+    scene.dim_orientation = "vertical"
+    assert scene._dim_constrain(QPointF(50, 80)) == QPointF(10, 80)   # Δy only
+    scene.dim_orientation = "aligned"
+    assert scene._dim_constrain(QPointF(50, 80)) == QPointF(50, 80)   # free
+
+
+def test_ruler_dropdown_sets_tool_and_defaults(window):
+    from khervepaint.canvas import DIMENSION
+    window._set_dim_orientation("vertical")
+    assert window.scene.tool == DIMENSION
+    assert window.scene.dim_orientation == "vertical"
+    window._set_dim_cap("dots")
+    assert window.scene.tool == DIMENSION
+    assert window.scene.dim_cap == "dots"
+
+
 def test_dimension_label_format():
     from khervepaint.canvas import DimensionItem
     scene = PaintScene(2000, 1500); scene.dpi = 300

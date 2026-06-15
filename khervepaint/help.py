@@ -129,7 +129,10 @@ pick a shape — the button then remembers it — and drag on the canvas to
 draw.</p>
 <p>The <b>Dimension</b> tool (M) drags out a measured line with
 arrowheads at both ends and a label showing the distance in
-<b>millimetres</b> (using the drawing's DPI). The label updates live as
+<b>millimetres</b> (using the drawing's DPI). It is a <b>dropdown</b> in
+the left toolbar: choose an <b>orientation</b> — <i>Aligned</i> (free
+angle), <i>Horizontal</i> (Δx only) or <i>Vertical</i> (Δy only) — and a
+default <b>end-cap</b> style for new rulers. The label updates live as
 you drag or move its endpoints, so it doubles as a ruler, and it saves
 like any other line. Its <b>style</b> is editable in the properties
 dialog (right-click ▸ <i>Edit properties…</i>): end caps

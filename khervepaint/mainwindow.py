@@ -53,8 +53,15 @@ DIRECT_TOOLS = [
     (BUCKET, "mdi.format-color-fill", "Bucket fill", "B"),
     (LINE, "mdi.vector-line", "Line", "L"),
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
-    (DIMENSION, "mdi.ruler", "Dimension / measure", "M"),
 ]
+
+#: Ruler dropdown: orientation choices and end-cap style choices, each
+#: (key, label). Picking any activates the dimension tool.
+DIM_ORIENTATIONS = [("aligned", "Aligned (free angle)"),
+                    ("horizontal", "Horizontal (Δx)"),
+                    ("vertical", "Vertical (Δy)")]
+DIM_CAPS = [("arrows", "Arrows"), ("ticks", "Ticks"),
+            ("dots", "Dots"), ("none", "Plain")]
 
 #: Shapes grouped into dropdown buttons: (button tooltip, [(tool, icon,
 #: label, shortcut), ...]). A None icon is drawn from the shape itself.
@@ -147,6 +154,7 @@ class MainWindow(QMainWindow):
         for tool, glyph, label, shortcut in DIRECT_TOOLS:
             self._add_tool_action(bar, tool, icons.icon(glyph), label,
                                   shortcut)
+        self._build_dimension_dropdown(bar)
         bar.addSeparator()
         for label, items in SHAPE_GROUPS:
             self._build_shape_dropdown(bar, label, items)
@@ -256,6 +264,60 @@ class MainWindow(QMainWindow):
         self._zoom_slider.setValue(self._zoom_to_slider(zoom))
         self._zoom_slider.blockSignals(False)
         self._zoom_label.setText(f"{round(zoom * 100)}%")
+
+    def _build_dimension_dropdown(self, bar):
+        """The ruler/dimension tool as a dropdown: pick an orientation
+        (aligned / horizontal / vertical) and an end-cap style; either
+        choice activates the dimension tool. M also activates it."""
+        button = QToolButton()
+        button.setPopupMode(QToolButton.InstantPopup)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setIcon(icons.icon("mdi.ruler"))
+        button.setToolTip("Dimension / measure (M) — orientation & style")
+        menu = QMenu(button)
+
+        menu.addSection("Orientation")
+        self._dim_orient_group = QActionGroup(self)
+        for key, label in DIM_ORIENTATIONS:
+            act = QAction(label, self, checkable=True)
+            act.setChecked(key == self.scene.dim_orientation)
+            act.triggered.connect(lambda _, k=key: self._set_dim_orientation(k))
+            self._dim_orient_group.addAction(act)
+            menu.addAction(act)
+
+        menu.addSection("End caps")
+        self._dim_cap_group = QActionGroup(self)
+        for key, label in DIM_CAPS:
+            act = QAction(label, self, checkable=True)
+            act.setChecked(key == self.scene.dim_cap)
+            act.triggered.connect(lambda _, k=key: self._set_dim_cap(k))
+            self._dim_cap_group.addAction(act)
+            menu.addAction(act)
+
+        button.setMenu(menu)
+        bar.addWidget(button)
+        shortcut = QAction(self)
+        shortcut.setShortcut("M")
+        shortcut.triggered.connect(self._activate_dimension)
+        self.addAction(shortcut)
+
+    def _activate_dimension(self):
+        # Dimension isn't a checkable tool-group button, so clear whatever
+        # tool button is currently lit before switching to it.
+        checked = self._tool_group.checkedAction()
+        if checked is not None:
+            self._tool_group.setExclusive(False)
+            checked.setChecked(False)
+            self._tool_group.setExclusive(True)
+        self._set_tool(DIMENSION)
+
+    def _set_dim_orientation(self, key):
+        self.scene.dim_orientation = key
+        self._activate_dimension()
+
+    def _set_dim_cap(self, key):
+        self.scene.dim_cap = key
+        self._activate_dimension()
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

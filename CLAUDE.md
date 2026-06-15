@@ -237,8 +237,14 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   checkable group). Direct buttons (pointer/pencil/bucket/line/arrow/
   text) plus four shape **dropdown** buttons (`SHAPE_GROUPS`:
   Rectangles, Ellipses & arcs, Polygons, Stars & symbols) — each a
-  `QToolButton` menu that remembers the last-picked shape. The column
-  ends with an **Objects** dropdown (the reusable-object library, see
+  `QToolButton` menu that remembers the last-picked shape. The
+  **ruler/dimension** is its own dropdown (`DIM_ORIENTATIONS` /
+  `DIM_CAPS`): pick an **orientation** (aligned/horizontal/vertical —
+  horizontal/vertical constrain the drawn line to measure Δx/Δy via
+  `scene.dim_orientation` + `PaintScene._dim_constrain`) and a default
+  **end-cap** style (`scene.dim_cap`, applied to each new
+  `DimensionItem`); either choice activates the tool, as does **M**. The
+  column ends with an **Objects** dropdown (the reusable-object library, see
   `library.py`): save the selection as a named SVG, or insert a saved
   object (the menu lists them by file name, rebuilt on open). Top
   toolbar = file ops + undo/redo + stroke/fill colour, width, grid,

@@ -515,6 +515,8 @@ class PaintScene(QGraphicsScene):
         self.fill_color = QColor("#4aa3ff")
         self.fill_enabled = False
         self.bucket_vector = False        # bucket output: raster vs vector
+        self.dim_cap = "arrows"           # end-cap style for new dimensions
+        self.dim_orientation = "aligned"  # aligned | horizontal | vertical
 
         # The grid is specified as a physical distance in millimetres
         # between adjacent lines; the pixel spacing is derived from the
@@ -852,6 +854,8 @@ class PaintScene(QGraphicsScene):
                 self.tool, LineItem)
             self._temp_item = cls(QLineF(pos, pos))
             self._temp_item.setPen(self.pen)
+            if self.tool == DIMENSION:
+                self._temp_item.cap_style = self.dim_cap
             self.addItem(self._temp_item)
         elif self.tool in _RECT_TOOLS:
             item = self._new_rect_item(self.tool)
@@ -879,9 +883,20 @@ class PaintScene(QGraphicsScene):
             return
         pos = self._tool_pos(event.scenePos())
         if self.tool in _TWO_POINT_TOOLS:
+            if self.tool == DIMENSION:
+                pos = self._dim_constrain(pos)
             self._temp_item.setLine(QLineF(self._start, pos))
         else:
             self._apply_rect(self._temp_item, self._shape_rect(pos))
+
+    def _dim_constrain(self, pos: QPointF) -> QPointF:
+        """Force a dimension to a pure horizontal/vertical line (so it
+        measures Δx or Δy only) for those ruler orientations."""
+        if self.dim_orientation == "horizontal":
+            return QPointF(pos.x(), self._start.y())
+        if self.dim_orientation == "vertical":
+            return QPointF(self._start.x(), pos.y())
+        return pos
 
     def mouseReleaseEvent(self, event):
         if not self._drawing:
