@@ -914,6 +914,23 @@ def test_chem_chain_connects_bonds(scene):
     assert scene._chain_pts is None                   # chain finished
 
 
+def test_chem_atom_snaps_to_bond_end(scene):
+    from khervescribe.canvas import LineItem, TextItem
+    scene.dpi = 300
+    scene.snap_enabled = True
+    bond = LineItem(QLineF(200, 200, 270, 200))      # ~6 mm single bond
+    scene.addItem(bond)
+    scene.place_chem_atom("O", QPointF(285, 210))    # click just off the end
+    o = [i for i in scene.vector_items() if isinstance(i, TextItem)][-1]
+    c = o.sceneBoundingRect().center()
+    assert abs(c.x() - 270) < 1 and abs(c.y() - 200) < 1   # snapped to end
+    # far from any bond: stays exactly where placed (no false snap)
+    scene.place_chem_atom("C", QPointF(900, 900))
+    cc = [i for i in scene.vector_items()
+          if isinstance(i, TextItem)][-1].sceneBoundingRect().center()
+    assert abs(cc.x() - 900) < 1 and abs(cc.y() - 900) < 1
+
+
 def test_chem_fixed_length_and_angle(scene):
     import math
     start = QPointF(100, 100)

@@ -230,7 +230,9 @@ ordinary editable shapes: drag <b>single/double/triple</b> bonds, a solid
 point again, right-click or press Esc to finish); click
 to drop a <b>benzene</b> ring
 (with aromatic circle), <b>cyclohexane</b> or <b>cyclopentane</b>; or pick
-an <b>atom/group label</b> (C, H, O, N, OH, CH₃…) and click to place it.
+an <b>atom/group label</b> (C, H, O, N, P, OH, CH₃…) and click to place
+it — it snaps onto a nearby bond end, so a <b>C=O</b> is just a double
+bond with an O dropped on its tip.
 By default bonds snap to a uniform length and 30° angles (ChemDraw-style)
 — toggle <b>Fixed length &amp; angle</b> at the top of the dropdown.</p>
 

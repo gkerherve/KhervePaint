@@ -1056,13 +1056,41 @@ class PaintScene(QGraphicsScene):
             ring.setSelected(True)
         self.changed_by_user.emit()
 
+    def _nearest_bond_end(self, scene_pos: QPointF, tol: float):
+        """The nearest line/path endpoint to *scene_pos* within *tol*, so an
+        atom label snaps onto the end of a bond. Returns None if none near."""
+        best, best_d = None, tol
+        for it in self.vector_items():
+            pts = []
+            if isinstance(it, LineItem):            # single/chain/arrow bonds
+                ln = it.line()
+                pts = [it.mapToScene(ln.p1()), it.mapToScene(ln.p2())]
+            elif isinstance(it, PathItem):          # double/triple/hash bonds
+                path = it.path()
+                pts = [it.mapToScene(QPointF(path.elementAt(i).x,
+                                             path.elementAt(i).y))
+                       for i in range(path.elementCount())]
+            for p in pts:
+                d = QLineF(scene_pos, p).length()
+                if d < best_d:
+                    best, best_d = p, d
+        return best
+
     def place_chem_atom(self, text: str, center: QPointF):
-        """Place an atom/group text label centred on *center*."""
+        """Place an atom/group label, snapping onto a nearby bond end so it
+        sits exactly at the terminus (e.g. the O of a C=O)."""
+        tol = self.bond_length_mm / 25.4 * self.dpi * 0.4
+        anchor = self._nearest_bond_end(center, tol)
+        if anchor is not None:
+            center = anchor
         item = TextItem(text or "C")
         item.setDefaultTextColor(self.pen.color())
         self.addItem(item)
-        br = item.boundingRect()
-        item.setPos(center.x() - br.width() / 2, center.y() - br.height() / 2)
+        c = item.boundingRect().center()        # exact centre incl. margins
+        was_snap = self.snap_enabled
+        self.snap_enabled = False               # sit exactly on the bond end
+        item.setPos(center.x() - c.x(), center.y() - c.y())
+        self.snap_enabled = was_snap
         center_origin(item)
         self.clearSelection()
         item.setSelected(True)

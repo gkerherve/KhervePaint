@@ -171,8 +171,10 @@ ChemDraw-style) every bond you draw snaps to a **uniform length** and to
 direction. Turn it off to draw bonds at any length/angle.
 - **Rings** — click to drop a **benzene** ring (hexagon with the
   aromatic inner circle), **cyclohexane** or **cyclopentane**.
-- **Atom / group label** — pick a symbol (C, H, O, N, OH, CH₃…) then
-  click to place it as text.
+- **Atom / group label** — pick a symbol (C, H, O, N, P, OH, CH₃…) then
+  click to place it; it **snaps onto a nearby bond end**, so building a
+  **C=O** is just *draw a double bond, then drop an O on its tip* — and
+  any element drops cleanly at a bond terminus.
 
 Everything is a normal item — restyle, move, group and save like any
 other shape.

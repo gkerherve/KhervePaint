@@ -274,7 +274,9 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   right-click / Esc — `PaintScene._chain_click`/`end_chain`),
   click-to-place rings
   (benzene→hexagon+inner circle group, cyclohexane, cyclopentane) and an
-  atom-label sub-menu (sets `scene.chem_atom`, places a `TextItem`). Bonds
+  atom-label sub-menu (sets `scene.chem_atom`, places a `TextItem` that
+  snaps onto a nearby bond end via `_nearest_bond_end`, so e.g. a C=O is a
+  double bond + an O dropped on its tip). Bonds
   default to ChemDraw-style **fixed length + 30° angle** snapping
   (`scene.chem_fixed`, `bond_length_mm`, `PaintScene._chem_constrain`;
   toggled in the dropdown). The
