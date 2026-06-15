@@ -900,6 +900,7 @@ def test_chem_chain_connects_bonds(scene):
             return self._p
 
     scene.snap_enabled = False
+    scene.chem_fixed = False              # exact coords (not ChemDraw snap)
     scene.tool = CHEM_CHAIN
     for x, y in [(100, 60), (60, 120), (100, 180)]:   # draw a "<"
         scene.mousePressEvent(_Ev(x, y))
@@ -911,6 +912,24 @@ def test_chem_chain_connects_bonds(scene):
                    if b.line().p1() == vertex or b.line().p2() == vertex)
     assert touching == 2
     assert scene._chain_pts is None                   # chain finished
+
+
+def test_chem_fixed_length_and_angle(scene):
+    import math
+    start = QPointF(100, 100)
+    scene.dpi = 300
+    scene.bond_length_mm = 6.0
+    expected = 6.0 / 25.4 * 300
+    scene.chem_fixed = True
+    p = scene._chem_constrain(start, QPointF(183, 141))   # messy direction
+    assert abs(QLineF(start, p).length() - expected) < 0.5     # fixed length
+    ang = round(math.degrees(math.atan2(p.y() - start.y(),
+                                        p.x() - start.x())))
+    assert ang % 30 == 0                                        # 30° snap
+    # fixed mode off -> free placement (no length/angle constraint)
+    scene.chem_fixed = False
+    scene.snap_enabled = False
+    assert scene._chem_constrain(start, QPointF(183, 141)) == QPointF(183, 141)
 
 
 def test_chem_hydrogen_bond_dashes_roundtrip(scene, tmp_path):

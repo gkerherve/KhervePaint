@@ -533,6 +533,8 @@ class PaintScene(QGraphicsScene):
         self.dim_cap = "arrows"           # end-cap style for new dimensions
         self.dim_orientation = "aligned"  # aligned | horizontal | vertical
         self.chem_atom = "C"              # label placed by the atom tool
+        self.chem_fixed = True            # ChemDraw-style fixed length + angle
+        self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
         self._chain_preview = None        # rubber-band segment to the cursor
 
@@ -861,17 +863,19 @@ class PaintScene(QGraphicsScene):
         if event.button() != Qt.LeftButton:
             self.end_chain()
             return
-        pos = self._tool_pos(event.scenePos())
+        raw = event.scenePos()
         if self._chain_pts is None:
+            pos = self._tool_pos(raw)
             self._chain_pts = [pos]
             self._chain_preview = LineItem(QLineF(pos, pos))
             self._chain_preview.setPen(QPen(self.pen))
             self.addItem(self._chain_preview)
             return
         last = self._chain_pts[-1]
-        if QLineF(last, pos).length() < max(self.grid_size, 2):
-            self.end_chain()                 # clicked the same spot -> finish
+        if QLineF(last, raw).length() < max(self.grid_size, 6):
+            self.end_chain()                 # clicked the last vertex -> finish
             return
+        pos = self._chem_constrain(last, raw)   # fixed length + 30° angle
         bond = LineItem(QLineF(last, pos))
         bond.setPen(QPen(self.pen))
         self.addItem(bond)
@@ -950,8 +954,9 @@ class PaintScene(QGraphicsScene):
 
     def mouseMoveEvent(self, event):
         if self.tool == CHEM_CHAIN and self._chain_pts is not None:
-            pos = self._tool_pos(event.scenePos())
-            self._chain_preview.setLine(QLineF(self._chain_pts[-1], pos))
+            last = self._chain_pts[-1]
+            self._chain_preview.setLine(
+                QLineF(last, self._chem_constrain(last, event.scenePos())))
             return
         if not self._drawing:
             super().mouseMoveEvent(event)
@@ -967,7 +972,8 @@ class PaintScene(QGraphicsScene):
                 pos = self._dim_constrain(pos)
             self._temp_item.setLine(QLineF(self._start, pos))
         elif self.tool in _CHEM_BOND_TOOLS:
-            self._update_chem_bond(self._temp_item, self._start, pos)
+            end = self._chem_constrain(self._start, event.scenePos())
+            self._update_chem_bond(self._temp_item, self._start, end)
         else:
             self._apply_rect(self._temp_item, self._shape_rect(pos))
 
@@ -981,6 +987,21 @@ class PaintScene(QGraphicsScene):
         return pos
 
     # ------------------------------------------------------------ chemistry
+    def _chem_constrain(self, start: QPointF, pos: QPointF) -> QPointF:
+        """ChemDraw-style: the bond endpoint sits at the predefined bond
+        length from *start*, in the cursor's direction snapped to 30°. When
+        fixed mode is off, fall back to plain grid snapping."""
+        if not self.chem_fixed:
+            return self._tool_pos(pos)
+        dx, dy = pos.x() - start.x(), pos.y() - start.y()
+        if dx == 0 and dy == 0:
+            return QPointF(start)
+        step = math.radians(30)
+        ang = round(math.atan2(dy, dx) / step) * step
+        length = self.bond_length_mm / 25.4 * self.dpi
+        return QPointF(start.x() + length * math.cos(ang),
+                       start.y() + length * math.sin(ang))
+
     def _chem_gap(self) -> float:
         """Spacing between the parallel lines of a multiple bond / the
         half-width of a wedge — scaled off the current stroke width."""

@@ -230,7 +230,9 @@ ordinary editable shapes: drag <b>single/double/triple</b> bonds, a solid
 point again, right-click or press Esc to finish); click
 to drop a <b>benzene</b> ring
 (with aromatic circle), <b>cyclohexane</b> or <b>cyclopentane</b>; or pick
-an <b>atom/group label</b> (C, H, O, N, OH, CH₃…) and click to place it.</p>
+an <b>atom/group label</b> (C, H, O, N, OH, CH₃…) and click to place it.
+By default bonds snap to a uniform length and 30° angles (ChemDraw-style)
+— toggle <b>Fixed length &amp; angle</b> at the top of the dropdown.</p>
 
 <h2>11 · Drawing size &amp; publication figures</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size
