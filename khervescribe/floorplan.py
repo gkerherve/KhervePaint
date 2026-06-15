@@ -16,6 +16,25 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 """
 
+import math
+
+
+def _arc(cx, cy, r, a0_deg, a1_deg, width=1.5, n=20):
+    """Quarter/any arc as a polyline of line specs (precise control over
+    centre/radius/angles; angles in degrees, screen coords with y down)."""
+    out = []
+    prev = None
+    for i in range(n + 1):
+        a = math.radians(a0_deg + (a1_deg - a0_deg) * i / n)
+        pt = (cx + r * math.cos(a), cy + r * math.sin(a))
+        if prev is not None:
+            out.append({"shape": "line", "x1": prev[0], "y1": prev[1],
+                        "x2": pt[0], "y2": pt[1], "stroke": "#333333",
+                        "width": width})
+        prev = pt
+    return out
+
+
 # --------------------------------------------------------- walls & openings
 def build_wall(w, h):
     return [{"shape": "rect", "x": 0.0, "y": 0.0, "w": w, "h": h,
@@ -23,37 +42,42 @@ def build_wall(w, h):
 
 
 def build_door(w, h):
-    jamb = h * 0.08
-    return [
+    # Single door hinged top-left: open leaf points down, quarter-circle
+    # swing of radius = opening width back to the far jamb.
+    jamb = min(w, h) * 0.1
+    specs = [
         {"shape": "rect", "x": 0.0, "y": 0.0, "w": jamb, "h": jamb,
          "stroke": "#333333", "width": 2, "fill": "#444444"},
         {"shape": "rect", "x": w - jamb, "y": 0.0, "w": jamb, "h": jamb,
          "stroke": "#333333", "width": 2, "fill": "#444444"},
-        {"shape": "quartercircle", "x": 0.0, "y": 0.0, "w": w * 2.0,
-         "h": h * 2.0, "stroke": "#333333", "fill": "none", "width": 1.5},
         {"shape": "line", "x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": h,
-         "stroke": "#333333", "width": 2},
+         "stroke": "#333333", "width": 2},                      # open leaf
     ]
+    specs += _arc(0.0, 0.0, w, 0.0, 90.0, width=1.5)            # swing arc
+    return specs
 
 
 def build_double_door(w, h):
-    jamb = h * 0.08
-    half = w * 0.5
-    return [
+    # Two leaves hinged at the outer top jambs; each quarter-circle swing
+    # (radius = half the opening) meets the other in a cusp at the bottom
+    # centre.  (SIZES keeps width = 2*height so the arcs reach the centre.)
+    jamb = min(w, h) * 0.16
+    leaf = h * 0.34
+    specs = [
+        {"shape": "line", "x1": 0.0, "y1": h, "x2": w, "y2": h,
+         "stroke": "#333333", "width": 2},                      # threshold
         {"shape": "rect", "x": 0.0, "y": 0.0, "w": jamb, "h": jamb,
          "stroke": "#333333", "width": 2, "fill": "#444444"},
         {"shape": "rect", "x": w - jamb, "y": 0.0, "w": jamb, "h": jamb,
          "stroke": "#333333", "width": 2, "fill": "#444444"},
-        {"shape": "quartercircle", "x": 0.0, "y": 0.0, "w": half * 2.0,
-         "h": h * 2.0, "stroke": "#333333", "fill": "none", "width": 1.5},
-        {"shape": "line", "x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": h,
-         "stroke": "#333333", "width": 2},
-        {"shape": "quartercircle", "x": w - half * 2.0, "y": 0.0,
-         "w": half * 2.0, "h": h * 2.0, "stroke": "#333333", "fill": "none",
-         "width": 1.5, "rotation": 90.0},
-        {"shape": "line", "x1": w, "y1": 0.0, "x2": w, "y2": h,
-         "stroke": "#333333", "width": 2},
+        {"shape": "line", "x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": leaf,
+         "stroke": "#333333", "width": 2},                      # left leaf
+        {"shape": "line", "x1": w, "y1": 0.0, "x2": w, "y2": leaf,
+         "stroke": "#333333", "width": 2},                      # right leaf
     ]
+    specs += _arc(0.0, h, h, -90.0, 0.0, width=1.5)             # left swing
+    specs += _arc(w, h, h, -90.0, -180.0, width=1.5)           # right swing
+    return specs
 
 
 def build_window(w, h):

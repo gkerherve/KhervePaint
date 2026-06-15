@@ -980,6 +980,18 @@ def test_electrical_all_elements_build_and_place(scene):
     assert scene.vector_items()                       # something was placed
 
 
+def test_double_door_meets_at_bottom_centre():
+    from khervescribe import floorplan
+    w, h = 1800.0, 900.0
+    specs = floorplan.build_double_door(w, h)
+    pts = {(round(s["x1"]), round(s["y1"])) for s in specs
+           if s["shape"] == "line"}
+    pts |= {(round(s["x2"]), round(s["y2"])) for s in specs
+            if s["shape"] == "line"}
+    assert (round(w / 2), round(h)) in pts        # arcs cusp at bottom centre
+    assert (0, 0) in pts and (round(w), 0) in pts  # hinged at top corners
+
+
 def test_floorplan_place_centres_and_groups(scene):
     scene.dpi = 300
     scene.snap_enabled = False
