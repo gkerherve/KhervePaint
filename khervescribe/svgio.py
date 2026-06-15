@@ -5,7 +5,7 @@ Two directions:
 * **Write** (`save_svg`) emits clean, standard SVG: one element per
   native item, geometry in local coordinates with a `translate`/
   `rotate` transform, the raster layer as an embedded `<image>`, and
-  KhervePaint-specific bits (grid settings, polygon kind, arrow flag)
+  KherveScribe-specific bits (grid settings, polygon kind, arrow flag)
   under a private ``kp:`` namespace so our own files round-trip
   losslessly while staying readable by any SVG tool.
 
@@ -41,6 +41,10 @@ from .document import cmds_to_painterpath, painterpath_to_cmds
 
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
+# Internal SVG namespace for our private attributes (grid, dim style,
+# polygon kind, raster role…). Kept at the original URI — not the renamed
+# one — so SVGs saved before the rename still round-trip. It is never
+# shown to users (only the "kp:" prefix appears in the file).
 KP_NS = "https://kerherve.app/khervepaint"
 
 ET.register_namespace("", SVG_NS)

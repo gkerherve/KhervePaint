@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QMessageBox,
 
 from . import APP_NAME, __version__, icons
 
-REPO_URL = "https://github.com/gkerherve/KhervePaint"
+REPO_URL = "https://github.com/gkerherve/khervescribe"
 
 
 def about_html() -> str:
@@ -22,7 +22,7 @@ def about_html() -> str:
 <div style="font-family:'Segoe UI',sans-serif;">
   <h2 style="margin-bottom:2px;">{APP_NAME}</h2>
   <p style="color:#666;margin-top:0;">Version {__version__}</p>
-  <p><b>KhervePaint</b> is a hybrid <b>raster + vector</b> drawing app for
+  <p><b>KherveScribe</b> is a hybrid <b>raster + vector</b> drawing app for
   figures, diagrams and quick image edits — a native desktop tool in the
   Kherve family (KherveFitting, KherveSheet, KhervePDF, KherveBook&nbsp;…).</p>
   <p>Open a photo or PNG and paint on it, or build clean vector artwork
@@ -191,7 +191,7 @@ path</b> behind the shapes.</p>
 drop</b> an image file (PNG, JPEG, BMP, GIF, WebP, TIFF — any format Qt
 can read) onto the canvas; it drops in as a movable picture at the drop
 point (drop several to cascade them). Dropping a <b>.svg</b> or
-<b>.kpaint</b> file opens it as a document. To <b>crop</b> an image,
+<b>.kscribe</b> file opens it as a document. To <b>crop</b> an image,
 right-click → <i>Crop image</i>, drag the frame handles, then
 <b>double-click</b> (or press <b>Enter</b>) to apply — <b>Esc</b>
 cancels.</p>
@@ -234,11 +234,12 @@ fills and canvas resizes.</p>
 <h2>13 · Saving, opening &amp; exporting</h2>
 <ul>
   <li><b>Save</b> writes <b>editable SVG</b> by default (also offered:
-      <code>.kpaint</code>, the lossless native format). Re-opening an SVG
+      <code>.kscribe</code>, the lossless native format). Re-opening an SVG
       brings every shape back editable; an imported external SVG is even
       broken into editable items you can ungroup.</li>
-  <li><b>Open</b> reads <code>.svg</code>, <code>.kpaint</code> or a
-      <code>.png</code> image. Recent files are under <b>File ▸ Open
+  <li><b>Open</b> reads <code>.svg</code>, <code>.kscribe</code> or a
+      <code>.png</code> image (old <code>.kpaint</code> files still open).
+      Recent files are under <b>File ▸ Open
       Recent</b>.</li>
   <li><b>Export</b> (Ctrl+E) writes a flattened <b>PNG</b> or single-page
       <b>PDF</b> at the drawing's physical size.</li>
@@ -282,7 +283,7 @@ it has unsaved changes).</p>
 <p><b>File</b></p>{file_keys}
 <p><b>View</b></p>{view_keys}
 
-<p style="color:#888;margin-top:18px;">KhervePaint {__version__} · GPL-3.0
+<p style="color:#888;margin-top:18px;">KherveScribe {__version__} · GPL-3.0
 · <a href="{REPO_URL}">{REPO_URL}</a></p>
 </div>
 """

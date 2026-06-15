@@ -1,7 +1,7 @@
 """Shared pytest configuration.
 
-KhervePaint persists provider API keys, recent files, the theme and the
-AI chat history in QSettings under ("Kherve", "KhervePaint"). On Windows
+KherveScribe persists provider API keys, recent files, the theme and the
+AI chat history in QSettings under ("Kherve", "KherveScribe"). On Windows
 that two-argument scope resolves to the user's real registry **even with
 setDefaultFormat(IniFormat)** — so a naive isolation attempt fails and
 the suite clobbers the developer's real settings (notably wiping the
@@ -28,10 +28,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt5.QtCore import QSettings
 
-from khervepaint import ai_assistant, mainwindow, style
+from khervescribe import ai_assistant, mainwindow, style
 
 _TEST_SETTINGS_FILE = os.path.join(
-    tempfile.mkdtemp(prefix="khervepaint-test-settings-"), "settings.ini")
+    tempfile.mkdtemp(prefix="khervescribe-test-settings-"), "settings.ini")
 
 
 def _isolated_settings(*_args, **_kwargs):

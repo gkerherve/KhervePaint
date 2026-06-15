@@ -36,14 +36,14 @@ ICON_SIZE = QSize(32, 32)
 #: The left tool column holds many shapes, so its icons are smaller.
 TOOL_ICON_SIZE = QSize(24, 24)
 
-#: Custom clipboard MIME carrying serialised KhervePaint items.
-MIME_ITEMS = "application/x-khervepaint-items"
+#: Custom clipboard MIME carrying serialised KherveScribe items.
+MIME_ITEMS = "application/x-khervescribe-items"
 
 #: Selectable stroke widths (px) shown as thin-to-thick line swatches.
 LINE_WIDTHS = [1, 2, 3, 4, 6, 8, 12, 16, 24]
 
 #: QSettings scope (shared with the theme settings) and recent-files key.
-SETTINGS = ("Kherve", "KhervePaint")
+SETTINGS = ("Kherve", "KherveScribe")
 MAX_RECENT = 10
 
 #: Standalone tool buttons: (tool id, mdi icon, label, shortcut).
@@ -729,12 +729,12 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------ drag & drop
     def _on_drop(self, paths, image, scene_pos):
-        """Drop handler: a dropped .svg/.kpaint opens as a document; any
-        image (file in any Qt-supported format, or raw image data dragged
-        from another app) is placed as a movable image item at the drop
-        point. Multiple images are cascaded and selected together."""
+        """Drop handler: a dropped .svg/.kscribe (or legacy .kpaint) opens
+        as a document; any image (file in any Qt-supported format, or raw
+        image data dragged from another app) is placed as a movable image
+        item at the drop point. Multiple images cascade and select together."""
         docs = [p for p in paths
-                if Path(p).suffix.lower() in (".svg", ".kpaint")]
+                if Path(p).suffix.lower() in (".svg", ".kscribe", ".kpaint")]
         if docs:
             if self._confirm_discard():
                 self._load_document(docs[0])
@@ -899,7 +899,7 @@ class MainWindow(QMainWindow):
         self._update_title()
 
     def new_window(self):
-        """Open a second, independent KhervePaint window (own document)."""
+        """Open a second, independent KherveScribe window (own document)."""
         win = MainWindow()
         win.move(self.x() + 40, self.y() + 40)
         win.show()
@@ -912,8 +912,9 @@ class MainWindow(QMainWindow):
             return
         path, _ = QFileDialog.getOpenFileName(
             self, "Open", "",
-            "All supported (*.svg *.kpaint *.png);;SVG image (*.svg);;"
-            "KhervePaint document (*.kpaint);;PNG image (*.png)")
+            "All supported (*.svg *.kscribe *.png);;SVG image (*.svg);;"
+            "KherveScribe document (*.kscribe);;PNG image (*.png);;"
+            "All files (*)")          # old .kpaint still open via All files
         if not path:
             return
         self._load_document(path)
@@ -937,7 +938,7 @@ class MainWindow(QMainWindow):
                 svgio.load_svg(self.scene, path)
                 self._path = path
             else:
-                document.load_kpaint(self.scene, path)
+                document.load_kscribe(self.scene, path)
                 self._path = path
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not open:\n{exc}")
@@ -990,8 +991,8 @@ class MainWindow(QMainWindow):
             self.save_file_as()
             return
         try:
-            if Path(self._path).suffix.lower() == ".kpaint":
-                document.save_kpaint(self.scene, self._path)
+            if Path(self._path).suffix.lower() in (".kscribe", ".kpaint"):
+                document.save_kscribe(self.scene, self._path)
             else:
                 svgio.save_svg(self.scene, self._path)
         except Exception as exc:
@@ -1022,11 +1023,11 @@ class MainWindow(QMainWindow):
     def save_file_as(self):
         path, chosen = QFileDialog.getSaveFileName(
             self, "Save As", "",
-            "SVG image (*.svg);;KhervePaint document (*.kpaint)")
+            "SVG image (*.svg);;KherveScribe document (*.kscribe)")
         if not path:
             return
-        if Path(path).suffix.lower() not in (".svg", ".kpaint"):
-            path += ".kpaint" if "kpaint" in chosen else ".svg"
+        if Path(path).suffix.lower() not in (".svg", ".kscribe", ".kpaint"):
+            path += ".kscribe" if "kscribe" in chosen else ".svg"
         self._path = path
         self.save_file()
 

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
 
-CRASH_LOG = Path(tempfile.gettempdir()) / "khervepaint_crash.log"
+CRASH_LOG = Path(tempfile.gettempdir()) / "khervescribe_crash.log"
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    app.setApplicationName("KhervePaint")
+    app.setApplicationName("KherveScribe")
 
     from .style import apply_style
     apply_style(app)

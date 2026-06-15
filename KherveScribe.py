@@ -1,4 +1,4 @@
-"""KhervePaint — hybrid raster + vector drawing app.
+"""KherveScribe launcher.
 
 Copyright (C) 2026 Gwilherm Kerherve
 
@@ -8,8 +8,7 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 """
 
-APP_NAME = "KhervePaint"
+from khervescribe.app import main
 
-from ._version import get_version  # noqa: E402
-
-__version__ = get_version()
+if __name__ == "__main__":
+    main()

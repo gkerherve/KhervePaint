@@ -60,7 +60,7 @@ THEMES = {
 }
 
 DEFAULT_THEME = "Light"
-_SETTINGS = ("Kherve", "KhervePaint")
+_SETTINGS = ("Kherve", "KherveScribe")
 _current = DEFAULT_THEME
 
 

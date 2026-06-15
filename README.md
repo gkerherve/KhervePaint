@@ -1,4 +1,4 @@
-# KhervePaint
+# KherveScribe
 
 Hybrid raster + vector drawing app in the Kherve family
 (KherveFitting, KherveSheet, KhervePDF, KherveBook, ...), built with
@@ -16,7 +16,7 @@ One canvas mixes two worlds:
 
 Documents **save and open as editable SVG by default** — an opened SVG
 is broken into editable items (groups ungroup; paths and transformed
-elements become editable path items). `.kpaint` (lossless JSON) is also
+elements become editable path items). `.kscribe` (lossless JSON) is also
 offered, and Export (Ctrl+E) writes flattened `.png` or single-page
 `.pdf`. Selected lines show endpoint handles — drag a handle to move
 just that end of the line.
@@ -45,14 +45,14 @@ caption. They are grouped by category:
 - **Thermal & sorption** — TGA, DSC, BET
 - **Chromatography** — HPLC
 
-Every element is a normal editable KhervePaint item, so each schematic
+Every element is a normal editable KherveScribe item, so each schematic
 doubles as a starting point you can restyle, relabel and export.
 
 ## Run
 
 ```
 pip install -r requirements.txt
-python KhervePaint.py
+python KherveScribe.py
 ```
 
 Recently opened/saved files are listed under **File ▸ Open Recent**.
