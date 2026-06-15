@@ -33,8 +33,8 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
                      ELEC_PLACE, PLAN_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR,
-                     STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem, PaintScene,
-                     PaintView)
+                     ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
+                     PaintScene, PaintView)
 from . import chemistry, electrical, floorplan
 from .style import THEMES, apply_style, current_theme
 
@@ -175,7 +175,9 @@ class MainWindow(QMainWindow):
         self._build_symbol_dropdown(
             bar, "mdi.floor-plan",
             "Room layout — walls, doors, furniture (top view)",
-            floorplan, self._set_plan_element)
+            floorplan, self._set_plan_element,
+            extra=("Room", [("Room — drag to size (the space)",
+                             lambda: self._activate_placement_tool(ROOM))]))
         self._build_symbol_dropdown(
             bar, "mdi.flash",
             "Electrical — circuit & installation symbols",
@@ -394,15 +396,21 @@ class MainWindow(QMainWindow):
         self._set_tool(tool)
 
     # ------------------------------------------------ symbol-library dropdowns
-    def _build_symbol_dropdown(self, bar, glyph, tip, module, on_pick):
+    def _build_symbol_dropdown(self, bar, glyph, tip, module, on_pick,
+                               extra=None):
         """A dropdown listing a spec-library module's elements by category;
-        picking one calls *on_pick(name)* to arm its placement tool."""
+        picking one calls *on_pick(name)* to arm its placement tool. *extra*
+        is an optional (section title, [(label, callback), …]) prepended."""
         button = QToolButton()
         button.setPopupMode(QToolButton.InstantPopup)
         button.setToolButtonStyle(Qt.ToolButtonIconOnly)
         button.setIcon(icons.icon(glyph))
         button.setToolTip(tip)
         menu = QMenu(button)
+        if extra:
+            menu.addSection(extra[0])
+            for label, callback in extra[1]:
+                menu.addAction(label, callback)
         for title, names in module.CATEGORIES:
             menu.addSection(title)
             for name in names:

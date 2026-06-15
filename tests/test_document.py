@@ -980,6 +980,31 @@ def test_electrical_all_elements_build_and_place(scene):
     assert scene.vector_items()                       # something was placed
 
 
+def test_room_tool_draws_wall_rect(scene):
+    from khervescribe.canvas import ROOM
+
+    class _Ev:
+        def __init__(self, x, y, b=Qt.LeftButton):
+            self._p, self._b = QPointF(x, y), b
+
+        def button(self):
+            return self._b
+
+        def scenePos(self):
+            return self._p
+
+    scene.snap_enabled = False
+    scene.tool = ROOM
+    scene.mousePressEvent(_Ev(20, 20))
+    scene.mouseMoveEvent(_Ev(220, 170))
+    scene.mouseReleaseEvent(_Ev(220, 170))
+    rooms = [i for i in scene.vector_items() if isinstance(i, RectItem)]
+    assert len(rooms) == 1
+    assert rooms[0].brush().style() == Qt.NoBrush      # just the space
+    assert rooms[0].pen().widthF() >= 4                # wall outline
+    assert round(rooms[0].rect().width()) == 200
+
+
 def test_double_door_meets_at_bottom_centre():
     from khervescribe import floorplan
     w, h = 1800.0, 900.0

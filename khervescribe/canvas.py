@@ -34,6 +34,7 @@ POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
 BUCKET = "bucket"
 ERASER, PICKER = "eraser", "picker"
+ROOM = "room"                 # drag-to-size room (the empty space / walls)
 ARROW, ROUNDRECT = "arrow", "roundrect"
 DIMENSION = "dimension"
 HALFCIRCLE, QUARTERCIRCLE = "halfcircle", "quartercircle"
@@ -91,7 +92,8 @@ ARC_KINDS = (HALFCIRCLE, QUARTERCIRCLE)
 #: Tools defined by two points (drag start -> end).
 _TWO_POINT_TOOLS = (LINE, ARROW, DIMENSION)
 #: Tools defined by a dragged bounding rect.
-_RECT_TOOLS = (RECT, CIRCLE, ELLIPSE, ROUNDRECT) + POLYGON_KINDS + ARC_KINDS
+_RECT_TOOLS = (RECT, ROOM, CIRCLE, ELLIPSE, ROUNDRECT) + POLYGON_KINDS \
+    + ARC_KINDS
 #: Tools that rubber-band a new vector item between press and release.
 _SHAPE_TOOLS = _TWO_POINT_TOOLS + _RECT_TOOLS
 
@@ -946,8 +948,15 @@ class PaintScene(QGraphicsScene):
             self.addItem(self._temp_item)
         elif self.tool in _RECT_TOOLS:
             item = self._new_rect_item(self.tool)
-            item.setPen(self.pen)
-            item.setBrush(self.current_brush())
+            if self.tool == ROOM:                       # a room = wall outline
+                wall = QPen(QColor("#333333"),
+                            max(self.pen.widthF() * 2, 4))
+                wall.setJoinStyle(Qt.MiterJoin)
+                item.setPen(wall)
+                item.setBrush(QBrush(Qt.NoBrush))       # just the space
+            else:
+                item.setPen(self.pen)
+                item.setBrush(self.current_brush())
             self.addItem(item)
             self._temp_item = item
         elif self.tool == TEXT:
@@ -1274,7 +1283,7 @@ class PaintScene(QGraphicsScene):
 
     def _new_rect_item(self, tool: str):
         """A fresh, empty rect-defined item for *tool*."""
-        if tool == RECT:
+        if tool in (RECT, ROOM):
             return RectItem(QRectF())
         if tool == ROUNDRECT:
             return RoundedRectItem(QRectF())

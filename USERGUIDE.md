@@ -182,7 +182,9 @@ other shape.
 
 ## 10b. Room layout (floor plans)
 
-The **Room layout** dropdown (left toolbar) drops ready-made **top-view**
+Start a plan with **Room — drag to size** (top of the Room layout
+dropdown): drag out the room's walls (just the empty space). Then drop in
+the rest. The **Room layout** dropdown drops ready-made **top-view**
 plan symbols where you click. They're scaled so a **whole room fits the
 page** — the page width represents about 4.8 m, so a chair is roughly
 a tenth of it — keeping all the furniture in proportion:
@@ -198,6 +200,11 @@ a tenth of it — keeping all the furniture in proportion:
 Each piece is a normal grouped item — move, rotate, resize and recolour
 it, ungroup to tweak parts, or save your own arrangements as **objects**
 (Section 10) for reuse. Snapping keeps everything aligned to the grid.
+
+To build a **whole house plan**: drag a **Room** for each space (or one
+big outline divided by walls), add **doors/windows/openings** along the
+walls, then place **furniture** and **electrical** symbols. Group a
+finished room and save it as an object to reuse across plans.
 
 ## 10c. Electrical symbols
 
