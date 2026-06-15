@@ -633,7 +633,21 @@ class MainWindow(QMainWindow):
         return [i for i in self.scene.selectedItems()
                 if i.parentItem() is None]
 
+    @staticmethod
+    def _focused_text_widget():
+        """The focused text widget (e.g. the AI chat box/transcript), so
+        Ctrl+C/X/V there act on the text rather than the canvas — the
+        window-level Edit shortcuts would otherwise swallow them."""
+        from PyQt5.QtWidgets import QLineEdit, QPlainTextEdit, QTextEdit
+        w = QApplication.focusWidget()
+        return w if isinstance(w, (QLineEdit, QPlainTextEdit, QTextEdit)) \
+            else None
+
     def copy_selection(self):
+        w = self._focused_text_widget()
+        if w is not None:
+            w.copy()
+            return
         items = self._selected_top_items()
         if not items:
             return
@@ -643,6 +657,10 @@ class MainWindow(QMainWindow):
         QApplication.clipboard().setMimeData(mime)
 
     def cut_selection(self):
+        w = self._focused_text_widget()
+        if w is not None:
+            w.cut()
+            return
         self.copy_selection()
         if self._selected_top_items():
             self.scene.delete_selection()
@@ -655,7 +673,13 @@ class MainWindow(QMainWindow):
         self._spawn_items(dicts, offset=20)
 
     def paste(self):
+        w = self._focused_text_widget()
+        if w is not None:
+            w.paste()
+            return
         mime = QApplication.clipboard().mimeData()
+        if mime is None:
+            return
         if mime.hasFormat(MIME_ITEMS):
             dicts = json.loads(bytes(mime.data(MIME_ITEMS)).decode("utf-8"))
             self._spawn_items(dicts, offset=20)
