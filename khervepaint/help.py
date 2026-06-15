@@ -182,10 +182,14 @@ fill is painted into the raster layer or becomes an <b>editable vector
 path</b> behind the shapes.</p>
 
 <h2>8 · Images</h2>
-<p>Paste a screenshot or copied image with <b>Ctrl+V</b> — it drops in as
-a movable picture. To <b>crop</b> it, right-click → <i>Crop image</i>,
-drag the frame handles, then <b>double-click</b> (or press <b>Enter</b>)
-to apply — <b>Esc</b> cancels.</p>
+<p>Paste a screenshot or copied image with <b>Ctrl+V</b>, or <b>drag and
+drop</b> an image file (PNG, JPEG, BMP, GIF, WebP, TIFF — any format Qt
+can read) onto the canvas; it drops in as a movable picture at the drop
+point (drop several to cascade them). Dropping a <b>.svg</b> or
+<b>.kpaint</b> file opens it as a document. To <b>crop</b> an image,
+right-click → <i>Crop image</i>, drag the frame handles, then
+<b>double-click</b> (or press <b>Enter</b>) to apply — <b>Esc</b>
+cancels.</p>
 
 <h2>9 · Grid &amp; snap</h2>
 <p>The <b>Grid (mm)</b> box sets the physical distance between grid lines

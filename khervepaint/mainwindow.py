@@ -12,8 +12,10 @@ import json
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QMimeData, QRectF, QSettings, QSize, Qt, QUrl
-from PyQt5.QtGui import QColor, QDesktopServices, QIcon, QKeySequence, QPixmap
+from PyQt5.QtCore import (QMimeData, QPointF, QRectF, QSettings, QSize, Qt,
+                          QUrl)
+from PyQt5.QtGui import (QColor, QDesktopServices, QIcon, QImage, QKeySequence,
+                         QPixmap)
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QDoubleSpinBox, QFileDialog,
                              QInputDialog, QLabel, QMainWindow, QMenu,
@@ -125,6 +127,7 @@ class MainWindow(QMainWindow):
             lambda p: self.statusBar().showMessage(
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
         self.view.item_context.connect(self._show_item_menu)
+        self.view.content_dropped.connect(self._on_drop)
 
         self._build_tool_bar()
         self._build_options_bar()
@@ -625,6 +628,43 @@ class MainWindow(QMainWindow):
 
     def _view_centre(self):
         return self.view.mapToScene(self.view.viewport().rect().center())
+
+    # ------------------------------------------------------------ drag & drop
+    def _on_drop(self, paths, image, scene_pos):
+        """Drop handler: a dropped .svg/.kpaint opens as a document; any
+        image (file in any Qt-supported format, or raw image data dragged
+        from another app) is placed as a movable image item at the drop
+        point. Multiple images are cascaded and selected together."""
+        docs = [p for p in paths
+                if Path(p).suffix.lower() in (".svg", ".kpaint")]
+        if docs:
+            if self._confirm_discard():
+                self._load_document(docs[0])
+            return
+
+        pixmaps = []
+        for p in paths:
+            pm = QPixmap(p)                 # uses Qt's image plugins
+            if not pm.isNull():
+                pixmaps.append(pm)
+        if not pixmaps and isinstance(image, QImage) and not image.isNull():
+            pixmaps.append(QPixmap.fromImage(image))
+        if not pixmaps:
+            if paths or image is not None:
+                QMessageBox.warning(
+                    self, APP_NAME,
+                    "Could not load the dropped item as an image.")
+            return
+
+        self.scene.clearSelection()
+        pos = QPointF(scene_pos)
+        for pm in pixmaps:
+            item = ImageItem(pm)
+            item.setPos(pos)
+            self.scene.addItem(item)
+            item.setSelected(True)
+            pos += QPointF(20, 20)          # cascade multiple drops
+        self.scene.changed_by_user.emit()
 
     # ------------------------------------------------------------ object library
     def save_object(self):

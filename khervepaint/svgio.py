@@ -603,17 +603,23 @@ def _parse_points(text: str) -> QPolygonF:
                       for i in range(0, len(nums) - 1, 2)])
 
 
-def _parse_element(el, parent_tf: QTransform, inherited: dict, scene):
+def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
+                   defs, depth: int = 0):
     """Return a native item (or None). Raster images set the layer
     directly and return None."""
+    if depth > 50:                       # guard against <use> reference loops
+        return None
     tag = _localname(el.tag)
     style = _resolve_style(el, inherited)
     total = _parse_transform(el.get("transform")) * parent_tf
 
-    if tag == "g":
+    if tag == "use":
+        return _parse_use(el, total, style, scene, defs, depth)
+
+    if tag in ("g", "symbol", "a", "svg"):
         group = GroupItem()
         for child in el:
-            sub = _parse_element(child, total, style, scene)
+            sub = _parse_element(child, total, style, scene, defs, depth + 1)
             if sub is not None:
                 # addToGroup (not setParentItem) so the group's cached
                 # bounding rect is correct — otherwise its scale/rotate
@@ -637,6 +643,23 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene):
     if isinstance(item, LabelMixin):
         _read_label(el, item)
     return item
+
+
+def _parse_use(el, total: QTransform, style: dict, scene, defs, depth: int):
+    """Resolve a <use xlink:href="#id"> by cloning the referenced element
+    (from <defs> or anywhere by id) with the use's x/y offset applied.
+    Inkscape/matplotlib exports lean on <use> for tick marks, markers and
+    text rendered as glyph paths — without this they vanish on import."""
+    href = _href(el)
+    if not href or not href.startswith("#"):
+        return None
+    target = defs.get(href[1:])
+    if target is None:
+        return None
+    x = float(el.get("x", 0) or 0)
+    y = float(el.get("y", 0) or 0)
+    base = QTransform.fromTranslate(x, y) * total if (x or y) else total
+    return _parse_element(target, base, style, scene, defs, depth + 1)
 
 
 def _read_label(el, item):
@@ -676,10 +699,14 @@ def load_svg(scene: PaintScene, path: str):
         scene.snap_enabled = root.get(_kp("grid-snap"), "1") == "1"
         scene.infinite = root.get(_kp("infinite"), "0") == "1"
 
+    # Map every element that carries an id, so <use href="#id"> can find
+    # its referent (glyphs/markers/ticks defined once in <defs>).
+    defs = {e.get("id"): e for e in root.iter() if e.get("id")}
+
     base = {"fill": "#000000", "stroke": "none"}
     z = 0
     for child in root:
-        item = _parse_element(child, QTransform(), base, scene)
+        item = _parse_element(child, QTransform(), base, scene, defs)
         if item is not None:
             item.setZValue(z)
             z += 1

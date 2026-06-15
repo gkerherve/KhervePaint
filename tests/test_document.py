@@ -577,6 +577,52 @@ def test_svg_native_roundtrip(scene, tmp_path):
     assert other.sceneRect().width() == 400
 
 
+def test_svg_use_resolves_defs(tmp_path):
+    # Inkscape/matplotlib exports render ticks, markers and text via
+    # <use href="#id"> referencing <defs>; these were dropped before.
+    from khervepaint import svgio
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        'xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">'
+        '<defs><path id="tick" d="M 0,0 L 0,10" style="stroke:#000000"/>'
+        '</defs>'
+        '<use xlink:href="#tick" x="20" y="5"/>'
+        '<use xlink:href="#tick" transform="translate(60,5)"/>'
+        '</svg>')
+    path = tmp_path / "use.svg"
+    path.write_text(svg, encoding="utf-8")
+    scene = PaintScene()
+    svgio.load_svg(scene, str(path))
+    items = scene.vector_items()
+    assert len(items) == 2                       # both <use> instances import
+    xs = sorted(round(i.sceneBoundingRect().center().x()) for i in items)
+    assert xs[0] != xs[1]                         # placed at their offsets
+
+
+def test_drop_image_files_place_items(window, tmp_path):
+    from khervepaint.canvas import ImageItem
+    from PyQt5.QtGui import QPixmap, QColor
+    paths = []
+    for ext in ("png", "bmp"):
+        p = tmp_path / f"img.{ext}"
+        pm = QPixmap(20, 16); pm.fill(QColor("#3377cc")); pm.save(str(p))
+        paths.append(str(p))
+    window._on_drop(paths, None, QPointF(30, 40))
+    imgs = [i for i in window.scene.vector_items()
+            if isinstance(i, ImageItem)]
+    assert len(imgs) == 2 and imgs[0].isSelected()
+
+
+def test_drop_raw_image_data(window):
+    from khervepaint.canvas import ImageItem
+    from PyQt5.QtGui import QImage, QColor
+    img = QImage(12, 12, QImage.Format_ARGB32)
+    img.fill(QColor("#aa3333"))
+    window._on_drop([], img, QPointF(0, 0))
+    assert any(isinstance(i, ImageItem)
+               for i in window.scene.vector_items())
+
+
 def test_svg_grid_metadata_roundtrip(scene, tmp_path):
     from khervepaint import svgio
     scene.grid_mm = 2.5

@@ -109,10 +109,13 @@ path** behind the shapes.
 
 ## 8. Images
 
-Paste a screenshot or copied image with **Ctrl+V** — it drops in as a
-movable picture. To **crop** it, right-click → *Crop image*, drag the
-frame handles, then **double-click** (or press **Enter**) to apply —
-**Esc** cancels.
+Paste a screenshot or copied image with **Ctrl+V**, or **drag and drop**
+an image file (PNG, JPEG, BMP, GIF, WebP, TIFF — any format Qt can read)
+straight onto the canvas — it drops in as a movable picture at the drop
+point (drop several at once to cascade them). Dropping a **.svg** or
+**.kpaint** file instead opens it as a document. To **crop** an image,
+right-click → *Crop image*, drag the frame handles, then **double-click**
+(or press **Enter**) to apply — **Esc** cancels.
 
 ## 9. Grid & snap
 

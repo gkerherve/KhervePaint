@@ -1043,6 +1043,8 @@ class PaintView(QGraphicsView):
     item_context = pyqtSignal(object, object)
     #: emitted with the new zoom factor (1.0 == 100%) whenever it changes.
     zoom_changed = pyqtSignal(float)
+    #: (list of local file paths, dropped QImage or None, scene pos) on drop.
+    content_dropped = pyqtSignal(list, object, QPointF)
 
     MIN_ZOOM, MAX_ZOOM = 0.1, 16.0
 
@@ -1054,9 +1056,38 @@ class PaintView(QGraphicsView):
         self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setFocusPolicy(Qt.StrongFocus)   # so Enter/Esc reach the view
+        self.setAcceptDrops(True)             # drop images/files onto canvas
         # Repaint the whole viewport on every change: partial updates
         # leave stale selection dashes / handles behind after deselect.
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+
+    # --------------------------------------------------------- drag & drop
+    @staticmethod
+    def _has_droppable(mime) -> bool:
+        return mime.hasImage() or mime.hasUrls()
+
+    def dragEnterEvent(self, event):
+        if self._has_droppable(event.mimeData()):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if self._has_droppable(event.mimeData()):
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        mime = event.mimeData()
+        if not self._has_droppable(mime):
+            super().dropEvent(event)
+            return
+        paths = [u.toLocalFile() for u in mime.urls()
+                 if u.isLocalFile()] if mime.hasUrls() else []
+        image = mime.imageData() if mime.hasImage() else None
+        self.content_dropped.emit(paths, image, self.mapToScene(event.pos()))
+        event.acceptProposedAction()
 
     def _pick_item(self, view_pos):
         """Top-level editable item under *view_pos*, or None.

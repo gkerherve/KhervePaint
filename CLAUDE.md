@@ -51,7 +51,11 @@ into a new module and import.
                        helpers used by both .kpaint and svgio.
   - `svgio.py`       — default format: editable SVG writer + parser
                        (breaks groups/paths/transforms into native
-                       items). Imports the path helpers from document.
+                       items). Resolves `<use href="#id">` against a
+                       whole-tree id map (so Inkscape/matplotlib exports,
+                       which draw ticks/markers/text as `<use>` of
+                       `<defs>` glyph paths, import fully). Imports the
+                       path helpers from document.
   - `library.py`     — reusable-object library: save the current
                        selection as a named standalone SVG in a per-user
                        objects folder (`KHERVEPAINT_OBJECTS_DIR` override
@@ -149,7 +153,11 @@ Everything lives in one `QGraphicsScene`:
     quarter circle + flip flags). All are box-resizable; every polygon
     explodes into its edge lines for free.
   - Text (`TextItem`) edits inline on double-click.
-  - `ImageItem` is a movable bitmap on the vector layer (paste); crop
+  - `ImageItem` is a movable bitmap on the vector layer (paste, or
+    drag-and-drop an image file/data onto the canvas — `PaintView`
+    accepts drops and emits `content_dropped`, which `MainWindow._on_drop`
+    turns into `ImageItem`s at the drop point; a dropped `.svg`/`.kpaint`
+    opens as a document instead); crop
     it via the right-click menu (`crop.py`).
   - Rect/ellipse/rounded-rect/polygon also carry an optional centred
     text **label** (`LabelMixin`) edited from their properties dialog.
