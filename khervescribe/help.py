@@ -156,7 +156,8 @@ existing item use its properties (below).</p>
   <li><b>Resize</b>: blue handles appear on a selected item — drag a
       line's endpoints, a polygon's vertices, or a box's corners. A
       <b>group</b> shows eight handles: corners resize both ways, while
-      the <b>side-middle</b> handles stretch it in X only or Y only.</li>
+      the <b>side-middle</b> handles stretch it in X only or Y only.
+      Resizing <b>snaps to the grid</b> while snapping is on.</li>
   <li><b>Rotate</b>: <b>double-click</b> the item and drag the green knob;
       it turns about its own centre.</li>
 </ul>
@@ -177,7 +178,9 @@ inside them (set it in the Label section).</p>
   <li><b>Flip</b> horizontally / vertically (Ctrl+Shift+H / J).</li>
   <li><b>Explode</b> (Ctrl+Shift+E) breaks a shape's outline into its
       separate edges — delete or edit one side, then regroup the rest.</li>
-  <li><b>Bring to front / Send to back</b> from the right-click menu.</li>
+  <li><b>Order</b>: Bring to Front / Bring Forward / Send Backward / Send
+      to Back — from the top toolbar icons, the right-click menu, or
+      <b>Edit ▸ Arrange</b> (Ctrl+] / Ctrl+[, add Shift for front/back).</li>
 </ul>
 
 <h2>7 · Bucket fill</h2>

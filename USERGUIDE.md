@@ -82,7 +82,8 @@ its properties (below).
 - **Resize**: blue handles appear on a selected item — drag a line's
   endpoints, a polygon's vertices, or a box's corners. A **group** shows
   eight handles: corners resize both ways, while the **side-middle**
-  handles stretch it in **X only** or **Y only**.
+  handles stretch it in **X only** or **Y only**. Resizing **snaps to the
+  grid** while snapping is on (toggle it in the toolbar / View menu).
 - **Rotate**: **double-click** the item and drag the green knob; it turns
   about its own centre.
 
@@ -104,7 +105,10 @@ inside them (set it in the Label section).
 - **Flip** horizontally / vertically (Ctrl+Shift+H / Ctrl+Shift+J).
 - **Explode** (Ctrl+Shift+E) breaks a shape's outline into its separate
   edges — delete or edit one side, then regroup the rest.
-- **Bring to front / Send to back** from the right-click menu.
+- **Order** an item with **Bring to Front / Bring Forward / Send
+  Backward / Send to Back** — from the top toolbar icons, the right-click
+  menu, or **Edit ▸ Arrange** (`Ctrl+]` / `Ctrl+[`, add **Shift** for
+  front/back).
 
 ## 7. Bucket fill
 

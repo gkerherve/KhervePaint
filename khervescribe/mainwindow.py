@@ -458,6 +458,20 @@ class MainWindow(QMainWindow):
                       lambda: self.scene.mirror_selection(True))
         bar.addAction(icons.icon("mdi.flip-vertical"), "Flip vertical",
                       lambda: self.scene.mirror_selection(False))
+        bar.addSeparator()
+        bar.addAction(icons.icon("mdi.arrange-bring-to-front"),
+                      "Bring to front",
+                      lambda: self._reorder_selection("front"))
+        bar.addAction(icons.icon("mdi.arrange-bring-forward"),
+                      "Bring forward",
+                      lambda: self._reorder_selection("forward"))
+        bar.addAction(icons.icon("mdi.arrange-send-backward"),
+                      "Send backward",
+                      lambda: self._reorder_selection("backward"))
+        bar.addAction(icons.icon("mdi.arrange-send-to-back"),
+                      "Send to back",
+                      lambda: self._reorder_selection("back"))
+        bar.addSeparator()
         bar.addAction(icons.icon("mdi.delete-outline"), "Delete",
                       self.scene.delete_selection)
 

@@ -259,7 +259,7 @@ class SelectionHandles:
         if self.kind == "rotate":
             self._rotate(scene_pos)
         elif self.kind == "scale":
-            self._scale(scene_pos)
+            self._scale(snapped)            # snap the dragged corner too
         elif self.kind == "line":
             self._drag_line(role, local)
         elif self.kind == "polygon":

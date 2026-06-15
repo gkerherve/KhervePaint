@@ -322,6 +322,32 @@ def test_reorder_four_modes(window):
     assert s.vector_items()[-1] is not a                # one step down
 
 
+def test_reorder_selection_entry_point(window):
+    s = window.scene
+    a = RectItem(QRectF(0, 0, 10, 10)); s.addItem(a)
+    b = RectItem(QRectF(0, 0, 10, 10)); s.addItem(b)
+    s.clearSelection(); a.setSelected(True)
+    window._reorder_selection("front")              # toolbar/menu entry point
+    assert s.vector_items()[-1] is a
+
+
+def test_scale_resize_snaps_to_grid(scene):
+    from khervescribe.handles import SelectionHandles, RESIZE
+    from PyQt5.QtGui import QPainterPath
+    scene.dpi = 25.4; scene.grid_mm = 20; scene.snap_enabled = True
+    pp = QPainterPath(); pp.addRect(0, 0, 40, 40)
+    p = PathItem(pp); p.setPos(40, 40); p.setPen(QPen(QColor("#000"), 0))
+    scene.addItem(p); p.setSelected(True)
+    h = SelectionHandles(scene, p, RESIZE)
+    assert h.kind == "scale"
+    h.begin("se", p.sceneBoundingRect().bottomRight())   # NW anchor at (40,40)
+    h.drag("se", QPointF(151, 151))                 # on the diagonal -> 160,160
+    h.end()
+    br = p.sceneBoundingRect()
+    # snapping makes the corner land on a grid multiple (was 142 unsnapped)
+    assert round(br.right()) % 20 == 0 and round(br.bottom()) % 20 == 0
+
+
 def test_group_handles_are_scene_level(scene):
     # A QGraphicsItemGroup intercepts its children's mouse events, so a
     # group's handles must NOT be its children (or they'd be dead) — they
