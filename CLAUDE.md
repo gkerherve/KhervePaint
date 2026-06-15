@@ -157,15 +157,24 @@ Everything lives in one `QGraphicsScene`:
 - **No default selection rectangle**: every item mixes in `NoSelMixin`,
   whose `paint` strips `State_Selected` before the base paint, so Qt's
   dashed selection box is never drawn (it lingered after deselect,
-  especially for grouped items). Selection feedback is the handles.
+  especially for grouped items). Selection feedback is instead our own:
+  the handles, plus a cosmetic **dashed outline** drawn around every
+  selected top-level item in `PaintView._draw_selection` (in the
+  foreground, so it never lingers or exports — and it makes a
+  *multi-*selection visible, which handles alone don't).
 - **Selection handles** (`handles.py`) — selecting one item shows
   resize handles (line/arrow endpoints, polygon vertices, rect/ellipse
   bounding box, or uniform-scale corners for path/image/text/group);
   double-clicking enters rotate mode (a knob spins it about its
   centre). The scene owns one `SelectionHandles`; handles are
-  `Handle`-marked children of the active item, rebuilt on pointer
-  mouse-release, dropped when selection changes, and filtered out of
-  all serialisation (`isinstance(c, Handle)`).
+  `Handle`-marked, rebuilt on pointer mouse-release, dropped when
+  selection changes, and filtered out of all serialisation and
+  `vector_items` (`isinstance(c, Handle)`). They parent to the active
+  item so they follow it — **except for a `GroupItem`**, whose handles
+  live at **scene level** (`SelectionHandles._scene_level`): a
+  `QGraphicsItemGroup` intercepts its children's mouse events (PyQt can't
+  disable that), so child handles on a group would be dead — scene-level
+  handles keep groups resizable/rotatable.
 - **Grid** is drawn in `PaintView.drawForeground` so it never appears
   in PNG exports. Grid size / show / snap live on the scene and
   round-trip through `.kpaint`.

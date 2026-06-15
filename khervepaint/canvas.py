@@ -554,9 +554,12 @@ class PaintScene(QGraphicsScene):
         self.changed_by_user.emit()
 
     def vector_items(self):
-        """Top-level vector items, bottom to top (excludes the raster)."""
+        """Top-level vector items, bottom to top (excludes the raster and
+        any scene-level selection handles)."""
+        from .handles import Handle
         return [i for i in sorted(self.items(), key=lambda i: i.zValue())
-                if i is not self.raster_item and i.parentItem() is None]
+                if i is not self.raster_item and i.parentItem() is None
+                and not isinstance(i, Handle)]
 
     # ------------------------------------------------------------ grid
     @property
@@ -1047,8 +1050,12 @@ class PaintView(QGraphicsView):
     def drawForeground(self, painter: QPainter, rect: QRectF):
         super().drawForeground(painter, rect)
         scene = self.scene()
-        if not getattr(scene, "show_grid", False):
-            return
+        if getattr(scene, "show_grid", False):
+            self._draw_grid(painter, rect)
+        self._draw_selection(painter)
+
+    def _draw_grid(self, painter: QPainter, rect: QRectF):
+        scene = self.scene()
         g = scene.grid_size
         # Infinite paper: the grid fills the whole exposed view; finite
         # paper clips it to the page and draws the page border.
@@ -1070,6 +1077,22 @@ class PaintView(QGraphicsView):
         if not infinite:
             painter.setPen(QPen(QColor(120, 144, 168, 160), 0))
             painter.drawRect(scene.sceneRect())
+
+    def _draw_selection(self, painter: QPainter):
+        """A cosmetic dashed box around every selected top-level item, so
+        a multi-selection is visible (handles only mark a single item).
+        Drawn in the foreground, so it never lingers and never exports."""
+        from .handles import Handle
+        scene = self.scene()
+        items = [i for i in scene.selectedItems()
+                 if i.parentItem() is None and not isinstance(i, Handle)]
+        if not items:
+            return
+        pen = QPen(QColor("#2176c7"), 0, Qt.DashLine)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        for item in items:
+            painter.drawRect(item.sceneBoundingRect().adjusted(-1, -1, 1, 1))
 
     # ------------------------------------------------------------ zoom
     def wheelEvent(self, event):

@@ -28,8 +28,9 @@ from PyQt5.QtGui import QBrush, QColor, QPen, QPolygonF, QTransform
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsLineItem, QGraphicsRectItem)
 
-from .canvas import (ArcShapeItem, EllipseItem, ImageItem, LineItem,
-                     PolygonItem, RectItem, RoundedRectItem, center_origin)
+from .canvas import (ArcShapeItem, EllipseItem, GroupItem, ImageItem,
+                     LineItem, PolygonItem, RectItem, RoundedRectItem,
+                     center_origin)
 
 HANDLE_SIZE = 9
 RESIZE, ROTATE = "resize", "rotate"
@@ -140,16 +141,30 @@ class SelectionHandles:
         self._guide = None
         self._scale_base = 1.0
         self._scale_dist = 1.0
+        # A QGraphicsItemGroup intercepts its children's mouse events
+        # (and PyQt can't disable that), which would make a group's
+        # handles dead. So a group's handles live at scene level instead
+        # of as children; every other item parents them to itself so they
+        # follow it for free. _place() maps anchors accordingly.
+        self._scene_level = isinstance(item, GroupItem)
         self._build()
         self.reposition()
 
     # ------------------------------------------------------------ build
+    def _parent(self):
+        return None if self._scene_level else self.item
+
+    def _attach(self, handle):
+        if self._scene_level:
+            self.scene.addItem(handle)
+        return handle
+
     def _build(self):
         if self.kind == "rotate":
-            self._guide = _GuideLine(self.item)
+            self._guide = self._attach(_GuideLine(self._parent()))
             self._guide.setPen(QPen(_GREEN, 0, Qt.DashLine))
             self._guide.setZValue(999)
-            self.handles = [_RotateHandle(self, self.item)]
+            self.handles = [self._attach(_RotateHandle(self, self._parent()))]
         elif self.kind == "line":
             self.handles = [self._rect_handle(r) for r in ("p1", "p2")]
         elif self.kind == "polygon":
@@ -163,18 +178,30 @@ class SelectionHandles:
                             for r in ("nw", "ne", "se", "sw")]
 
     def _rect_handle(self, role, cursor=Qt.SizeAllCursor):
-        return _RectHandle(self, role, self.item, _BLUE, cursor)
+        return self._attach(
+            _RectHandle(self, role, self._parent(), _BLUE, cursor))
 
     # ------------------------------------------------------------ layout
+    def _place(self, handle, local):
+        """Position a handle at item-local point *local*, mapping to scene
+        coords when the handles live at scene level (groups)."""
+        handle.setPos(self.item.mapToScene(local) if self._scene_level
+                      else local)
+
     def reposition(self):
         if self.kind == "rotate":
             br = self.item.boundingRect()
-            knob = QPointF(br.center().x(), br.top() - 22)
-            self.handles[0].setPos(knob)
-            self._guide.setLine(QLineF(br.center(), knob))
+            center, knob = br.center(), QPointF(br.center().x(), br.top() - 22)
+            self._place(self.handles[0], knob)
+            if self._scene_level:
+                self._guide.setPos(0, 0)
+                self._guide.setLine(QLineF(self.item.mapToScene(center),
+                                           self.item.mapToScene(knob)))
+            else:
+                self._guide.setLine(QLineF(center, knob))
             return
         for handle in self.handles:
-            handle.setPos(self._anchor(handle.role))
+            self._place(handle, self._anchor(handle.role))
 
     def _anchor(self, role) -> QPointF:
         if self.kind == "line":

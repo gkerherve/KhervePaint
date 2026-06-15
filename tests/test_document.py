@@ -220,6 +220,33 @@ def test_group_resize_anchors_opposite_corner(scene):
     assert br2.height() > br.height()
 
 
+def test_group_handles_are_scene_level(scene):
+    # A QGraphicsItemGroup intercepts its children's mouse events, so a
+    # group's handles must NOT be its children (or they'd be dead) — they
+    # live at scene level and are excluded from vector_items.
+    from khervepaint.handles import SelectionHandles, RESIZE, ROTATE
+    r1 = RectItem(QRectF(0, 0, 40, 30)); r1.setPos(100, 100); scene.addItem(r1)
+    r2 = RectItem(QRectF(0, 0, 40, 30)); r2.setPos(200, 160); scene.addItem(r2)
+    r1.setSelected(True); r2.setSelected(True); scene.group_selection()
+    g = scene.vector_items()[0]
+    for mode in (RESIZE, ROTATE):
+        h = SelectionHandles(scene, g, mode)
+        assert h.handles and all(hd.parentItem() is None for hd in h.handles)
+        assert all(hd.scene() is scene for hd in h.handles)
+        assert all(hd not in scene.vector_items() for hd in h.handles)
+        h.remove()
+        assert all(hd.scene() is None for hd in h.handles)
+
+
+def test_normal_item_handles_stay_children(scene):
+    # Non-group items keep child handles so they follow the item.
+    from khervepaint.handles import SelectionHandles, RESIZE
+    r = RectItem(QRectF(0, 0, 40, 30)); scene.addItem(r); r.setSelected(True)
+    h = SelectionHandles(scene, r, RESIZE)
+    assert all(hd.parentItem() is r for hd in h.handles)
+    h.remove()
+
+
 def _scaled_group(scene):
     from khervepaint.handles import SelectionHandles, RESIZE
     scene.dpi = 25.4; scene.grid_mm = 20
