@@ -267,8 +267,12 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   **end-cap** style (`scene.dim_cap`, applied to each new
   `DimensionItem`); either choice activates the tool, as does **M**. A
   **Chemistry** dropdown (`_CHEM_*` tools) holds bond tools (single/
-  double/triple/wedge/hash — two-point, built via `chemistry.bond_path`/
-  `wedge_polygon` as `PathItem`/`PolygonItem`), click-to-place rings
+  double/triple/wedge/hash/hydrogen — two-point, built via
+  `chemistry.bond_path`/`wedge_polygon` as `PathItem`/`PolygonItem`; the
+  H-bond's dashes are geometry so they survive SVG), a **chain** tool
+  (click-to-click connected single bonds; finish with a repeat click /
+  right-click / Esc — `PaintScene._chain_click`/`end_chain`),
+  click-to-place rings
   (benzene→hexagon+inner circle group, cyclohexane, cyclopentane) and an
   atom-label sub-menu (sets `scene.chem_atom`, places a `TextItem`). The
   column ends with an **Objects** dropdown (the reusable-object/template

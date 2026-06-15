@@ -26,8 +26,8 @@ from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
 from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEM_ATOM, CHEM_BENZENE,
                      CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE, CHEM_DOUBLE,
-                     CHEM_HASH, CHEM_HBOND, CHEM_SINGLE, CHEM_TRIPLE,
-                     CHEM_WEDGE, CHEVRON,
+                     CHEM_CHAIN, CHEM_HASH, CHEM_HBOND, CHEM_SINGLE,
+                     CHEM_TRIPLE, CHEM_WEDGE, CHEVRON,
                      CIRCLE, DIAMOND, DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
@@ -338,6 +338,7 @@ class MainWindow(QMainWindow):
 
         menu.addSection("Bonds")
         for tool, label in ((CHEM_SINGLE, "Single bond"),
+                            (CHEM_CHAIN, "Chain (connected bonds)"),
                             (CHEM_DOUBLE, "Double bond"),
                             (CHEM_TRIPLE, "Triple bond"),
                             (CHEM_WEDGE, "Wedge (up)"),
@@ -687,6 +688,7 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------ state
     def _set_tool(self, tool: str):
+        self.scene.end_chain()              # finish any in-progress bond chain
         self.scene.tool = tool
         self.view.set_tool_cursor(tool)
         if tool != POINTER:

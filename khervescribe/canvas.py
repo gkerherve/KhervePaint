@@ -47,6 +47,7 @@ PLUS, CHEVRON, ARROW_RIGHT, LIGHTNING, HOUSE = (
 CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE, CHEM_HASH = (
     "chem_single", "chem_double", "chem_triple", "chem_wedge", "chem_hash")
 CHEM_HBOND = "chem_hbond"
+CHEM_CHAIN = "chem_chain"
 CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE = (
     "chem_benzene", "chem_cyclohexane", "chem_cyclopentane")
 CHEM_ATOM = "chem_atom"
@@ -54,7 +55,7 @@ _CHEM_BOND_TOOLS = (CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE,
                     CHEM_HASH, CHEM_HBOND)
 _CHEM_RING_TOOLS = (CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE)
 _CHEM_PLACE_TOOLS = _CHEM_RING_TOOLS + (CHEM_ATOM,)   # placed on a click
-_CHEM_TOOLS = _CHEM_BOND_TOOLS + _CHEM_PLACE_TOOLS
+_CHEM_TOOLS = _CHEM_BOND_TOOLS + _CHEM_PLACE_TOOLS + (CHEM_CHAIN,)
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -532,6 +533,8 @@ class PaintScene(QGraphicsScene):
         self.dim_cap = "arrows"           # end-cap style for new dimensions
         self.dim_orientation = "aligned"  # aligned | horizontal | vertical
         self.chem_atom = "C"              # label placed by the atom tool
+        self._chain_pts = None            # vertices of an in-progress chain
+        self._chain_preview = None        # rubber-band segment to the cursor
 
         # The grid is specified as a physical distance in millimetres
         # between adjacent lines; the pixel spacing is derived from the
@@ -850,8 +853,45 @@ class PaintScene(QGraphicsScene):
             self._crop.cancel()
             self._crop = None
 
+    # --------------------------------------------------------- chain tool
+    def _chain_click(self, event):
+        """Click-to-click connected bonds: each click drops a vertex; the
+        bond runs from the previous vertex. Clicking the last vertex again
+        (or any non-left button) ends the chain."""
+        if event.button() != Qt.LeftButton:
+            self.end_chain()
+            return
+        pos = self._tool_pos(event.scenePos())
+        if self._chain_pts is None:
+            self._chain_pts = [pos]
+            self._chain_preview = LineItem(QLineF(pos, pos))
+            self._chain_preview.setPen(QPen(self.pen))
+            self.addItem(self._chain_preview)
+            return
+        last = self._chain_pts[-1]
+        if QLineF(last, pos).length() < max(self.grid_size, 2):
+            self.end_chain()                 # clicked the same spot -> finish
+            return
+        bond = LineItem(QLineF(last, pos))
+        bond.setPen(QPen(self.pen))
+        self.addItem(bond)
+        center_origin(bond)
+        self._chain_pts.append(pos)
+        self._chain_preview.setLine(QLineF(pos, pos))
+        self.changed_by_user.emit()
+
+    def end_chain(self):
+        """Finish an in-progress bond chain, removing the preview segment."""
+        if self._chain_preview is not None:
+            self.removeItem(self._chain_preview)
+        self._chain_preview = None
+        self._chain_pts = None
+
     # ------------------------------------------------------------ tools
     def mousePressEvent(self, event):
+        if self.tool == CHEM_CHAIN:
+            self._chain_click(event)
+            return
         if self.tool == POINTER or event.button() != Qt.LeftButton:
             super().mousePressEvent(event)
             if self.tool == POINTER:
@@ -909,6 +949,10 @@ class PaintScene(QGraphicsScene):
                 self.place_chem_ring(self.tool.split("_")[1], pos)
 
     def mouseMoveEvent(self, event):
+        if self.tool == CHEM_CHAIN and self._chain_pts is not None:
+            pos = self._tool_pos(event.scenePos())
+            self._chain_preview.setLine(QLineF(self._chain_pts[-1], pos))
+            return
         if not self._drawing:
             super().mouseMoveEvent(event)
             return
@@ -1349,4 +1393,6 @@ class PaintView(QGraphicsView):
             if event.key() == Qt.Key_Escape:
                 self.scene().cancel_crop()
                 return
+        if event.key() == Qt.Key_Escape:        # finish a bond chain
+            self.scene().end_chain()
         super().keyPressEvent(event)

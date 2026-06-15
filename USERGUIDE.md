@@ -161,6 +161,9 @@ ordinary editable shapes:
 - **Bonds** — drag to draw a **single**, **double** or **triple** bond,
   a solid **wedge** (coming forward), a **hash** bond (going back) or a
   dashed **hydrogen bond** (the dotted connectors between atoms).
+- **Chain** — click point-to-point to draw connected single bonds (for
+  zig-zag skeletons); click the last point again, right-click, or press
+  **Esc** to finish.
 - **Rings** — click to drop a **benzene** ring (hexagon with the
   aromatic inner circle), **cyclohexane** or **cyclopentane**.
 - **Atom / group label** — pick a symbol (C, H, O, N, OH, CH₃…) then

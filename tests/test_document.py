@@ -886,6 +886,33 @@ def test_chem_bond_roundtrips_svg(scene, tmp_path):
     assert isinstance(other.vector_items()[0], PathItem)
 
 
+def test_chem_chain_connects_bonds(scene):
+    from khervescribe.canvas import LineItem, CHEM_CHAIN
+
+    class _Ev:
+        def __init__(self, x, y, btn=Qt.LeftButton):
+            self._p, self._b = QPointF(x, y), btn
+
+        def button(self):
+            return self._b
+
+        def scenePos(self):
+            return self._p
+
+    scene.snap_enabled = False
+    scene.tool = CHEM_CHAIN
+    for x, y in [(100, 60), (60, 120), (100, 180)]:   # draw a "<"
+        scene.mousePressEvent(_Ev(x, y))
+    scene.mousePressEvent(_Ev(100, 180))              # click last point: end
+    bonds = [i for i in scene.vector_items() if isinstance(i, LineItem)]
+    assert len(bonds) == 2
+    vertex = QPointF(60, 120)                         # shared by both bonds
+    touching = sum(1 for b in bonds
+                   if b.line().p1() == vertex or b.line().p2() == vertex)
+    assert touching == 2
+    assert scene._chain_pts is None                   # chain finished
+
+
 def test_chem_hydrogen_bond_dashes_roundtrip(scene, tmp_path):
     # The dashed H-bond is built from segments so the dashes are geometry
     # and survive the SVG round-trip (no reliance on pen dash style).
