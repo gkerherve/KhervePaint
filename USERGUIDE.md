@@ -165,10 +165,8 @@ ordinary editable shapes:
   zig-zag skeletons); click the last point again, right-click, or press
   **Esc** to finish.
 
-By default (a **Fixed length & angle** toggle at the top of the dropdown,
-ChemDraw-style) every bond you draw snaps to a **uniform length** and to
-**30° angle steps**, so structures stay tidy — you just click the
-direction. Turn it off to draw bonds at any length/angle.
+Every bond you draw snaps to a **uniform length** and to **30° angle
+steps**, so structures stay tidy — you just click the direction.
 - **Rings** — click to drop a **benzene** ring (hexagon with the
   aromatic inner circle), **cyclohexane** or **cyclopentane**.
 - **Atom / group label** — pick a symbol (C, H, O, N, P, OH, CH₃…) then

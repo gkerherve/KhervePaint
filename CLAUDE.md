@@ -277,9 +277,8 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   atom-label sub-menu (sets `scene.chem_atom`, places a `TextItem` that
   snaps onto a nearby bond end via `_nearest_bond_end`, so e.g. a C=O is a
   double bond + an O dropped on its tip). Bonds
-  default to ChemDraw-style **fixed length + 30° angle** snapping
-  (`scene.chem_fixed`, `bond_length_mm`, `PaintScene._chem_constrain`;
-  toggled in the dropdown). The
+  snap to a **fixed length + 30° angle** (`scene.chem_fixed` default True,
+  `bond_length_mm`, `PaintScene._chem_constrain`). The
   column ends with an **Objects** dropdown (the reusable-object/template
   library, see `library.py`): save the selection, open the **Template
   Explorer**, or insert a saved object — folders shown as nested

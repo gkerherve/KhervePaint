@@ -336,13 +336,6 @@ class MainWindow(QMainWindow):
         button.setToolTip("Chemistry — bonds, rings, atoms")
         menu = QMenu(button)
 
-        fixed = QAction("Fixed length && angle (ChemDraw style)", self,
-                        checkable=True)
-        fixed.setChecked(self.scene.chem_fixed)
-        fixed.setToolTip("Bonds snap to a uniform length and 30° angles")
-        fixed.toggled.connect(lambda on: setattr(self.scene, "chem_fixed", on))
-        menu.addAction(fixed)
-
         menu.addSection("Bonds")
         for tool, label in ((CHEM_SINGLE, "Single bond"),
                             (CHEM_CHAIN, "Chain (connected bonds)"),

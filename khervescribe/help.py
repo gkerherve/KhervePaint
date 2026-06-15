@@ -233,8 +233,8 @@ to drop a <b>benzene</b> ring
 an <b>atom/group label</b> (C, H, O, N, P, OH, CH₃…) and click to place
 it — it snaps onto a nearby bond end, so a <b>C=O</b> is just a double
 bond with an O dropped on its tip.
-By default bonds snap to a uniform length and 30° angles (ChemDraw-style)
-— toggle <b>Fixed length &amp; angle</b> at the top of the dropdown.</p>
+Bonds snap to a uniform length and 30° angles, so you just click the
+direction.</p>
 
 <h2>11 · Drawing size &amp; publication figures</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size
