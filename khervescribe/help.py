@@ -247,6 +247,15 @@ chair, sofa, armchair, coffee table, TV unit, bookshelf), <b>kitchen</b>
 editable item — move, rotate, resize, ungroup, or save arrangements as
 objects.</p>
 
+<h2>10c · Electrical symbols</h2>
+<p>The <b>Electrical</b> dropdown drops standard (IEC/ANSI) symbols:
+<b>components</b> (resistor, capacitor, inductor, diode, LED, NPN
+transistor, fuse, switch, lamp), <b>sources &amp; ground</b> (battery,
+DC/AC source, ground, junction) and <b>installation</b> markers (sockets,
+switches, ceiling/wall lights, consumer unit, junction box, ceiling fan,
+smoke detector). Two-terminal parts have lead stubs so you can wire them
+with the line/chain tools.</p>
+
 <h2>11 · Drawing size &amp; publication figures</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size
 (3.25 in ≈ 82.6 mm) at 300 dpi. <b>File ▸ Drawing Size</b> sets the

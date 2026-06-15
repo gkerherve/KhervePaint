@@ -56,8 +56,9 @@ _CHEM_BOND_TOOLS = (CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE,
 _CHEM_RING_TOOLS = (CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE)
 _CHEM_PLACE_TOOLS = _CHEM_RING_TOOLS + (CHEM_ATOM,)   # placed on a click
 _CHEM_TOOLS = _CHEM_BOND_TOOLS + _CHEM_PLACE_TOOLS + (CHEM_CHAIN,)
-#: Room-layout (floor-plan) element placement tool.
+#: Room-layout / electrical element placement tools.
 PLAN_PLACE = "plan_place"
+ELEC_PLACE = "elec_place"
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -536,6 +537,7 @@ class PaintScene(QGraphicsScene):
         self.dim_orientation = "aligned"  # aligned | horizontal | vertical
         self.chem_atom = "C"              # label placed by the atom tool
         self.plan_element = "wall"        # room-layout element to place
+        self.elec_element = "resistor"    # electrical element to place
         self.chem_fixed = True            # ChemDraw-style fixed length + angle
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
@@ -664,7 +666,7 @@ class PaintScene(QGraphicsScene):
     def _tool_pos(self, pos: QPointF) -> QPointF:
         """Snap vector-tool positions; the pencil stays freehand."""
         if (self.snap_enabled
-                and self.tool in _SHAPE_TOOLS + (TEXT, PLAN_PLACE)
+                and self.tool in _SHAPE_TOOLS + (TEXT, PLAN_PLACE, ELEC_PLACE)
                 + _CHEM_TOOLS):
             return self.snap(pos)
         return pos
@@ -958,6 +960,9 @@ class PaintScene(QGraphicsScene):
         elif self.tool == PLAN_PLACE:               # room-layout element
             self._drawing = False
             self.place_plan_element(self.plan_element, pos)
+        elif self.tool == ELEC_PLACE:               # electrical symbol
+            self._drawing = False
+            self.place_elec_element(self.elec_element, pos)
 
     def mouseMoveEvent(self, event):
         if self.tool == CHEM_CHAIN and self._chain_pts is not None:
@@ -1103,18 +1108,27 @@ class PaintScene(QGraphicsScene):
         item.setSelected(True)
         self.changed_by_user.emit()
 
-    # ------------------------------------------------------------ room layout
+    # ------------------------------------------------ symbol libraries (plan/elec)
     def place_plan_element(self, name: str, center: QPointF):
-        """Build a top-view room-layout element (walls/furniture/fittings)
-        from floorplan specs and drop it centred on *center*, grouped and
-        editable."""
+        """Drop a top-view room-layout element (walls/furniture/fittings),
+        grouped and editable, centred on *center*."""
         from . import floorplan
+        self._place_symbol(floorplan, name, center)
+
+    def place_elec_element(self, name: str, center: QPointF):
+        """Drop an electrical symbol (component or installation marker)."""
+        from . import electrical
+        self._place_symbol(electrical, name, center)
+
+    def _place_symbol(self, module, name: str, center: QPointF):
+        """Build items from a spec-library module's `build_specs`/`size_mm`
+        and place them centred on *center* (grouped if multi-part)."""
         from .ai_assistant import _spec_to_item
-        w_mm, h_mm = floorplan.size_mm(name)
+        w_mm, h_mm = module.size_mm(name)
         w = w_mm / 25.4 * self.dpi
         h = h_mm / 25.4 * self.dpi
         items = [it for it in (_spec_to_item(s)
-                               for s in floorplan.build_specs(name, w, h))
+                               for s in module.build_specs(name, w, h))
                  if it is not None]
         if not items:
             return

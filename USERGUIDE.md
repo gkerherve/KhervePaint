@@ -194,6 +194,19 @@ Each piece is a normal grouped item — move, rotate, resize and recolour
 it, ungroup to tweak parts, or save your own arrangements as **objects**
 (Section 10) for reuse. Snapping keeps everything aligned to the grid.
 
+## 10c. Electrical symbols
+
+The **Electrical** dropdown drops standard (IEC/ANSI-style) symbols:
+
+- **Components** — resistor, capacitor (incl. polarised), inductor,
+  diode, LED, NPN transistor, fuse, switch, lamp.
+- **Sources & ground** — battery, DC source, AC source, ground, junction.
+- **Installation (plan)** — sockets, light/two-way switches, ceiling &
+  wall lights, consumer unit, junction box, ceiling fan, smoke detector.
+
+Two-terminal components have lead stubs so you can wire them together
+with the line/chain tools; everything is grouped and editable.
+
 ## 11. Drawing size & publication figures
 
 New documents open at the **ACS single-column** figure size (3.25 in ≈

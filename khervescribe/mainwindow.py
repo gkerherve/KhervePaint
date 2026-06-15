@@ -31,9 +31,10 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEM_ATOM, CHEM_BENZENE,
                      CIRCLE, DIAMOND, DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
-                     PLAN_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR, STAR6, TEXT,
-                     TRAPEZOID, TRIANGLE, ImageItem, PaintScene, PaintView)
-from . import chemistry, floorplan
+                     ELEC_PLACE, PLAN_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR,
+                     STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem, PaintScene,
+                     PaintView)
+from . import chemistry, electrical, floorplan
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -166,7 +167,14 @@ class MainWindow(QMainWindow):
         self._add_tool_action(bar, TEXT, icons.icon("mdi.format-text"),
                               "Text", "T")
         self._build_chemistry_dropdown(bar)
-        self._build_roomplan_dropdown(bar)
+        self._build_symbol_dropdown(
+            bar, "mdi.floor-plan",
+            "Room layout — walls, doors, furniture (top view)",
+            floorplan, self._set_plan_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.flash",
+            "Electrical — circuit & installation symbols",
+            electrical, self._set_elec_element)
         bar.addSeparator()
         self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
@@ -380,28 +388,31 @@ class MainWindow(QMainWindow):
             self._tool_group.setExclusive(True)
         self._set_tool(tool)
 
-    # ------------------------------------------------------------ room layout
-    def _build_roomplan_dropdown(self, bar):
-        """Dropdown of top-view room-layout elements (walls, doors, windows
-        and furniture), grouped by room; picking one places it on click."""
+    # ------------------------------------------------ symbol-library dropdowns
+    def _build_symbol_dropdown(self, bar, glyph, tip, module, on_pick):
+        """A dropdown listing a spec-library module's elements by category;
+        picking one calls *on_pick(name)* to arm its placement tool."""
         button = QToolButton()
         button.setPopupMode(QToolButton.InstantPopup)
         button.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        button.setIcon(icons.icon("mdi.floor-plan"))
-        button.setToolTip("Room layout — walls, doors, furniture (top view)")
+        button.setIcon(icons.icon(glyph))
+        button.setToolTip(tip)
         menu = QMenu(button)
-        for title, names in floorplan.CATEGORIES:
+        for title, names in module.CATEGORIES:
             menu.addSection(title)
             for name in names:
-                menu.addAction(
-                    floorplan.LABELS[name],
-                    lambda _=False, n=name: self._set_plan_element(n))
+                menu.addAction(module.LABELS[name],
+                               lambda _=False, n=name: on_pick(n))
         button.setMenu(menu)
         bar.addWidget(button)
 
     def _set_plan_element(self, name):
         self.scene.plan_element = name
         self._activate_placement_tool(PLAN_PLACE)
+
+    def _set_elec_element(self, name):
+        self.scene.elec_element = name
+        self._activate_placement_tool(ELEC_PLACE)
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

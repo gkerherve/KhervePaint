@@ -942,6 +942,21 @@ def test_floorplan_all_elements_build():
             assert n in floorplan.SIZES and n in floorplan.LABELS
 
 
+def test_electrical_all_elements_build_and_place(scene):
+    from khervescribe import electrical
+    for name in electrical.SIZES:
+        specs = electrical.build_specs(name, 120.0, 90.0)
+        assert isinstance(specs, list) and specs
+        assert all("shape" in s for s in specs)
+    for _title, names in electrical.CATEGORIES:
+        for n in names:
+            assert n in electrical.SIZES and n in electrical.LABELS
+    scene.dpi = 300
+    scene.snap_enabled = False
+    scene.place_elec_element("resistor", QPointF(400, 400))
+    assert scene.vector_items()                       # something was placed
+
+
 def test_floorplan_place_centres_and_groups(scene):
     scene.dpi = 300
     scene.snap_enabled = False

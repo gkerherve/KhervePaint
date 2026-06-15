@@ -75,8 +75,15 @@ into a new module and import.
                        returns shape specs (AI/example format) for walls,
                        doors, windows, furniture, kitchen & bathroom
                        fittings; `SIZES` (mm), `LABELS`, `CATEGORIES`.
-                       `PaintScene.place_plan_element` builds native items
-                       via `ai_assistant._spec_to_item`, grouped, on click.
+  - `electrical.py`  — same shape: IEC/ANSI circuit components (resistor,
+                       capacitor, diode, transistor, sources, ground…) +
+                       building-installation symbols (sockets, switches,
+                       lights, consumer unit…). Same `build_specs`/`size_mm`
+                       interface as `floorplan`.
+                       `PaintScene._place_symbol(module, name, center)` builds
+                       native items via `ai_assistant._spec_to_item`, grouped,
+                       on click — used by both `place_plan_element` and
+                       `place_elec_element`.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
@@ -286,7 +293,9 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   snap to a **fixed length + 30° angle** (`scene.chem_fixed` default True,
   `bond_length_mm`, `PaintScene._chem_constrain`). A **Room layout**
   dropdown (`PLAN_PLACE` tool, `floorplan.py`) click-places top-view
-  walls/doors/furniture (grouped, real-world mm sizes) by category. The
+  walls/doors/furniture (grouped, real-world mm sizes) by category. An
+  **Electrical** dropdown (`ELEC_PLACE`, `electrical.py`) likewise places
+  circuit + installation symbols. The
   column ends with an **Objects** dropdown (the reusable-object/template
   library, see `library.py`): save the selection, open the **Template
   Explorer**, or insert a saved object — folders shown as nested
