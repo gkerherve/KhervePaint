@@ -467,7 +467,7 @@ class PaintScene(QGraphicsScene):
         # The grid is specified as a physical distance in millimetres
         # between adjacent lines; the pixel spacing is derived from the
         # canvas dpi (see grid_size). Smaller mm -> finer cells.
-        self.grid_mm = 0.5
+        self.grid_mm = 1.0
         self.snap_enabled = True
         self.show_grid = True
         self.infinite = False     # infinite paper: grid fills the view
