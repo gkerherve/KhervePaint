@@ -102,10 +102,12 @@ left toolbar (or *Edit ▸ Save Selection as Object…*), name it (e.g.
 *wall*), and it is stored as a standalone SVG. The dropdown then lists
 saved objects by name, dropping a fresh, editable copy into the view.
 
-**File ▸ Drawing Size** sets the canvas in **px, inches or mm** at a
-chosen **DPI** — with publication presets including **ACS single column
-(3.25 in)** and **double column (7.0 in)** at 300 dpi, plus A4/Letter
-and slides. Exports carry the real physical size: PNG embeds the DPI,
+New documents open at the **ACS single-column** size (3.25 in ≈ 82.6 mm,
+300 dpi). **File ▸ Drawing Size** sets the canvas in **px, inches or mm**
+at a chosen **DPI** — with column-width presets (in mm) for **ACS,
+Nature, Science, Cell, RSC, Elsevier, IEEE, Wiley and PNAS**, plus
+A4/Letter and slides. Exports carry the real physical size: PNG embeds
+the DPI,
 PDF pages are the figure's true inch size, and SVG sets its width/height
 in inches (with a pixel `viewBox`). You can also **fit to drawing** to
 shrink the canvas snugly around your shapes (optionally just the

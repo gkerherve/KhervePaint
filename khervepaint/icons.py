@@ -45,6 +45,26 @@ def app_icon() -> QIcon:
     return icon("mdi.palette-outline", color="#3776ab")
 
 
+def line_width_icon(width: float, color: str = None,
+                    w: int = 72, h: int = 16) -> QIcon:
+    """A horizontal stroke drawn at *width* pixels — a visual swatch for
+    the line-width picker, so widths read as thin-to-thick lines."""
+    from PyQt5.QtCore import Qt, QPointF
+    from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap
+
+    pixmap = QPixmap(w, h)
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+    pen = QPen(QColor(color or DEFAULT_COLOR), max(1.0, float(width)))
+    pen.setCapStyle(Qt.RoundCap)
+    painter.setPen(pen)
+    y = h / 2
+    painter.drawLine(QPointF(4, y), QPointF(w - 4, y))
+    painter.end()
+    return QIcon(pixmap)
+
+
 def shape_icon(kind: str, color: str = None, size: int = 24) -> QIcon:
     """Draw a shape's own outline into an icon — used for shapes that
     have no Material Design glyph (e.g. parallelogram, heptagon)."""

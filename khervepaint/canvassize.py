@@ -19,11 +19,43 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
                              QSpinBox, QVBoxLayout)
 
 #: Presets: label -> (unit, width, height, dpi). unit in {"px","in","mm"}.
+#: Journal figure widths are the official column widths (in mm), all at
+#: 300 dpi; heights are sensible starting points you can change.
 PRESETS = [
     ("Custom", None),
-    ("ACS single column — 3.25 in @ 300 dpi", ("in", 3.25, 2.50, 300)),
-    ("ACS double column — 7.0 in @ 300 dpi", ("in", 7.00, 4.00, 300)),
-    ("ACS max height — 7.0 × 9.5 in @ 300 dpi", ("in", 7.00, 9.50, 300)),
+    # ACS (single column = 3.25 in = 82.55 mm)
+    ("ACS single column — 82.6 mm @ 300 dpi", ("mm", 82.55, 63.5, 300)),
+    ("ACS double column — 177.8 mm @ 300 dpi", ("mm", 177.8, 101.6, 300)),
+    ("ACS max — 177.8 × 241.3 mm @ 300 dpi", ("mm", 177.8, 241.3, 300)),
+    # Nature
+    ("Nature single column — 89 mm @ 300 dpi", ("mm", 89, 120, 300)),
+    ("Nature double column — 183 mm @ 300 dpi", ("mm", 183, 120, 300)),
+    # Science
+    ("Science 1 column — 55 mm @ 300 dpi", ("mm", 55, 80, 300)),
+    ("Science 2 columns — 121 mm @ 300 dpi", ("mm", 121, 100, 300)),
+    ("Science 3 columns — 183 mm @ 300 dpi", ("mm", 183, 120, 300)),
+    # Cell Press
+    ("Cell 1 column — 85 mm @ 300 dpi", ("mm", 85, 100, 300)),
+    ("Cell 1.5 column — 114 mm @ 300 dpi", ("mm", 114, 110, 300)),
+    ("Cell 2 columns — 174 mm @ 300 dpi", ("mm", 174, 120, 300)),
+    # RSC
+    ("RSC single column — 83 mm @ 300 dpi", ("mm", 83, 63, 300)),
+    ("RSC double column — 171 mm @ 300 dpi", ("mm", 171, 110, 300)),
+    # Elsevier
+    ("Elsevier single column — 90 mm @ 300 dpi", ("mm", 90, 120, 300)),
+    ("Elsevier 1.5 column — 140 mm @ 300 dpi", ("mm", 140, 120, 300)),
+    ("Elsevier double column — 190 mm @ 300 dpi", ("mm", 190, 130, 300)),
+    # IEEE
+    ("IEEE single column — 88.9 mm @ 300 dpi", ("mm", 88.9, 100, 300)),
+    ("IEEE double column — 181 mm @ 300 dpi", ("mm", 181, 120, 300)),
+    # Wiley
+    ("Wiley single column — 80 mm @ 300 dpi", ("mm", 80, 100, 300)),
+    ("Wiley double column — 170 mm @ 300 dpi", ("mm", 170, 120, 300)),
+    # PNAS
+    ("PNAS 1 column — 87 mm @ 300 dpi", ("mm", 87, 100, 300)),
+    ("PNAS 2 columns — 114 mm @ 300 dpi", ("mm", 114, 110, 300)),
+    ("PNAS full width — 178 mm @ 300 dpi", ("mm", 178, 120, 300)),
+    # Paper & slides
     ("A4 portrait @ 300 dpi", ("mm", 210, 297, 300)),
     ("A4 landscape @ 300 dpi", ("mm", 297, 210, 300)),
     ("US Letter portrait @ 300 dpi", ("in", 8.5, 11.0, 300)),
@@ -32,7 +64,18 @@ PRESETS = [
     ("Slide 4:3 — 1024 × 768 px", ("px", 1024, 768, 96)),
 ]
 
+#: New documents open at ACS single column (3.25 in) in mm at 300 dpi.
+DEFAULT_PRESET = ("mm", 82.55, 63.5, 300)
+
 _UNITS = ["px", "in", "mm"]
+
+
+def default_size():
+    """Pixel (width, height, dpi) for a new document — the ACS single
+    column figure size."""
+    unit, w, h, dpi = DEFAULT_PRESET
+    return (max(1, round(_to_px(w, unit, dpi))),
+            max(1, round(_to_px(h, unit, dpi))), dpi)
 
 
 def _to_px(value, unit, dpi):

@@ -74,9 +74,14 @@ into a new module and import.
                        (dim mask + frame + handles); Enter applies,
                        Esc cancels. Right-click an image → Crop image.
   - `canvassize.py`  — `CanvasSizeDialog` (File ▸ Drawing Size): size in
-                       px/in/mm at a DPI, ACS journal + paper presets,
-                       custom, or fit-to-drawing. Sets `scene.dpi` and
-                       drives `resize_canvas`/`fit_to_content` (undoable).
+                       px/in/mm at a DPI, mm column-width presets for many
+                       journals (ACS, Nature, Science, Cell, RSC,
+                       Elsevier, IEEE, Wiley, PNAS) + paper/slides, custom,
+                       or fit-to-drawing. Also owns `DEFAULT_PRESET` /
+                       `default_size()` — new documents open at ACS single
+                       column (3.25 in in mm) at 300 dpi. Sets `scene.dpi`
+                       and drives `resize_canvas`/`fit_to_content`
+                       (undoable).
                        `scene.dpi` round-trips (.kpaint/SVG) and drives
                        physical export size (PNG dpi, PDF page, SVG inch
                        width with px viewBox).
@@ -214,7 +219,10 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   object (the menu lists them by file name, rebuilt on open). Top
   toolbar = file ops + undo/redo + stroke/fill colour, width, grid,
   arrange. Grid spacing is set in **mm** (converted via `scene.dpi`);
-  an **Infinite paper** toggle fills the view with grid.
+  an **Infinite paper** toggle fills the view with grid. The line
+  **width** is a dropdown of thin-to-thick line swatches
+  (`LINE_WIDTHS`, drawn by `icons.line_width_icon` in the current stroke
+  colour), not a numeric spinner.
 - Pointer tool = rubber-band select + move; other tools draw.
 - Select an item to get resize handles; **double-click to rotate** it
   about its centre. Right-click for the context menu (which includes

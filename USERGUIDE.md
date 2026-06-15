@@ -53,8 +53,10 @@ canvas to draw:
 
 On the top toolbar: click the **stroke** swatch (outline colour) or the
 **fill** swatch to choose colours, toggle **Fill new shapes** to give new
-shapes a fill, and set the line **Width**. These apply to the next thing
-you draw; to recolour an existing item, use its properties (below).
+shapes a fill, and pick the **line width** from the dropdown — it shows
+each width as a line, thin to thick, drawn in the current stroke colour.
+These apply to the next thing you draw; to recolour an existing item, use
+its properties (below).
 
 ## 4. Selecting, moving, resizing, rotating
 
@@ -123,13 +125,14 @@ files on disk (delete or rename them there).
 
 ## 11. Drawing size & publication figures
 
-**File ▸ Drawing Size** sets the canvas in **pixels, inches or
-millimetres** at a chosen **DPI**. Presets include **ACS single column
-(3.25 in)** and **double column (7.0 in)** at 300 dpi, plus A4, US Letter
-and slides — or enter a custom size, or **Fit to drawing** to shrink the
-canvas around your artwork. Exports then carry the true physical size
-(PNG embeds the DPI, PDF pages are the figure's inch size, SVG sets its
-width in inches).
+New documents open at the **ACS single-column** figure size (3.25 in ≈
+82.6 mm) at 300 dpi. **File ▸ Drawing Size** sets the canvas in
+**pixels, inches or millimetres** at a chosen **DPI**, with column-width
+presets (in mm) for many journals — **ACS, Nature, Science, Cell, RSC,
+Elsevier, IEEE, Wiley and PNAS** — plus A4, US Letter and slides. Or
+enter a custom size, or **Fit to drawing** to shrink the canvas around
+your artwork. Exports then carry the true physical size (PNG embeds the
+DPI, PDF pages are the figure's inch size, SVG sets its width in inches).
 
 ## 12. Undo / redo
 

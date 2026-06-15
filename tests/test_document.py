@@ -1348,16 +1348,25 @@ def test_dpi_roundtrip_svg(scene, tmp_path):
 
 
 def test_acs_preset_pixels(app):
-    from khervepaint.canvassize import CanvasSizeDialog
-    dlg = CanvasSizeDialog(current=(800, 600), dpi=96)
-    # select the ACS single column preset (index 1)
+    from khervepaint import canvassize
+    dlg = canvassize.CanvasSizeDialog(current=(800, 600), dpi=96)
+    # the ACS single column preset is the first non-Custom entry
     dlg.preset_combo.setCurrentIndex(1)
     dlg._apply_preset(1)
     mode, pw, ph, dpi = dlg.result_value()
     assert mode == "size"
     assert dpi == 300
-    assert pw == round(3.25 * 300)              # 975 px wide
-    assert ph == round(2.50 * 300)              # 750 px tall
+    # ACS single column = 3.25 in, now specified in mm (~975 x 750 px)
+    assert abs(pw - round(3.25 * 300)) <= 1
+    assert abs(ph - round(2.50 * 300)) <= 1
+
+
+def test_default_size_is_acs_single_column(app):
+    from khervepaint import canvassize
+    w, h, dpi = canvassize.default_size()
+    assert dpi == 300
+    assert abs(w - round(3.25 * 300)) <= 1      # ~975 px
+    assert abs(h - round(2.50 * 300)) <= 1      # ~750 px
 
 
 def test_size_dialog_mm_conversion(app):
@@ -1396,13 +1405,16 @@ def test_fit_to_content_shrinks_and_shifts(scene):
 
 
 def test_resize_canvas_is_undoable(window):
+    from khervepaint import canvassize
+    default_w = canvassize.default_size()[0]
     s = window.scene
+    assert s.sceneRect().width() == default_w   # new docs open at the default
     s.addItem(RectItem(QRectF(0, 0, 10, 10)))
     s.changed_by_user.emit()                    # baseline (the add)
     s.resize_canvas(1234, 567)
     assert s.sceneRect().width() == 1234
     window._undo_stack.undo()                   # undo the resize
-    assert s.sceneRect().width() == 800         # back to the default
+    assert s.sceneRect().width() == default_w   # back to the default
 
 
 def test_pencil_creates_vector_stroke(scene):

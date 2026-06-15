@@ -16,10 +16,9 @@ from PyQt5.QtGui import QColor, QDesktopServices, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
                              QColorDialog, QDoubleSpinBox, QFileDialog,
                              QInputDialog, QLabel, QMainWindow, QMenu,
-                             QMessageBox, QSpinBox, QToolBar, QToolButton,
-                             QUndoStack)
+                             QMessageBox, QToolBar, QToolButton, QUndoStack)
 
-from . import APP_NAME, __version__, document, icons, library, svgio
+from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
 from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEVRON, CIRCLE, DIAMOND,
                      ELLIPSE, HALFCIRCLE, HEPTAGON, HEXAGON, HOUSE, LIGHTNING,
@@ -35,6 +34,9 @@ TOOL_ICON_SIZE = QSize(24, 24)
 
 #: Custom clipboard MIME carrying serialised KhervePaint items.
 MIME_ITEMS = "application/x-khervepaint-items"
+
+#: Selectable stroke widths (px) shown as thin-to-thick line swatches.
+LINE_WIDTHS = [1, 2, 3, 4, 6, 8, 12, 16, 24]
 
 #: QSettings scope (shared with the theme settings) and recent-files key.
 SETTINGS = ("Kherve", "KhervePaint")
@@ -95,7 +97,9 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(icons.app_icon())
         self.resize(1200, 800)
 
-        self.scene = PaintScene(800, 600)
+        w, h, dpi = canvassize.default_size()
+        self.scene = PaintScene(w, h)
+        self.scene.dpi = dpi
         self.view = PaintView(self.scene)
         self.setCentralWidget(self.view)
 
@@ -281,12 +285,14 @@ class MainWindow(QMainWindow):
             lambda i: setattr(self.scene, "bucket_vector", i == 1))
         bar.addWidget(self._bucket_mode)
 
-        bar.addWidget(QLabel(" Width "))
-        self._width_spin = QSpinBox()
-        self._width_spin.setRange(1, 60)
-        self._width_spin.setValue(int(self.scene.pen.widthF()))
-        self._width_spin.valueChanged.connect(self._set_pen_width)
-        bar.addWidget(self._width_spin)
+        self._width_combo = QComboBox()
+        self._width_combo.setIconSize(QSize(72, 16))
+        self._width_combo.setToolTip("Line width — thin to thick")
+        for w in LINE_WIDTHS:
+            self._width_combo.addItem(f"{w} px", w)
+        self._select_width(self.scene.pen.widthF())
+        self._width_combo.currentIndexChanged.connect(self._on_width_changed)
+        bar.addWidget(self._width_combo)
         bar.addSeparator()
 
         self._grid_act = QAction(icons.icon("mdi.grid"), "Grid", self)
@@ -463,8 +469,26 @@ class MainWindow(QMainWindow):
         if tool != POINTER:
             self.scene.clear_handles()
 
-    def _set_pen_width(self, width: int):
-        self.scene.pen.setWidthF(width)
+    def _on_width_changed(self, index: int):
+        width = self._width_combo.itemData(index)
+        if width is not None:
+            self.scene.pen.setWidthF(float(width))
+
+    def _select_width(self, width: float):
+        """Select the listed width nearest to *width* without firing the
+        change handler."""
+        idx = min(range(len(LINE_WIDTHS)),
+                  key=lambda i: abs(LINE_WIDTHS[i] - width))
+        self._width_combo.blockSignals(True)
+        self._width_combo.setCurrentIndex(idx)
+        self._width_combo.blockSignals(False)
+
+    def _refresh_width_icons(self):
+        """Redraw the line-width swatches in the current stroke colour."""
+        color = self.scene.pen.color().name()
+        for i in range(self._width_combo.count()):
+            w = self._width_combo.itemData(i)
+            self._width_combo.setItemIcon(i, icons.line_width_icon(w, color))
 
     def _set_fill_enabled(self, enabled: bool):
         self.scene.fill_enabled = enabled
@@ -654,12 +678,15 @@ class MainWindow(QMainWindow):
             pixmap = QPixmap(22, 22)
             pixmap.fill(QColor(color))
             btn.setIcon(QIcon(pixmap))
+        self._refresh_width_icons()      # swatches follow the stroke colour
 
     # ------------------------------------------------------------ files
     def new_document(self):
         if not self._confirm_discard():
             return
-        self.scene.new_document(800, 600)
+        w, h, dpi = canvassize.default_size()
+        self.scene.new_document(w, h)
+        self.scene.dpi = dpi
         self._path = None
         self._reset_history()
         self._update_title()
@@ -768,11 +795,10 @@ class MainWindow(QMainWindow):
         self._update_title()
 
     def change_canvas_size(self):
-        from .canvassize import CanvasSizeDialog
         rect = self.scene.sceneRect()
         has_sel = any(i.parentItem() is None
                       for i in self.scene.selectedItems())
-        dlg = CanvasSizeDialog(
+        dlg = canvassize.CanvasSizeDialog(
             self, current=(rect.width(), rect.height()),
             dpi=self.scene.dpi, has_selection=has_sel)
         if not dlg.exec_():

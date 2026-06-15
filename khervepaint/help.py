@@ -130,9 +130,10 @@ draw.</p>
 <h2>3 · Colours, width and fill</h2>
 <p>On the top toolbar: click the <b>stroke</b> swatch (outline colour) or
 the <b>fill</b> swatch to choose colours, toggle <b>Fill new shapes</b>
-to give new shapes a fill, and set the line <b>Width</b>. These apply to
-the next thing you draw; to recolour an existing item use its properties
-(below).</p>
+to give new shapes a fill, and pick the <b>line width</b> from the
+dropdown — it shows each width as a line, thin to thick, in the current
+stroke colour. These apply to the next thing you draw; to recolour an
+existing item use its properties (below).</p>
 
 <h2>4 · Selecting, moving, resizing, rotating</h2>
 <ul>
@@ -196,13 +197,15 @@ drop a fresh, fully editable copy into the middle of the view.
 <b>Open objects folder</b> reveals the files on disk.</p>
 
 <h2>11 · Drawing size &amp; publication figures</h2>
-<p><b>File ▸ Drawing Size</b> sets the canvas in <b>pixels, inches or
-millimetres</b> at a chosen <b>DPI</b>. Presets include <b>ACS single
-column (3.25 in)</b> and <b>double column (7.0 in)</b> at 300 dpi, plus
-A4, US Letter and slides — or enter a custom size, or <b>Fit to
-drawing</b> to shrink the canvas around your artwork. Exports then carry
-the true physical size (PNG embeds the DPI, PDF pages are the figure's
-inch size, SVG sets its width in inches).</p>
+<p>New documents open at the <b>ACS single-column</b> figure size
+(3.25 in ≈ 82.6 mm) at 300 dpi. <b>File ▸ Drawing Size</b> sets the
+canvas in <b>pixels, inches or millimetres</b> at a chosen <b>DPI</b>,
+with column-width presets (in mm) for many journals — <b>ACS, Nature,
+Science, Cell, RSC, Elsevier, IEEE, Wiley and PNAS</b> — plus A4, US
+Letter and slides. Or enter a custom size, or <b>Fit to drawing</b> to
+shrink the canvas around your artwork. Exports then carry the true
+physical size (PNG embeds the DPI, PDF pages are the figure's inch size,
+SVG sets its width in inches).</p>
 
 <h2>12 · Undo / redo</h2>
 <p><b>Ctrl+Z</b> undoes and <b>Ctrl+Y</b> redoes <i>everything</i> —
