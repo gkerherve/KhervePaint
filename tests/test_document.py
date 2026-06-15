@@ -805,6 +805,31 @@ def test_object_name_is_sanitised(scene, tmp_path, monkeypatch):
     assert path.exists()
 
 
+def test_object_library_folders(scene, tmp_path, monkeypatch):
+    from khervescribe import library
+    monkeypatch.setenv("KHERVESCRIBE_OBJECTS_DIR", str(tmp_path / "objects"))
+    _populated(scene)
+    d = [document.item_to_dict(i) for i in scene.vector_items()]
+    library.save_object(d, "Chem/benzene")               # folder via name path
+    library.save_object(d, "brick", folder=("Arch", "Walls"))  # via arg
+    library.save_object(d, "loose")
+    folders = library.list_folders()
+    assert ("Chem",) in folders and ("Arch", "Walls") in folders
+    where = {name: parts for parts, name, _ in library.iter_objects()}
+    assert where["benzene"] == ("Chem",)
+    assert where["brick"] == ("Arch", "Walls")
+    assert where["loose"] == ()
+    # move an object, rename a folder, delete a folder (with contents)
+    loose = next(p for parts, n, p in library.iter_objects() if n == "loose")
+    library.move_object(loose, "Chem")
+    library.rename_folder(("Arch", "Walls"), "Brick")
+    after = {name: parts for parts, name, _ in library.iter_objects()}
+    assert after["loose"] == ("Chem",) and after["brick"] == ("Arch", "Brick")
+    library.delete_folder(("Chem",))
+    names = {n for _, n, _ in library.iter_objects()}
+    assert "benzene" not in names and "loose" not in names
+
+
 def _scene_br(item):
     r = item.sceneBoundingRect()
     return [round(v, 2) for v in (r.x(), r.y(), r.width(), r.height())]

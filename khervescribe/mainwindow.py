@@ -338,17 +338,35 @@ class MainWindow(QMainWindow):
         menu.clear()
         menu.addAction(icons.icon("mdi.content-save-plus-outline"),
                        "Save selection as object…", self.save_object)
+        menu.addAction(icons.icon("mdi.folder-cog-outline"),
+                       "Template Explorer…", self.open_template_explorer)
         menu.addAction(icons.icon("mdi.folder-open-outline"),
                        "Open objects folder", self.open_objects_folder)
         menu.addSeparator()
-        objects = library.list_objects()
+        objects = library.iter_objects()
         if not objects:
             empty = menu.addAction("(no saved objects yet)")
             empty.setEnabled(False)
             return
-        for name, path in objects:
-            menu.addAction(name,
-                           lambda _=False, p=path: self.insert_object(p))
+        # nested sub-menus mirror the folder structure
+        submenus = {(): menu}
+        for parts, name, path in objects:
+            parent = self._objects_submenu(menu, submenus, parts)
+            parent.addAction(name,
+                             lambda _=False, p=path: self.insert_object(p))
+
+    def _objects_submenu(self, root, cache, parts):
+        """Return the QMenu for folder *parts*, creating nested menus."""
+        if parts in cache:
+            return cache[parts]
+        parent = self._objects_submenu(root, cache, parts[:-1])
+        sub = parent.addMenu(icons.icon("mdi.folder-outline"), parts[-1])
+        cache[parts] = sub
+        return sub
+
+    def open_template_explorer(self):
+        from .templates import TemplateExplorer
+        TemplateExplorer(self).exec_()
 
     def _build_ai_dock(self):
         from .ai_assistant import AiDock
@@ -789,7 +807,9 @@ class MainWindow(QMainWindow):
                 "Select one or more items first, then save them as an "
                 "object.")
             return
-        name, ok = QInputDialog.getText(self, "Save object", "Object name:")
+        name, ok = QInputDialog.getText(
+            self, "Save object",
+            "Object name (use Folder/Name to file it in a sub-folder):")
         if not ok or not name.strip():
             return
         dicts = [document.item_to_dict(i) for i in items]
