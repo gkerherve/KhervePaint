@@ -110,7 +110,18 @@ with no fixed page edge (the page still bounds what you export).
 Snapping keeps shapes aligned as you draw and move them (the pencil
 stays freehand).
 
-## 10. Drawing size & publication figures
+## 10. Object library
+
+Reuse a drawing across files. Select one or more items and choose
+**Save selection as object…** (in the **Objects** dropdown at the bottom
+of the left toolbar, or **Edit ▸ Save Selection as Object…**), then give
+it a name — for example *wall*. It is written as a standalone **SVG**
+file in a per-user objects folder. The Objects dropdown then lists every
+saved object **by its name**; pick one to drop a fresh, fully editable
+copy into the middle of the view. **Open objects folder** reveals the
+files on disk (delete or rename them there).
+
+## 11. Drawing size & publication figures
 
 **File ▸ Drawing Size** sets the canvas in **pixels, inches or
 millimetres** at a chosen **DPI**. Presets include **ACS single column
@@ -120,13 +131,13 @@ canvas around your artwork. Exports then carry the true physical size
 (PNG embeds the DPI, PDF pages are the figure's inch size, SVG sets its
 width in inches).
 
-## 11. Undo / redo
+## 12. Undo / redo
 
 **Ctrl+Z** undoes and **Ctrl+Y** redoes *everything* — drawing, moving,
 resizing, rotating, properties, grouping, cropping, fills and canvas
 resizes.
 
-## 12. Saving, opening & exporting
+## 13. Saving, opening & exporting
 
 - **Save** writes **editable SVG** by default (also offered: `.kpaint`,
   the lossless native format). Re-opening an SVG brings every shape back
@@ -137,12 +148,12 @@ resizes.
 - **Export** (Ctrl+E) writes a flattened **PNG** or single-page **PDF**
   at the drawing's physical size.
 
-## 13. View & themes
+## 14. View & themes
 
 Zoom with **Ctrl + mouse wheel**, reset with **Ctrl+0**. Pick a colour
 theme under **View ▸ Theme**.
 
-## 14. AI assistant
+## 15. AI assistant
 
 Open **View ▸ AI Assistant** for a chat panel that can draw for you.
 Choose a provider — **Claude, ChatGPT, Mistral, Ollama** or a **Local**
@@ -153,7 +164,7 @@ down to a circle"*. The shapes it returns become real, editable items on
 the canvas, so you can move, restyle and undo them. API keys are stored
 locally on your machine.
 
-## 15. Examples
+## 16. Examples
 
 The **Examples** menu loads ready-made, fully labelled instrument
 schematics onto an A4 page — each with the instrument cross-section

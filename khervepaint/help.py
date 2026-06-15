@@ -185,7 +185,17 @@ whole view with no fixed page edge (the page still bounds what you
 export). Snapping keeps shapes aligned as you draw and move them (the
 pencil stays freehand).</p>
 
-<h2>10 · Drawing size &amp; publication figures</h2>
+<h2>10 · Object library</h2>
+<p>Reuse a drawing across files. Select one or more items and choose
+<b>Save selection as object…</b> (in the <b>Objects</b> dropdown at the
+bottom of the left toolbar, or <b>Edit ▸ Save Selection as Object…</b>),
+then give it a name — for example <i>wall</i>. It is written as a
+standalone <b>SVG</b> file in a per-user objects folder. The Objects
+dropdown then lists every saved object <b>by its name</b>; pick one to
+drop a fresh, fully editable copy into the middle of the view.
+<b>Open objects folder</b> reveals the files on disk.</p>
+
+<h2>11 · Drawing size &amp; publication figures</h2>
 <p><b>File ▸ Drawing Size</b> sets the canvas in <b>pixels, inches or
 millimetres</b> at a chosen <b>DPI</b>. Presets include <b>ACS single
 column (3.25 in)</b> and <b>double column (7.0 in)</b> at 300 dpi, plus
@@ -194,12 +204,12 @@ drawing</b> to shrink the canvas around your artwork. Exports then carry
 the true physical size (PNG embeds the DPI, PDF pages are the figure's
 inch size, SVG sets its width in inches).</p>
 
-<h2>11 · Undo / redo</h2>
+<h2>12 · Undo / redo</h2>
 <p><b>Ctrl+Z</b> undoes and <b>Ctrl+Y</b> redoes <i>everything</i> —
 drawing, moving, resizing, rotating, properties, grouping, cropping,
 fills and canvas resizes.</p>
 
-<h2>12 · Saving, opening &amp; exporting</h2>
+<h2>13 · Saving, opening &amp; exporting</h2>
 <ul>
   <li><b>Save</b> writes <b>editable SVG</b> by default (also offered:
       <code>.kpaint</code>, the lossless native format). Re-opening an SVG
@@ -212,11 +222,11 @@ fills and canvas resizes.</p>
       <b>PDF</b> at the drawing's physical size.</li>
 </ul>
 
-<h2>13 · View &amp; themes</h2>
+<h2>14 · View &amp; themes</h2>
 <p>Zoom with <b>Ctrl + mouse wheel</b>, reset with <b>Ctrl+0</b>. Pick a
 colour theme under <b>View ▸ Theme</b>.</p>
 
-<h2>14 · AI assistant</h2>
+<h2>15 · AI assistant</h2>
 <p>Open <b>View ▸ AI Assistant</b> for a chat panel that can draw for
 you. Choose a provider — <b>Claude, ChatGPT, Mistral, Ollama</b> or a
 <b>Local</b> endpoint — enter its API key (Ollama/Local need only a base
@@ -229,7 +239,7 @@ line shows and the send button becomes a <b>Stop</b> button. The chat is
 remembered between sessions; the clear icon wipes it. Keys are stored
 locally on your machine.</p>
 
-<h2>15 · Examples</h2>
+<h2>16 · Examples</h2>
 <p>The <b>Examples</b> menu loads ready-made, fully labelled instrument
 schematics onto an A4 page — each with the instrument cross-section, a
 realistic data plot and a caption. They are grouped by category:

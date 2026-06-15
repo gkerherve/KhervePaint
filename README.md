@@ -96,6 +96,12 @@ properties), and images can be **cropped** — right-click an image →
 millimetres (smaller means finer), and the **Infinite paper** toggle
 lets the grid fill the whole view with no fixed page edge.
 
+Build a **reusable-object library**: select some items and *Save
+selection as object…* from the **Objects** dropdown at the bottom of the
+left toolbar (or *Edit ▸ Save Selection as Object…*), name it (e.g.
+*wall*), and it is stored as a standalone SVG. The dropdown then lists
+saved objects by name, dropping a fresh, editable copy into the view.
+
 **File ▸ Drawing Size** sets the canvas in **px, inches or mm** at a
 chosen **DPI** — with publication presets including **ACS single column
 (3.25 in)** and **double column (7.0 in)** at 300 dpi, plus A4/Letter

@@ -11,14 +11,15 @@ the Free Software Foundation, either version 3 of the License, or
 import json
 from pathlib import Path
 
-from PyQt5.QtCore import QMimeData, QSettings, QSize, Qt
-from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPixmap
+from PyQt5.QtCore import QMimeData, QRectF, QSettings, QSize, Qt, QUrl
+from PyQt5.QtGui import QColor, QDesktopServices, QIcon, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
-                             QColorDialog, QDoubleSpinBox, QFileDialog, QLabel,
-                             QMainWindow, QMenu, QMessageBox, QSpinBox,
-                             QToolBar, QToolButton, QUndoStack)
+                             QColorDialog, QDoubleSpinBox, QFileDialog,
+                             QInputDialog, QLabel, QMainWindow, QMenu,
+                             QMessageBox, QSpinBox, QToolBar, QToolButton,
+                             QUndoStack)
 
-from . import APP_NAME, __version__, document, icons, svgio
+from . import APP_NAME, __version__, document, icons, library, svgio
 from .undo import SnapshotCommand
 from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEVRON, CIRCLE, DIAMOND,
                      ELLIPSE, HALFCIRCLE, HEPTAGON, HEXAGON, HOUSE, LIGHTNING,
@@ -142,6 +143,8 @@ class MainWindow(QMainWindow):
         bar.addSeparator()
         self._add_tool_action(bar, TEXT, icons.icon("mdi.format-text"),
                               "Text", "T")
+        bar.addSeparator()
+        self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
 
     def _add_tool_action(self, bar, tool, icon, label, shortcut):
@@ -196,6 +199,37 @@ class MainWindow(QMainWindow):
         button.setIcon(act.icon())
         act.setChecked(True)
         self._set_tool(act.data())
+
+    def _build_objects_button(self, bar):
+        """Dropdown for the reusable-object library: save the current
+        selection as a named object, or insert a saved one. The list of
+        objects is rebuilt from the folder each time it opens."""
+        button = QToolButton()
+        button.setPopupMode(QToolButton.InstantPopup)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setIcon(icons.icon("mdi.bookshelf"))
+        button.setToolTip("Objects — save the selection or insert a "
+                          "saved object")
+        menu = QMenu(button)
+        menu.aboutToShow.connect(lambda: self._rebuild_objects_menu(menu))
+        button.setMenu(menu)
+        bar.addWidget(button)
+
+    def _rebuild_objects_menu(self, menu):
+        menu.clear()
+        menu.addAction(icons.icon("mdi.content-save-plus-outline"),
+                       "Save selection as object…", self.save_object)
+        menu.addAction(icons.icon("mdi.folder-open-outline"),
+                       "Open objects folder", self.open_objects_folder)
+        menu.addSeparator()
+        objects = library.list_objects()
+        if not objects:
+            empty = menu.addAction("(no saved objects yet)")
+            empty.setEnabled(False)
+            return
+        for name, path in objects:
+            menu.addAction(name,
+                           lambda _=False, p=path: self.insert_object(p))
 
     def _build_ai_dock(self):
         from .ai_assistant import AiDock
@@ -337,6 +371,7 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("&Copy", self.copy_selection, QKeySequence.Copy)
         edit_menu.addAction("&Paste", self.paste, QKeySequence.Paste)
         edit_menu.addAction("D&uplicate", self.duplicate_selection, "Ctrl+D")
+        edit_menu.addAction("Save Selection as &Object…", self.save_object)
         edit_menu.addSeparator()
         edit_menu.addAction("Select &All", self._select_all,
                             QKeySequence.SelectAll)
@@ -516,6 +551,61 @@ class MainWindow(QMainWindow):
 
     def _view_centre(self):
         return self.view.mapToScene(self.view.viewport().rect().center())
+
+    # ------------------------------------------------------------ object library
+    def save_object(self):
+        """Save the current selection as a named SVG object in the
+        library folder, ready to re-insert from the Objects dropdown."""
+        items = self._selected_top_items()
+        if not items:
+            QMessageBox.information(
+                self, APP_NAME,
+                "Select one or more items first, then save them as an "
+                "object.")
+            return
+        name, ok = QInputDialog.getText(self, "Save object", "Object name:")
+        if not ok or not name.strip():
+            return
+        dicts = [document.item_to_dict(i) for i in items]
+        try:
+            path = library.save_object(dicts, name,
+                                       dpi=getattr(self.scene, "dpi", 96))
+        except Exception as exc:
+            QMessageBox.warning(self, APP_NAME,
+                                f"Could not save object:\n{exc}")
+            return
+        self.statusBar().showMessage(f"Saved object “{path.stem}”")
+
+    def insert_object(self, path):
+        """Insert a saved object as fresh, editable items, centred on the
+        current view and selected as one paste-like gesture (undoable)."""
+        try:
+            dicts = library.load_object(path)
+        except Exception as exc:
+            QMessageBox.warning(self, APP_NAME,
+                                f"Could not load object:\n{exc}")
+            return
+        if not dicts:
+            return
+        self.scene.clearSelection()
+        new_items = []
+        for d in dicts:
+            item = document.item_from_dict(d)
+            self.scene.addItem(item)
+            item.setSelected(True)
+            new_items.append(item)
+        rect = QRectF()
+        for it in new_items:
+            rect = rect.united(it.sceneBoundingRect())
+        target = self._view_centre()
+        dx, dy = target.x() - rect.center().x(), target.y() - rect.center().y()
+        for it in new_items:
+            it.moveBy(dx, dy)
+        self.scene.changed_by_user.emit()
+
+    def open_objects_folder(self):
+        QDesktopServices.openUrl(
+            QUrl.fromLocalFile(str(library.objects_dir())))
 
     # ------------------------------------------------------------ editing
     def _show_item_menu(self, item, global_pos):

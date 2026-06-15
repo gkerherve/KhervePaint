@@ -52,6 +52,12 @@ into a new module and import.
   - `svgio.py`       — default format: editable SVG writer + parser
                        (breaks groups/paths/transforms into native
                        items). Imports the path helpers from document.
+  - `library.py`     — reusable-object library: save the current
+                       selection as a named standalone SVG in a per-user
+                       objects folder (`KHERVEPAINT_OBJECTS_DIR` override
+                       for tests), list saved objects, and load one back
+                       to serialised item dicts. Driven by the left
+                       toolbar's **Objects** dropdown in `mainwindow.py`.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
@@ -202,8 +208,13 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   checkable group). Direct buttons (pointer/pencil/bucket/line/arrow/
   text) plus four shape **dropdown** buttons (`SHAPE_GROUPS`:
   Rectangles, Ellipses & arcs, Polygons, Stars & symbols) — each a
-  `QToolButton` menu that remembers the last-picked shape. Top toolbar =
-  file ops + undo/redo + stroke/fill colour, width, grid, arrange.
+  `QToolButton` menu that remembers the last-picked shape. The column
+  ends with an **Objects** dropdown (the reusable-object library, see
+  `library.py`): save the selection as a named SVG, or insert a saved
+  object (the menu lists them by file name, rebuilt on open). Top
+  toolbar = file ops + undo/redo + stroke/fill colour, width, grid,
+  arrange. Grid spacing is set in **mm** (converted via `scene.dpi`);
+  an **Infinite paper** toggle fills the view with grid.
 - Pointer tool = rubber-band select + move; other tools draw.
 - Select an item to get resize handles; **double-click to rotate** it
   about its centre. Right-click for the context menu (which includes

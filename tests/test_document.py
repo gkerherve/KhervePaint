@@ -403,6 +403,34 @@ def test_svg_grid_metadata_roundtrip(scene, tmp_path):
     assert other.infinite is True
 
 
+def test_object_library_roundtrip(scene, tmp_path, monkeypatch):
+    from khervepaint import library
+    monkeypatch.setenv("KHERVEPAINT_OBJECTS_DIR", str(tmp_path / "objects"))
+    _populated(scene)
+    dicts = [document.item_to_dict(i) for i in scene.vector_items()]
+
+    path = library.save_object(dicts, "Wall", dpi=96)
+    assert path.exists()
+    assert path.name == "Wall.svg"
+    assert ("Wall", path) in library.list_objects()
+
+    loaded = library.load_object(path)
+    assert len(loaded) == len(dicts)
+    types = {d["type"] for d in loaded}
+    assert {"line", "rect", "ellipse", "text"} <= types
+
+
+def test_object_name_is_sanitised(scene, tmp_path, monkeypatch):
+    from khervepaint import library
+    monkeypatch.setenv("KHERVEPAINT_OBJECTS_DIR", str(tmp_path / "objects"))
+    _populated(scene)
+    dicts = [document.item_to_dict(i) for i in scene.vector_items()]
+    path = library.save_object(dicts, "wall/../x?:y", dpi=96)
+    # Path separators and illegal chars are stripped to a safe stem.
+    assert "/" not in path.stem and ":" not in path.stem
+    assert path.exists()
+
+
 def _scene_br(item):
     r = item.sceneBoundingRect()
     return [round(v, 2) for v in (r.x(), r.y(), r.width(), r.height())]
