@@ -41,8 +41,33 @@ def icon(name: str, color: str = None) -> QIcon:
 
 
 def app_icon() -> QIcon:
-    """Window/taskbar icon: a palette glyph in Python blue."""
-    return icon("mdi.palette-outline", color="#3776ab")
+    """Window/taskbar icon: a 'K' wordmark over 'scribe' on a rounded
+    tile (reads 'K scribe', not 'KS')."""
+    from PyQt5.QtCore import Qt, QRectF
+    from PyQt5.QtGui import QColor, QFont, QPainter, QPixmap
+
+    size = 256
+    pm = QPixmap(size, size)
+    pm.fill(Qt.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.Antialiasing)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QColor("#2f6f9f"))
+    p.drawRoundedRect(QRectF(10, 10, size - 20, size - 20), 44, 44)
+
+    p.setPen(QColor("#ffffff"))
+    big = QFont("Segoe UI", 132)
+    big.setBold(True)
+    p.setFont(big)
+    p.drawText(QRectF(0, 6, size, size * 0.64), Qt.AlignCenter, "K")
+
+    small = QFont("Segoe UI", 52)
+    small.setItalic(True)
+    p.setFont(small)
+    p.drawText(QRectF(0, size * 0.60, size, size * 0.34),
+               Qt.AlignCenter, "scribe")
+    p.end()
+    return QIcon(pm)
 
 
 def line_width_icon(width: float, color: str = None,

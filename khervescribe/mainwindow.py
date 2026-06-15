@@ -140,8 +140,8 @@ class MainWindow(QMainWindow):
         self.view.content_dropped.connect(self._on_drop)
 
         self._build_tool_bar()
+        self._build_ai_dock()           # before the options bar (toggle button)
         self._build_options_bar()
-        self._build_ai_dock()
         self._build_menus()
         self._build_status_zoom()
         self._update_title()
@@ -545,6 +545,11 @@ class MainWindow(QMainWindow):
         bar.addSeparator()
         bar.addAction(icons.icon("mdi.delete-outline"), "Delete",
                       self.scene.delete_selection)
+        bar.addSeparator()
+        ai_toggle = self.ai_dock.toggleViewAction()   # show/hide chat panel
+        ai_toggle.setIcon(icons.icon("mdi.robot-outline"))
+        ai_toggle.setToolTip("Show / hide the AI Assistant panel")
+        bar.addAction(ai_toggle)
 
         self._refresh_color_buttons()
 

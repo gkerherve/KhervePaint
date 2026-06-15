@@ -17,7 +17,7 @@ import re
 
 from PyQt5.QtCore import (QLineF, QRectF, QSettings, QSize, Qt, QThread,
                           QTimer, pyqtSignal)
-from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QTextCursor
+from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QPixmap, QTextCursor
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
                              QDockWidget, QFormLayout, QGroupBox, QHBoxLayout,
                              QLabel, QLineEdit, QMessageBox, QPlainTextEdit,
@@ -378,6 +378,13 @@ class _ChatInput(QPlainTextEdit):
     submitted = pyqtSignal()
     history_prev = pyqtSignal()
     history_next = pyqtSignal()
+    image_pasted = pyqtSignal(object)        # a pasted QImage (screenshot)
+
+    def insertFromMimeData(self, source):
+        if source.hasImage():                # paste a screenshot, not text
+            self.image_pasted.emit(source.imageData())
+        else:
+            super().insertFromMimeData(source)
 
     def keyPressEvent(self, event):
         if (event.key() in (Qt.Key_Return, Qt.Key_Enter)
@@ -448,9 +455,26 @@ class AiDock(QDockWidget):
         self.thinking_label.setVisible(False)
         layout.addWidget(self.thinking_label)
 
+        # Pasted-screenshot attachment row (hidden until an image is pasted).
+        self._pending_image = None
+        self.attach_row = QWidget()
+        attach = QHBoxLayout(self.attach_row)
+        attach.setContentsMargins(0, 0, 0, 0)
+        self.attach_thumb = QLabel()
+        self.attach_label = QLabel("Image attached")
+        self.attach_label.setStyleSheet("color:#888;")
+        remove = self._tool(None, "Remove image", self._clear_image,
+                            "mdi.close")
+        attach.addWidget(self.attach_thumb)
+        attach.addWidget(self.attach_label, 1)
+        attach.addWidget(remove)
+        self.attach_row.setVisible(False)
+        layout.addWidget(self.attach_row)
+
         input_row = QHBoxLayout()
         self.input = _ChatInput()
-        self.input.setPlaceholderText("Ask Claude to draw…")
+        self.input.setPlaceholderText("Ask Claude to draw… (paste a "
+                                      "screenshot with Ctrl+V)")
         self.input.setFixedHeight(70)
         self.send_btn = self._tool(None, "Send", self._send_or_stop, "mdi.send")
         self.send_btn.setIconSize(QSize(24, 24))
@@ -462,6 +486,7 @@ class AiDock(QDockWidget):
         self.input.submitted.connect(self._send)
         self.input.history_prev.connect(self._history_prev)
         self.input.history_next.connect(self._history_next)
+        self.input.image_pasted.connect(self._attach_image)
 
         self._apply_font()
         self._update_status()
@@ -477,6 +502,34 @@ class AiDock(QDockWidget):
         btn.setAutoRaise(True)
         btn.clicked.connect(slot)
         return btn
+
+    # ------------------------------------------------------- image attach
+    def _attach_image(self, image):
+        """Hold a pasted screenshot to send with the next message."""
+        if image is None or image.isNull():
+            return
+        self._pending_image = image
+        self.attach_thumb.setPixmap(QPixmap.fromImage(image).scaledToHeight(
+            36, Qt.SmoothTransformation))
+        self.attach_label.setText(f"Screenshot attached "
+                                  f"({image.width()}×{image.height()})")
+        self.attach_row.setVisible(True)
+
+    def _clear_image(self):
+        self._pending_image = None
+        self.attach_thumb.clear()
+        self.attach_row.setVisible(False)
+
+    @staticmethod
+    def _image_to_b64(image) -> str:
+        from PyQt5.QtCore import QBuffer, QByteArray
+        import base64
+        data = QByteArray()
+        buf = QBuffer(data)
+        buf.open(QBuffer.WriteOnly)
+        image.save(buf, "PNG")
+        buf.close()
+        return base64.b64encode(bytes(data)).decode("ascii")
 
     # ------------------------------------------------------- settings
     def _open_settings(self):
@@ -627,7 +680,7 @@ class AiDock(QDockWidget):
         if self._is_busy:
             return
         text = self.input.toPlainText().strip()
-        if not text:
+        if not text and self._pending_image is None:
             return
         provider = self._settings.value("ai/provider", "Claude")
         model = self._settings.value(f"ai/model/{provider}", "")
@@ -640,12 +693,19 @@ class AiDock(QDockWidget):
             self._log("error", "Set your API key for this provider in "
                               "Settings (the gear icon).")
             return
+        # A pasted screenshot is sent with THIS message only (not stored in
+        # history, which stays text). Clear the attachment once consumed.
+        image_b64 = None
+        if self._pending_image is not None:
+            image_b64 = self._image_to_b64(self._pending_image)
+            self._clear_image()
+
         self.input.clear()
         self._sent.append(text)
         self._hist_index = None
         self._draft = ""
-        self._log("you", text)
-        self._history.append({"role": "user", "content": text})
+        self._log("you", text + ("  🖼 [screenshot]" if image_b64 else ""))
+        self._history.append({"role": "user", "content": text or "(image)"})
         self._save_history()
 
         rect = self.scene.sceneRect()
@@ -654,7 +714,8 @@ class AiDock(QDockWidget):
             summary=_scene_summary(self.scene))
         messages = [{"role": "system", "content": system}] + self._history
         self._busy(True)
-        self._run(lambda: providers.chat(provider, model, messages, key, base),
+        self._run(lambda: providers.chat(provider, model, messages, key, base,
+                                         image=image_b64),
                   self._reply_ready)
 
     def _reply_ready(self, reply):

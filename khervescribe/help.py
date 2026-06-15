@@ -266,8 +266,9 @@ with −/+ buttons and a percentage you can click to snap back to 100%
 (also <b>Ctrl+0</b>). Pick a colour theme under <b>View ▸ Theme</b>.</p>
 
 <h2>15 · AI assistant</h2>
-<p>Open <b>View ▸ AI Assistant</b> for a chat panel that can draw for
-you. Choose a provider — <b>Claude, ChatGPT, Mistral, Ollama</b> or a
+<p>Open the chat panel with the <b>AI Assistant</b> button on the top
+toolbar (or <b>View ▸ AI Chat</b>) — the same button hides/shows it.
+Choose a provider — <b>Claude, ChatGPT, Mistral, Ollama</b> or a
 <b>Local</b> endpoint — enter its API key (Ollama/Local need only a base
 URL), and press <b>Refresh</b> to list that provider's models. Then ask
 in plain language, e.g. <i>“draw a blue flowchart box labelled Start with
@@ -276,7 +277,9 @@ canvas as real, editable items, so you can move, restyle and undo them
 like anything else. While it works, an <i>“Assistant is thinking…”</i>
 line shows and the send button becomes a <b>Stop</b> button. The chat is
 remembered between sessions; the clear icon wipes it. Keys are stored
-locally on your machine.</p>
+locally on your machine. You can <b>paste a screenshot</b> into the chat
+box (<b>Ctrl+V</b>) to send it with your message (use a vision-capable
+model such as Claude or GPT-4o); click <b>✕</b> to drop the attachment.</p>
 
 <h2>16 · Examples</h2>
 <p>The <b>Examples</b> menu loads ready-made, fully labelled instrument

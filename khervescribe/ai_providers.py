@@ -144,10 +144,37 @@ def _get(url, headers, timeout=30):
     return _send(req, timeout)
 
 
-def chat(provider, model, messages, api_key="", base_url=""):
-    """Send *messages* ([{role, content}, …]) and return the reply text."""
+def _with_image(messages, image_b64, provider):
+    """Attach a base64 PNG to the last user message, in *provider*'s
+    multimodal format (so a pasted screenshot reaches a vision model)."""
+    msgs = [dict(m) for m in messages]
+    idx = next((i for i in range(len(msgs) - 1, -1, -1)
+                if msgs[i].get("role") == "user"), None)
+    if idx is None:
+        return msgs
+    text = msgs[idx].get("content", "")
+    if provider == "Claude":
+        msgs[idx]["content"] = [
+            {"type": "text", "text": text},
+            {"type": "image", "source": {"type": "base64",
+             "media_type": "image/png", "data": image_b64}}]
+    elif provider == "Ollama":
+        msgs[idx] = {"role": "user", "content": text, "images": [image_b64]}
+    else:                                       # OpenAI-compatible
+        msgs[idx]["content"] = [
+            {"type": "text", "text": text},
+            {"type": "image_url",
+             "image_url": {"url": f"data:image/png;base64,{image_b64}"}}]
+    return msgs
+
+
+def chat(provider, model, messages, api_key="", base_url="", image=None):
+    """Send *messages* ([{role, content}, …]) and return the reply text.
+    *image* (base64 PNG) is attached to the last user message if given."""
     api_key = (api_key or "").strip()
     base_url = (base_url or "").strip()
+    if image:
+        messages = _with_image(messages, image, provider)
     if provider in _OPENAI_LIKE:
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         data = _post(f"{_base(provider, base_url)}/v1/chat/completions",

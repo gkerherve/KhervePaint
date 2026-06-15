@@ -206,7 +206,8 @@ buttons and a percentage you can click to snap back to 100% (also
 
 ## 15. AI assistant
 
-Open **View ▸ AI Assistant** for a chat panel that can draw for you.
+Open the chat panel with the **AI Assistant** button on the top toolbar
+(or **View ▸ AI Chat**) — the same button **hides/shows** the panel.
 Choose a provider — **Claude, ChatGPT, Mistral, Ollama** or a **Local**
 endpoint — enter its API key (Ollama/Local need only a base URL), and
 press **Refresh** to list that provider's models. Then ask in plain
@@ -214,6 +215,11 @@ language, e.g. *"draw a blue flowchart box labelled Start with an arrow
 down to a circle"*. The shapes it returns become real, editable items on
 the canvas, so you can move, restyle and undo them. API keys are stored
 locally on your machine.
+
+You can also **paste a screenshot** into the chat box (**Ctrl+V**) to
+send it with your message — handy for *"recreate this diagram"*. The
+image goes to the model with your next prompt (use a vision-capable model
+such as Claude or GPT-4o); click **✕** to drop the attachment.
 
 ## 16. Examples
 

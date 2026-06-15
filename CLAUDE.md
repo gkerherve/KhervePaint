@@ -104,13 +104,17 @@ into a new module and import.
                        (`Help ▸ User Guide`, F1). Keep the guide and the
                        repo `USERGUIDE.md` in sync when features change.
   - `ai_providers.py`— AI back-ends over urllib (no deps): Claude,
-                       ChatGPT, Mistral, Ollama, Local. `chat()` and
+                       ChatGPT, Mistral, Ollama, Local. `chat()` (with an
+                       optional pasted `image` — `_with_image` attaches a
+                       base64 PNG to the last user msg per provider) and
                        `list_models()`; keys/base URLs in QSettings.
-  - `ai_assistant.py`— `AiDock` (View ▸ AI Assistant): chat panel with
-                       provider/model combos + Refresh-models button.
-                       Parses the model's JSON shape specs and creates
-                       real, undoable items (`apply_specs`). Network runs
-                       on a `QThread`.
+  - `ai_assistant.py`— `AiDock` (toggled from the top toolbar / View ▸ AI
+                       Chat): chat panel with provider/model combos +
+                       Refresh button. Parses the model's JSON shape specs
+                       into real, undoable items (`apply_specs`); hides the
+                       code from the chat (`prose_only`). Paste a
+                       screenshot (Ctrl+V) to send it with the next
+                       message. Network runs on a `QThread`.
   - `examples.py`    — built-in **Examples** menu assembly: imports the
                        `SKETCHES` registry and exposes `EXAMPLES` (sorted
                        by category order) + the `PAGE_*` constants. The

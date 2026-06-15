@@ -715,6 +715,19 @@ def test_ai_chat_hides_code_even_when_truncated():
     assert prose_only("Just a question?") == "Just a question?"
 
 
+def test_provider_attaches_pasted_image():
+    from khervescribe import ai_providers as p
+    msgs = [{"role": "system", "content": "s"},
+            {"role": "user", "content": "hi"}]
+    claude = p._with_image(msgs, "B64", "Claude")[-1]["content"]
+    assert [b["type"] for b in claude] == ["text", "image"]
+    assert claude[1]["source"]["data"] == "B64"
+    openai = p._with_image(msgs, "B64", "ChatGPT")[-1]["content"]
+    assert [b["type"] for b in openai] == ["text", "image_url"]
+    assert openai[1]["image_url"]["url"].endswith("B64")
+    assert p._with_image(msgs, "B64", "Ollama")[-1]["images"] == ["B64"]
+
+
 def test_svg_use_resolves_defs(tmp_path):
     # Inkscape/matplotlib exports render ticks, markers and text via
     # <use href="#id"> referencing <defs>; these were dropped before.
