@@ -27,6 +27,8 @@ from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsScene, QGraphicsTextItem,
                              QGraphicsView, QStyle)
 
+from . import chemistry
+
 # Tool identifiers.
 POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
@@ -41,6 +43,17 @@ RIGHT_TRIANGLE, PARALLELOGRAM, TRAPEZOID = (
 HEPTAGON, OCTAGON, STAR6 = "heptagon", "octagon", "star6"
 PLUS, CHEVRON, ARROW_RIGHT, LIGHTNING, HOUSE = (
     "plus", "chevron", "arrow_right", "lightning", "house")
+# Chemistry tools.
+CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE, CHEM_HASH = (
+    "chem_single", "chem_double", "chem_triple", "chem_wedge", "chem_hash")
+CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE = (
+    "chem_benzene", "chem_cyclohexane", "chem_cyclopentane")
+CHEM_ATOM = "chem_atom"
+_CHEM_BOND_TOOLS = (CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE,
+                    CHEM_HASH)
+_CHEM_RING_TOOLS = (CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE)
+_CHEM_PLACE_TOOLS = _CHEM_RING_TOOLS + (CHEM_ATOM,)   # placed on a click
+_CHEM_TOOLS = _CHEM_BOND_TOOLS + _CHEM_PLACE_TOOLS
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -517,6 +530,7 @@ class PaintScene(QGraphicsScene):
         self.bucket_vector = False        # bucket output: raster vs vector
         self.dim_cap = "arrows"           # end-cap style for new dimensions
         self.dim_orientation = "aligned"  # aligned | horizontal | vertical
+        self.chem_atom = "C"              # label placed by the atom tool
 
         # The grid is specified as a physical distance in millimetres
         # between adjacent lines; the pixel spacing is derived from the
@@ -640,7 +654,8 @@ class PaintScene(QGraphicsScene):
 
     def _tool_pos(self, pos: QPointF) -> QPointF:
         """Snap vector-tool positions; the pencil stays freehand."""
-        if self.snap_enabled and self.tool in _SHAPE_TOOLS + (TEXT,):
+        if (self.snap_enabled
+                and self.tool in _SHAPE_TOOLS + (TEXT,) + _CHEM_TOOLS):
             return self.snap(pos)
         return pos
 
@@ -882,6 +897,15 @@ class PaintScene(QGraphicsScene):
             item.start_editing()
             self._drawing = False
             self.changed_by_user.emit()
+        elif self.tool in _CHEM_BOND_TOOLS:
+            self._temp_item = self._new_chem_bond(pos)
+            self.addItem(self._temp_item)
+        elif self.tool in _CHEM_PLACE_TOOLS:        # rings / atom: one click
+            self._drawing = False
+            if self.tool == CHEM_ATOM:
+                self.place_chem_atom(self.chem_atom, pos)
+            else:
+                self.place_chem_ring(self.tool.split("_")[1], pos)
 
     def mouseMoveEvent(self, event):
         if not self._drawing:
@@ -897,6 +921,8 @@ class PaintScene(QGraphicsScene):
             if self.tool == DIMENSION:
                 pos = self._dim_constrain(pos)
             self._temp_item.setLine(QLineF(self._start, pos))
+        elif self.tool in _CHEM_BOND_TOOLS:
+            self._update_chem_bond(self._temp_item, self._start, pos)
         else:
             self._apply_rect(self._temp_item, self._shape_rect(pos))
 
@@ -908,6 +934,73 @@ class PaintScene(QGraphicsScene):
         if self.dim_orientation == "vertical":
             return QPointF(self._start.x(), pos.y())
         return pos
+
+    # ------------------------------------------------------------ chemistry
+    def _chem_gap(self) -> float:
+        """Spacing between the parallel lines of a multiple bond / the
+        half-width of a wedge — scaled off the current stroke width."""
+        return max(3.0, self.pen.widthF() * 2.0 + 2.0)
+
+    def _new_chem_bond(self, pos: QPointF):
+        if self.tool == CHEM_WEDGE:
+            item = PolygonItem(chemistry.wedge_polygon(pos, pos,
+                                                       self._chem_gap()))
+            item.setPen(QPen(self.pen.color(), 1))
+            item.setBrush(QBrush(self.pen.color()))     # solid filled wedge
+        else:
+            kind = self.tool.split("_")[1]              # single/double/...
+            item = PathItem(chemistry.bond_path(kind, pos, pos,
+                                                self._chem_gap()))
+            item.setPen(QPen(self.pen))
+            item.setBrush(QBrush(Qt.NoBrush))
+        return item
+
+    def _update_chem_bond(self, item, p1: QPointF, p2: QPointF):
+        if self.tool == CHEM_WEDGE:
+            item.setPolygon(chemistry.wedge_polygon(p1, p2, self._chem_gap()))
+        else:
+            item.setPath(chemistry.bond_path(self.tool.split("_")[1],
+                                             p1, p2, self._chem_gap()))
+
+    def place_chem_ring(self, kind: str, center: QPointF):
+        """Drop a ready-made ring (editable) centred at *center*."""
+        r = 6.0 / 25.4 * self.dpi                       # ~6 mm radius
+        poly = chemistry.ring_polygon(kind, center, r)
+        side = "pentagon" if kind == "cyclopentane" else "hexagon"
+        ring = PolygonItem(poly, kind=side)
+        ring.setPen(QPen(self.pen))
+        ring.setBrush(self.current_brush())
+        self.clearSelection()
+        if chemistry.is_aromatic(kind):                 # benzene: inner circle
+            ir = r * 0.55
+            circle = EllipseItem(QRectF(center.x() - ir, center.y() - ir,
+                                        2 * ir, 2 * ir))
+            circle.setPen(QPen(self.pen))
+            circle.setBrush(QBrush(Qt.NoBrush))
+            group = GroupItem()
+            self.addItem(group)
+            for z, it in enumerate((ring, circle)):
+                it.setZValue(z)
+                group.addToGroup(it)
+            center_origin(group)
+            group.setSelected(True)
+        else:
+            self.addItem(ring)
+            center_origin(ring)
+            ring.setSelected(True)
+        self.changed_by_user.emit()
+
+    def place_chem_atom(self, text: str, center: QPointF):
+        """Place an atom/group text label centred on *center*."""
+        item = TextItem(text or "C")
+        item.setDefaultTextColor(self.pen.color())
+        self.addItem(item)
+        br = item.boundingRect()
+        item.setPos(center.x() - br.width() / 2, center.y() - br.height() / 2)
+        center_origin(item)
+        self.clearSelection()
+        item.setSelected(True)
+        self.changed_by_user.emit()
 
     def mouseReleaseEvent(self, event):
         if not self._drawing:

@@ -830,6 +830,49 @@ def test_object_library_folders(scene, tmp_path, monkeypatch):
     assert "benzene" not in names and "loose" not in names
 
 
+def test_chem_bonds_rings_atoms(scene):
+    from khervescribe.canvas import (PathItem, PolygonItem, EllipseItem,
+                                     TextItem, GroupItem, CHEM_TRIPLE,
+                                     CHEM_WEDGE)
+    from khervescribe.handles import Handle
+    scene.dpi = 300
+    scene.tool = CHEM_TRIPLE
+    b = scene._new_chem_bond(QPointF(0, 0))
+    scene._update_chem_bond(b, QPointF(0, 0), QPointF(100, 0))
+    assert isinstance(b, PathItem) and b.path().elementCount() == 6  # 3 lines
+    scene.tool = CHEM_WEDGE
+    w = scene._new_chem_bond(QPointF(0, 0))
+    scene._update_chem_bond(w, QPointF(0, 0), QPointF(60, 0))
+    assert isinstance(w, PolygonItem) and w.polygon().count() == 3
+    assert w.brush().style() != Qt.NoBrush                  # filled wedge
+
+    scene.place_chem_ring("benzene", QPointF(200, 200))
+    g = [i for i in scene.vector_items() if isinstance(i, GroupItem)][-1]
+    kids = [c for c in g.childItems() if not isinstance(c, Handle)]
+    assert len(kids) == 2 and any(isinstance(c, EllipseItem) for c in kids)
+    scene.place_chem_ring("cyclopentane", QPointF(400, 200))
+    poly = [i for i in scene.vector_items() if isinstance(i, PolygonItem)][-1]
+    assert poly.polygon().count() == 5
+    scene.place_chem_atom("OH", QPointF(0, 0))
+    assert any(isinstance(i, TextItem) and i.toPlainText() == "OH"
+               for i in scene.vector_items())
+
+
+def test_chem_bond_roundtrips_svg(scene, tmp_path):
+    from khervescribe import svgio
+    from khervescribe.canvas import PathItem, CHEM_DOUBLE
+    scene.tool = CHEM_DOUBLE
+    b = scene._new_chem_bond(QPointF(0, 0))
+    scene._update_chem_bond(b, QPointF(0, 0), QPointF(100, 0))
+    scene.addItem(b)
+    path = tmp_path / "bond.svg"
+    svgio.save_svg(scene, str(path))
+    other = PaintScene()
+    svgio.load_svg(other, str(path))
+    assert len(other.vector_items()) == 1
+    assert isinstance(other.vector_items()[0], PathItem)
+
+
 def _scene_br(item):
     r = item.sceneBoundingRect()
     return [round(v, 2) for v in (r.x(), r.y(), r.width(), r.height())]

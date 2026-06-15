@@ -217,6 +217,17 @@ standalone <b>SVG</b> file in a per-user objects folder. The Objects
 dropdown then lists every saved object <b>by its name</b>; pick one to
 drop a fresh, fully editable copy into the middle of the view.
 <b>Open objects folder</b> reveals the files on disk.</p>
+<p><b>Organise into folders</b>: save into a sub-folder by typing a path
+like <i>Walls/brick</i>, or open <b>Template Explorer…</b> to create
+folders and rename, move, delete or insert objects. The Objects dropdown
+mirrors your folders as nested sub-menus.</p>
+
+<h2>10a · Chemistry tools</h2>
+<p>The <b>Chemistry</b> dropdown (left toolbar) draws structures as
+ordinary editable shapes: drag <b>single/double/triple</b> bonds, a solid
+<b>wedge</b> or a <b>hash</b> bond; click to drop a <b>benzene</b> ring
+(with aromatic circle), <b>cyclohexane</b> or <b>cyclopentane</b>; or pick
+an <b>atom/group label</b> (C, H, O, N, OH, CH₃…) and click to place it.</p>
 
 <h2>11 · Drawing size &amp; publication figures</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size

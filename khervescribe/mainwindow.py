@@ -24,12 +24,15 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
 
 from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
-from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEVRON, CIRCLE, DIAMOND,
-                     DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON, HEXAGON, HOUSE,
-                     LIGHTNING, LINE, OCTAGON, PARALLELOGRAM, PENCIL, PENTAGON,
-                     PLUS, POINTER, QUARTERCIRCLE, RECT, RIGHT_TRIANGLE,
-                     ROUNDRECT, STAR, STAR6, TEXT, TRAPEZOID, TRIANGLE,
-                     ImageItem, PaintScene, PaintView)
+from .canvas import (ARROW, ARROW_RIGHT, BUCKET, CHEM_ATOM, CHEM_BENZENE,
+                     CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE, CHEM_DOUBLE,
+                     CHEM_HASH, CHEM_SINGLE, CHEM_TRIPLE, CHEM_WEDGE, CHEVRON,
+                     CIRCLE, DIAMOND, DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON,
+                     HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
+                     PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
+                     RIGHT_TRIANGLE, ROUNDRECT, STAR, STAR6, TEXT, TRAPEZOID,
+                     TRIANGLE, ImageItem, PaintScene, PaintView)
+from . import chemistry
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -161,6 +164,7 @@ class MainWindow(QMainWindow):
         bar.addSeparator()
         self._add_tool_action(bar, TEXT, icons.icon("mdi.format-text"),
                               "Text", "T")
+        self._build_chemistry_dropdown(bar)
         bar.addSeparator()
         self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
@@ -318,6 +322,55 @@ class MainWindow(QMainWindow):
     def _set_dim_cap(self, key):
         self.scene.dim_cap = key
         self._activate_dimension()
+
+    # ------------------------------------------------------------ chemistry
+    def _build_chemistry_dropdown(self, bar):
+        """Dropdown of chemistry tools: bonds, stereo bonds, rings and an
+        atom-label sub-menu. Bonds/rings are checkable tools; an atom pick
+        sets the label and activates the atom tool."""
+        button = QToolButton()
+        button.setPopupMode(QToolButton.InstantPopup)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setIcon(icons.icon("mdi.molecule"))
+        button.setToolTip("Chemistry — bonds, rings, atoms")
+        menu = QMenu(button)
+
+        menu.addSection("Bonds")
+        for tool, label in ((CHEM_SINGLE, "Single bond"),
+                            (CHEM_DOUBLE, "Double bond"),
+                            (CHEM_TRIPLE, "Triple bond"),
+                            (CHEM_WEDGE, "Wedge (up)"),
+                            (CHEM_HASH, "Hash (down)")):
+            self._add_grouped_tool(menu, tool, label)
+        menu.addSection("Rings")
+        for tool, label in ((CHEM_BENZENE, "Benzene (aromatic)"),
+                            (CHEM_CYCLOHEXANE, "Cyclohexane"),
+                            (CHEM_CYCLOPENTANE, "Cyclopentane")):
+            self._add_grouped_tool(menu, tool, label)
+        atoms = menu.addMenu("Atom / group label")
+        for sym in chemistry.ATOMS:
+            atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
+
+        button.setMenu(menu)
+        bar.addWidget(button)
+
+    def _add_grouped_tool(self, menu, tool, label):
+        """A checkable tool action in the shared tool group (so it lights up
+        when active) added to *menu*."""
+        act = QAction(label, self, checkable=True)
+        act.setData(tool)
+        act.triggered.connect(lambda _, t=tool: self._set_tool(t))
+        self._tool_group.addAction(act)
+        menu.addAction(act)
+
+    def _set_chem_atom(self, symbol):
+        self.scene.chem_atom = symbol
+        checked = self._tool_group.checkedAction()
+        if checked is not None:
+            self._tool_group.setExclusive(False)
+            checked.setChecked(False)
+            self._tool_group.setExclusive(True)
+        self._set_tool(CHEM_ATOM)
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

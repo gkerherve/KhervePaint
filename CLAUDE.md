@@ -56,12 +56,21 @@ into a new module and import.
                        which draw ticks/markers/text as `<use>` of
                        `<defs>` glyph paths, import fully). Imports the
                        path helpers from document.
-  - `library.py`     — reusable-object library: save the current
+  - `library.py`     — reusable-object/template library: save the current
                        selection as a named standalone SVG in a per-user
                        objects folder (`KHERVESCRIBE_OBJECTS_DIR` override
-                       for tests), list saved objects, and load one back
-                       to serialised item dicts. Driven by the left
-                       toolbar's **Objects** dropdown in `mainwindow.py`.
+                       for tests), now **folder-aware** (sub-folders via a
+                       `Folder/Name` save path; `iter_objects`/`list_folders`
+                       /`create`/`rename`/`move`/`delete`). Driven by the
+                       left toolbar's **Objects** dropdown (nested sub-menus
+                       per folder) in `mainwindow.py`.
+  - `templates.py`   — `TemplateExplorer` dialog (Objects ▸ Template
+                       Explorer…): tree of folders + objects with new
+                       folder / rename / move / delete / insert.
+  - `chemistry.py`   — pure geometry for the chemistry tools: bond paths
+                       (single/double/triple/hash), wedge polygon, ring
+                       polygons, atom-label list. `canvas` builds native
+                       items from these (no item classes here, so no cycle).
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
@@ -252,12 +261,17 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   horizontal/vertical constrain the drawn line to measure Δx/Δy via
   `scene.dim_orientation` + `PaintScene._dim_constrain`) and a default
   **end-cap** style (`scene.dim_cap`, applied to each new
-  `DimensionItem`); either choice activates the tool, as does **M**. The
-  column ends with an **Objects** dropdown (the reusable-object library, see
-  `library.py`): save the selection as a named SVG, or insert a saved
-  object (the menu lists them by file name, rebuilt on open). Top
-  toolbar = file ops + undo/redo + stroke/fill colour, width, grid,
-  arrange. Grid spacing is set in **mm** (converted via `scene.dpi`);
+  `DimensionItem`); either choice activates the tool, as does **M**. A
+  **Chemistry** dropdown (`_CHEM_*` tools) holds bond tools (single/
+  double/triple/wedge/hash — two-point, built via `chemistry.bond_path`/
+  `wedge_polygon` as `PathItem`/`PolygonItem`), click-to-place rings
+  (benzene→hexagon+inner circle group, cyclohexane, cyclopentane) and an
+  atom-label sub-menu (sets `scene.chem_atom`, places a `TextItem`). The
+  column ends with an **Objects** dropdown (the reusable-object/template
+  library, see `library.py`): save the selection, open the **Template
+  Explorer**, or insert a saved object — folders shown as nested
+  sub-menus. Top toolbar = file ops + undo/redo + stroke/fill colour,
+  width, grid, arrange (incl. front/forward/backward/back order icons). Grid spacing is set in **mm** (converted via `scene.dpi`);
   an **Infinite paper** toggle fills the view with grid. The line
   **width** is a dropdown of thin-to-thick line swatches
   (`LINE_WIDTHS`, drawn by `icons.line_width_icon` in the current stroke

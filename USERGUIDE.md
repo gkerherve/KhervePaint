@@ -148,6 +148,26 @@ saved object **by its name**; pick one to drop a fresh, fully editable
 copy into the middle of the view. **Open objects folder** reveals the
 files on disk (delete or rename them there).
 
+**Organise into folders.** Save into a sub-folder by typing a path like
+*Walls/brick*, or use **Template Explorer…** (in the Objects dropdown)
+to create folders and rename, move, delete or insert objects. The
+Objects dropdown mirrors your folders as nested sub-menus.
+
+## 10a. Chemistry tools
+
+The **Chemistry** dropdown (left toolbar) draws chemical structures as
+ordinary editable shapes:
+
+- **Bonds** — drag to draw a **single**, **double** or **triple** bond,
+  a solid **wedge** (coming forward) or a **hash** bond (going back).
+- **Rings** — click to drop a **benzene** ring (hexagon with the
+  aromatic inner circle), **cyclohexane** or **cyclopentane**.
+- **Atom / group label** — pick a symbol (C, H, O, N, OH, CH₃…) then
+  click to place it as text.
+
+Everything is a normal item — restyle, move, group and save like any
+other shape.
+
 ## 11. Drawing size & publication figures
 
 New documents open at the **ACS single-column** figure size (3.25 in ≈
