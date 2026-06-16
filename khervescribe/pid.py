@@ -259,24 +259,36 @@ def build_blower(w, h):
 
 # ----------------------------------------------------------------- Valves
 
+def _tri_pointing(cx, cy, length, base, direction):
+    """Filled triangle whose APEX is at (cx, cy), `base` wide, reaching
+    `length` in `direction` ('l','r','u','d'), built so the rotated bounding
+    box keeps the intended proportions (no aspect distortion)."""
+    if direction in ("u", "d"):
+        if direction == "u":          # triangle below the seat, apex up
+            x, y, rot = cx - base * 0.5, cy, 0
+        else:                          # triangle above the seat, apex down
+            x, y, rot = cx - base * 0.5, cy - length, 180
+        return {"shape": "triangle", "x": x, "y": y, "w": base, "h": length,
+                "stroke": OUTLINE, "fill": EQUIP, "width": W_OUT,
+                "rotation": rot}
+    if direction == "r":
+        cxb, rot = cx - length * 0.5, 90
+    else:                              # 'l'
+        cxb, rot = cx + length * 0.5, 270
+    return {"shape": "triangle", "x": cxb - base * 0.5, "y": cy - length * 0.5,
+            "w": base, "h": length, "stroke": OUTLINE, "fill": EQUIP,
+            "width": W_OUT, "rotation": rot}
+
+
 def _bowtie(w, h, cy=None):
-    """Two triangles tip-to-tip about the box centre (gate valve body)."""
+    """Two triangles tip-to-tip, apexes meeting cleanly at the centre."""
     if cy is None:
         cy = h * 0.50
-    left = w * 0.10
-    right = w * 0.90
     cx = w * 0.50
-    half = (right - left) / 2
+    half = w * 0.40
     th = h * 0.40
-    specs = []
-    specs.append({"shape": "triangle", "x": left, "y": cy - th / 2,
-                  "w": half, "h": th,
-                  "stroke": OUTLINE, "fill": EQUIP, "width": W_OUT,
-                  "rotation": 90})
-    specs.append({"shape": "triangle", "x": cx, "y": cy - th / 2,
-                  "w": half, "h": th,
-                  "stroke": OUTLINE, "fill": EQUIP, "width": W_OUT,
-                  "rotation": 270})
+    specs = [_tri_pointing(cx, cy, half, th, "r"),
+             _tri_pointing(cx, cy, half, th, "l")]
     return specs, cx, cy, th
 
 
@@ -357,28 +369,16 @@ def build_control_valve(w, h):
 
 
 def build_three_way_valve(w, h):
-    """Three triangles meeting at centre (tee of ports)."""
+    """Three triangles meeting at the centre seat (left, right + bottom)."""
     cx = w * 0.50
     cy = h * 0.45
     th = h * 0.34
-    left = w * 0.08
-    right = w * 0.92
-    half = (right - left) / 2
-    specs = []
-    specs.append({"shape": "triangle", "x": left, "y": cy - th / 2,
-                  "w": half, "h": th,
-                  "stroke": OUTLINE, "fill": EQUIP, "width": W_OUT,
-                  "rotation": 90})
-    specs.append({"shape": "triangle", "x": cx, "y": cy - th / 2,
-                  "w": half, "h": th,
-                  "stroke": OUTLINE, "fill": EQUIP, "width": W_OUT,
-                  "rotation": 270})
-    pw = w * 0.34
-    specs.append({"shape": "triangle", "x": cx - pw / 2, "y": cy,
-                  "w": pw, "h": h * 0.45,
-                  "stroke": OUTLINE, "fill": EQUIP, "width": W_OUT,
-                  "rotation": 0})
-    return specs
+    half = w * 0.42
+    return [
+        _tri_pointing(cx, cy, half, th, "r"),        # left port
+        _tri_pointing(cx, cy, half, th, "l"),        # right port
+        _tri_pointing(cx, cy, h * 0.45, w * 0.30, "u"),   # bottom port
+    ]
 
 
 # ------------------------------------------------------------- Instruments

@@ -322,18 +322,40 @@ def build_cryo_pump(w, h):
 # Valves & fittings
 # ---------------------------------------------------------------------------
 
+def _tri_pointing(cx, cy, length, base, direction):
+    """A filled triangle whose APEX is at (cx, cy), base `base` wide, reaching
+    `length` away in `direction` ('l','r','u','d').  Built so the rotated
+    bounding box keeps the intended proportions (no aspect distortion): a
+    horizontal triangle uses a (base-tall x length-wide) footprint.
+
+    A plain "triangle" polygon points up in its box, so we size the box as
+    width=base / height=length when pointing up/down, and width=base /
+    height=length with a 90/270 rotation when pointing left/right — placing
+    the box centre so the apex lands exactly on (cx, cy)."""
+    if direction in ("u", "d"):
+        # up/down: no rotation distortion (box already base-wide, length-tall)
+        if direction == "u":          # apex at top of box -> put box top at apex
+            x, y, rot = cx - base * 0.5, cy, 0
+        else:                          # down: rotate 180, apex ends at box bottom
+            x, y, rot = cx - base * 0.5, cy - length, 180
+        return {"shape": "triangle", "x": x, "y": y, "w": base, "h": length,
+                "stroke": _OUT, "fill": _BODY, "width": _W, "rotation": rot}
+    # left/right: box is base-wide x length-tall, rotated 90/270; the box
+    # centre sits half a length toward `direction` so the apex meets (cx, cy).
+    if direction == "r":
+        cxb, rot = cx - length * 0.5, 90
+    else:                              # 'l'
+        cxb, rot = cx + length * 0.5, 270
+    return {"shape": "triangle", "x": cxb - base * 0.5, "y": cy - length * 0.5,
+            "w": base, "h": length, "stroke": _OUT, "fill": _BODY,
+            "width": _W, "rotation": rot}
+
+
 def _bowtie(cx, cy, bw, bh):
-    """Two triangles tip-to-tip forming a bow-tie valve symbol."""
+    """Two triangles tip-to-tip (apexes meeting cleanly at the centre)."""
     half = bw * 0.5
-    # left triangle: box left half, pointing right (rotation 90 -> apex right)
-    left = {"shape": "triangle", "x": cx - half, "y": cy - bh * 0.5,
-            "w": half, "h": bh, "stroke": _OUT, "fill": _BODY,
-            "width": _W, "rotation": 90}
-    # right triangle: box right half, pointing left (rotation 270 -> apex left)
-    right = {"shape": "triangle", "x": cx, "y": cy - bh * 0.5,
-             "w": half, "h": bh, "stroke": _OUT, "fill": _BODY,
-             "width": _W, "rotation": 270}
-    return [left, right]
+    return [_tri_pointing(cx, cy, half, bh, "r"),    # left half, points right
+            _tri_pointing(cx, cy, half, bh, "l")]    # right half, points left
 
 
 def build_gate_valve(w, h):
@@ -352,37 +374,43 @@ def build_gate_valve(w, h):
 
 
 def build_angle_valve(w, h):
-    """Bow-tie with one port turned 90° (an L of two ports)."""
-    cx, cy = w * 0.46, h * 0.56
-    bw, bh = w * 0.56, h * 0.46
-    specs = _bowtie(cx, cy, bw, bh)
-    # horizontal port stub (left)
-    specs.append({"shape": "line", "x1": cx - bw * 0.5, "y1": cy,
-                  "x2": w * 0.06, "y2": cy, "stroke": _ACC, "width": _W})
-    # vertical port stub (up) from centre -> L shape
+    """Right-angle valve: a horizontal port and a downward port meeting at
+    the seat at 90°, with a bonnet/handle stem opposite."""
+    cx, cy = w * 0.50, h * 0.50
+    port = h * 0.40            # port width (base of each triangle)
+    reach_h = w * 0.42         # horizontal reach to the left
+    reach_v = h * 0.42         # vertical reach downward
+    specs = [
+        _tri_pointing(cx, cy, reach_h, port, "r"),   # inlet from the left
+        _tri_pointing(cx, cy, reach_v, port, "u"),   # outlet down -> apex up
+    ]
+    # bonnet stem + handwheel up-and-right (opposite the two ports)
     specs.append({"shape": "line", "x1": cx, "y1": cy,
-                  "x2": cx, "y2": h * 0.08, "stroke": _ACC, "width": _W})
-    # small flange at vertical port end
-    specs.append({"shape": "line", "x1": cx - w * 0.10, "y1": h * 0.08,
-                  "x2": cx + w * 0.10, "y2": h * 0.08,
-                  "stroke": _ACC, "width": _W})
+                  "x2": w * 0.86, "y2": h * 0.14, "stroke": _ACC, "width": _W})
+    hw = w * 0.18
+    specs.append({"shape": "ellipse", "x": w * 0.86 - hw * 0.5,
+                  "y": h * 0.14 - h * 0.05, "w": hw, "h": h * 0.10,
+                  "stroke": _OUT, "fill": _BODY, "width": _D})
     return specs
 
 
 def build_leak_valve(w, h):
-    """Bow-tie with a fine-adjust needle hint (a small triangle/arrow)."""
-    cx, cy = w * 0.5, h * 0.56
-    bw, bh = w * 0.66, h * 0.50
+    """Bow-tie body with a needle dropping onto the seat + a round adjuster
+    knob (a fine/leak metering valve)."""
+    cx, cy = w * 0.5, h * 0.62
+    bw, bh = w * 0.66, h * 0.46
     specs = _bowtie(cx, cy, bw, bh)
-    # needle hint: small triangle pointing into the bow-tie from top
-    nw, nh = w * 0.16, h * 0.20
-    specs.append({"shape": "triangle", "x": cx - nw * 0.5,
-                  "y": cy - bh * 0.5 - nh, "w": nw, "h": nh,
-                  "stroke": _OUT, "fill": _STEEL, "width": _D,
-                  "rotation": 180})
-    # adjust stem
-    specs.append({"shape": "line", "x1": cx, "y1": cy - bh * 0.5 - nh,
-                  "x2": cx, "y2": h * 0.10, "stroke": _ACC, "width": _D})
+    # needle: thin triangle, tip exactly on the seat (centre)
+    nlen = cy - h * 0.22
+    specs.append(dict(_tri_pointing(cx, cy, nlen, w * 0.10, "d"),
+                      fill=_STEEL, width=_D))
+    # adjust stem + round knob
+    specs.append({"shape": "line", "x1": cx, "y1": cy - nlen,
+                  "x2": cx, "y2": h * 0.14, "stroke": _ACC, "width": _D})
+    kd = w * 0.18
+    specs.append({"shape": "circle", "x": cx - kd * 0.5, "y": h * 0.05,
+                  "w": kd, "h": kd, "stroke": _OUT, "fill": _BODY,
+                  "width": _D})
     return specs
 
 
@@ -838,21 +866,22 @@ def build_ball_valve(w, h):
 
 
 def build_needle_valve(w, h):
-    cx, cy = w * 0.5, h * 0.55
+    """Bow-tie body with a long thin needle seating at the centre + a
+    handwheel (precise metering valve)."""
+    cx, cy = w * 0.5, h * 0.62
     bw, bh = w * 0.72, h * 0.42
     parts = _bowtie(cx, cy, bw, bh)
-    nw = w * 0.1
-    parts += [
-        {"shape": "triangle", "x": cx - nw * 0.5, "y": cy - bh * 0.45,
-         "w": nw, "h": bh * 0.95, "rotation": 180.0,
-         "stroke": _OUT, "fill": _STEEL, "width": _D},
-        {"shape": "line", "x1": cx, "y1": cy - bh * 0.5, "x2": cx,
-         "y2": h * 0.12, "stroke": _OUT, "width": _D},
-        {"shape": "line", "x1": cx - w * 0.13, "y1": h * 0.12,
-         "x2": cx + w * 0.13, "y2": h * 0.12, "stroke": _OUT, "width": _W},
-        {"shape": "line", "x1": cx, "y1": h * 0.12, "x2": cx, "y2": h * 0.04,
-         "stroke": _OUT, "width": _D},
-    ]
+    # long thin needle, tip exactly on the seat
+    nlen = cy - h * 0.20
+    parts.append(dict(_tri_pointing(cx, cy, nlen, w * 0.07, "d"),
+                      fill=_STEEL, width=_D))
+    # stem + handwheel (wide flat ellipse)
+    parts.append({"shape": "line", "x1": cx, "y1": cy - nlen,
+                  "x2": cx, "y2": h * 0.16, "stroke": _OUT, "width": _D})
+    hw = w * 0.40
+    parts.append({"shape": "ellipse", "x": cx - hw * 0.5, "y": h * 0.09,
+                  "w": hw, "h": h * 0.10, "stroke": _OUT, "fill": _BODY,
+                  "width": _W})
     return parts
 
 
@@ -952,44 +981,57 @@ def build_tee(w, h):
 
 
 def build_elbow(w, h):
-    ph = h * 0.24
-    cy = h * 0.78
-    cx = w * 0.74
+    """90° pipe elbow: a horizontal run meeting a vertical run at the corner."""
+    t = h * 0.26                 # pipe width
+    x0 = w * 0.10                # left open end
+    yb = h * 0.74                # horizontal centreline (low)
+    cxv = w * 0.70               # vertical run centreline
+    yt = h * 0.12                # top open end
     return [
-        {"shape": "rect", "x": w * 0.08, "y": cy - ph * 0.5,
-         "w": cx - w * 0.08, "h": ph, "stroke": _OUT, "fill": _BODY,
+        # horizontal run (left -> corner, includes the corner square)
+        {"shape": "rect", "x": x0, "y": yb - t * 0.5,
+         "w": (cxv + t * 0.5) - x0, "h": t, "stroke": _OUT, "fill": _BODY,
          "width": _W},
-        {"shape": "rect", "x": cx - ph * 0.5, "y": h * 0.1,
-         "w": ph, "h": cy - ph * 0.5 - h * 0.1, "stroke": _OUT,
-         "fill": _BODY, "width": _W},
-        {"shape": "quartercircle", "x": cx - ph * 0.5, "y": cy - ph * 0.5,
-         "w": ph, "h": ph, "stroke": _OUT, "fill": _STEEL,
-         "width": _D, "rotation": 0.0},
-        {"shape": "line", "x1": w * 0.08, "y1": cy - ph * 0.85,
-         "x2": w * 0.08, "y2": cy + ph * 0.85, "stroke": _OUT, "width": _W},
-        {"shape": "line", "x1": cx - ph * 0.85, "y1": h * 0.1,
-         "x2": cx + ph * 0.85, "y2": h * 0.1, "stroke": _OUT, "width": _W},
+        # vertical run (corner -> top), butt-joined onto the horizontal top
+        {"shape": "rect", "x": cxv - t * 0.5, "y": yt,
+         "w": t, "h": (yb - t * 0.5) - yt, "stroke": _OUT, "fill": _BODY,
+         "width": _W},
+        # flange tick at the left open end
+        {"shape": "line", "x1": x0, "y1": yb - t * 0.85,
+         "x2": x0, "y2": yb + t * 0.85, "stroke": _OUT, "width": _W},
+        # flange tick at the top open end
+        {"shape": "line", "x1": cxv - t * 0.85, "y1": yt,
+         "x2": cxv + t * 0.85, "y2": yt, "stroke": _OUT, "width": _W},
     ]
 
 
 def build_reducer(w, h):
+    """Concentric reducer: a wide pipe (left) tapering to a narrow pipe
+    (right) through a cone."""
     cy = h * 0.5
-    bigh = h * 0.5
-    smallh = h * 0.26
+    bigh = h * 0.52              # wide-end height
+    smallh = bigh * 0.5         # narrow-end height (trapezoid narrow = 0.5*wide)
+    x0, x1 = w * 0.30, w * 0.70  # cone span
+    cone_len = x1 - x0
     return [
+        # wide pipe stub (left)
         {"shape": "rect", "x": w * 0.06, "y": cy - bigh * 0.5,
-         "w": w * 0.22, "h": bigh, "stroke": _OUT, "fill": _BODY,
+         "w": x0 - w * 0.06, "h": bigh, "stroke": _OUT, "fill": _BODY,
          "width": _W},
-        {"shape": "rect", "x": w * 0.72, "y": cy - smallh * 0.5,
-         "w": w * 0.22, "h": smallh, "stroke": _OUT, "fill": _BODY,
+        # narrow pipe stub (right)
+        {"shape": "rect", "x": x1, "y": cy - smallh * 0.5,
+         "w": w * 0.94 - x1, "h": smallh, "stroke": _OUT, "fill": _BODY,
          "width": _W},
-        {"shape": "trapezoid", "x": w * 0.28, "y": cy - bigh * 0.5,
-         "w": w * 0.44, "h": bigh, "rotation": 90.0,
+        # cone: trapezoid rotated 90 with a box sized so the footprint is
+        # cone_len wide x bigh tall (wide-left, narrow-right)
+        {"shape": "trapezoid", "x": (x0 + x1) * 0.5 - bigh * 0.5,
+         "y": cy - cone_len * 0.5, "w": bigh, "h": cone_len, "rotation": 90.0,
          "stroke": _OUT, "fill": _STEEL, "width": _W},
-        {"shape": "line", "x1": w * 0.06, "y1": cy - bigh * 0.85,
-         "x2": w * 0.06, "y2": cy + bigh * 0.85, "stroke": _OUT, "width": _W},
-        {"shape": "line", "x1": w * 0.94, "y1": cy - smallh * 0.85,
-         "x2": w * 0.94, "y2": cy + smallh * 0.85, "stroke": _OUT,
+        # end flange ticks
+        {"shape": "line", "x1": w * 0.06, "y1": cy - bigh * 0.7,
+         "x2": w * 0.06, "y2": cy + bigh * 0.7, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": w * 0.94, "y1": cy - smallh * 0.7,
+         "x2": w * 0.94, "y2": cy + smallh * 0.7, "stroke": _OUT,
          "width": _W},
     ]
 

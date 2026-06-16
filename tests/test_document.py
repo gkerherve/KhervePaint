@@ -967,6 +967,21 @@ def test_science_symbol_modules_build(app):
                 assert ai_assistant._spec_to_item(s) is not None
 
 
+def test_valve_triangles_meet_at_seat(app):
+    """Bow-tie / port triangles are built so their apex lands exactly on the
+    seat centre (guards the rotated-box aspect-distortion bug)."""
+    from khervescribe import vacuum, pid
+    from khervescribe.ai_assistant import _spec_to_item
+    cx = cy = 50.0
+    for mod in (vacuum, pid):
+        for d in ("l", "r", "u", "d"):
+            item = _spec_to_item(dict(mod._tri_pointing(cx, cy, 40.0, 24.0, d)))
+            poly = item.mapToScene(item.polygon())
+            dmin = min(((p.x() - cx) ** 2 + (p.y() - cy) ** 2) ** 0.5
+                       for p in poly)
+            assert dmin < 2.0, (mod.__name__, d, dmin)
+
+
 def test_science_symbol_place_and_group(scene):
     """Placing a multi-part science symbol drops a grouped, editable item."""
     from khervescribe.canvas import GroupItem
