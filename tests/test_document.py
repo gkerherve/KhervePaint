@@ -933,13 +933,19 @@ def test_chem_atom_snaps_to_bond_end(scene):
 
 def test_floorplan_all_elements_build():
     from khervescribe import floorplan
+    from khervescribe import ai_assistant
     for name in floorplan.SIZES:                  # every element builds specs
         specs = floorplan.build_specs(name, 120.0, 90.0)
         assert isinstance(specs, list) and specs
         assert all("shape" in s for s in specs)
+        for s in specs:                           # and each spec is a real item
+            assert ai_assistant._spec_to_item(s) is not None
     for _title, names in floorplan.CATEGORIES:    # menu wiring is complete
         for n in names:
             assert n in floorplan.SIZES and n in floorplan.LABELS
+    # newer reference-based symbols are present
+    for n in ("desk", "round_table", "plant", "rug"):
+        assert n in floorplan.SIZES
 
 
 def test_eraser_clears_raster_to_white(scene):

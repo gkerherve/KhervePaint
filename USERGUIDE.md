@@ -189,13 +189,21 @@ plan symbols where you click. They're scaled so a **whole room fits the
 page** — the page width represents about 4.8 m, so a chair is roughly
 a tenth of it — keeping all the furniture in proportion:
 
+The symbols are drawn as detailed plan-view blocks (the kind you see on a
+professional furniture-symbol sheet): beds with pillows and a turned-down
+duvet, U-shaped chairs and sofas, a round dining set, a lamp-topped
+nightstand, a wardrobe with clothes on the rail, double-bowl sinks, a
+four-burner hob, and so on.
+
 - **Walls & openings** — wall, door (with swing), double door, window,
   opening, stairs.
-- **Bedroom** — single/double bed, wardrobe, nightstand, chest of drawers.
-- **Living & dining** — dining table, chair, sofa, armchair, coffee
-  table, TV unit, bookshelf.
+- **Bedroom** — single/double bed, wardrobe, nightstand, chest of
+  drawers, desk.
+- **Living & dining** — dining table, round table (with chairs), chair,
+  sofa, armchair, coffee table, TV unit, bookshelf.
 - **Kitchen** — counter, sink, stove/hob, fridge, island, dishwasher.
 - **Bathroom & utility** — toilet, basin, bathtub, shower, washing machine.
+- **Decor** — plant, rug.
 
 Each piece is a normal grouped item — move, rotate, resize and recolour
 it, ungroup to tweak parts, or save your own arrangements as **objects**

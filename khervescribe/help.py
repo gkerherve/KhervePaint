@@ -244,14 +244,17 @@ drawn with thin <b>solid walls</b> (a filled wall ring), then drop in the
 rest. The <b>Room
 layout</b> dropdown drops ready-made <b>top-view</b> plan symbols where
 you click, scaled so a whole room fits the page (the page width is about
-4.8 m, so a chair is ~1/10 of it): <b>walls &amp; openings</b>
-(wall, door, double door, window, opening, stairs), <b>bedroom</b>
-(beds, wardrobe, nightstand, chest), <b>living &amp; dining</b> (table,
-chair, sofa, armchair, coffee table, TV unit, bookshelf), <b>kitchen</b>
-(counter, sink, stove, fridge, island, dishwasher) and <b>bathroom</b>
-(toilet, basin, bathtub, shower, washing machine). Each is a grouped,
-editable item — move, rotate, resize, ungroup, or save arrangements as
-objects.</p>
+4.8 m, so a chair is ~1/10 of it). They are detailed plan-view blocks
+(detailed beds, U-shaped chairs/sofas, a round dining set, lamp-topped
+nightstand, double-bowl sinks, four-burner hob…): <b>walls &amp;
+openings</b> (wall, door, double door, window, opening, stairs),
+<b>bedroom</b> (beds, wardrobe, nightstand, chest, desk), <b>living
+&amp; dining</b> (dining table, round table, chair, sofa, armchair,
+coffee table, TV unit, bookshelf), <b>kitchen</b> (counter, sink, stove,
+fridge, island, dishwasher), <b>bathroom</b> (toilet, basin, bathtub,
+shower, washing machine) and <b>decor</b> (plant, rug). Each is a
+grouped, editable item — move, rotate, resize, ungroup, or save
+arrangements as objects.</p>
 
 <h2>10c · Electrical symbols</h2>
 <p>The <b>Electrical</b> dropdown drops standard (IEC/ANSI) symbols:

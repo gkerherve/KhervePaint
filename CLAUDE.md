@@ -74,7 +74,14 @@ into a new module and import.
   - `floorplan.py`   — top-view room-layout elements: `build_<name>(w,h)`
                        returns shape specs (AI/example format) for walls,
                        doors, windows, furniture, kitchen & bathroom
-                       fittings; `SIZES` (mm), `LABELS`, `CATEGORIES`.
+                       fittings, plus decor (plant, rug); `SIZES` (mm),
+                       `LABELS`, `CATEGORIES`. Symbols are drawn as refined
+                       plan-view blocks (clean line-art + subtle fills,
+                       shared palette constants) modelled on a professional
+                       furniture-symbol sheet — detailed beds/sofas/chairs
+                       (U-shaped shells), round dining set, lamp-topped
+                       nightstand, clothed wardrobe, double-bowl sinks,
+                       4-burner hob, etc.
   - `electrical.py`  — same shape: IEC/ANSI circuit components (resistor,
                        capacitor, diode, transistor, sources, ground…) +
                        building-installation symbols (sockets, switches,
