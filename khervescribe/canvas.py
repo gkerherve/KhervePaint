@@ -1233,6 +1233,9 @@ class PaintScene(QGraphicsScene):
         self._temp_item = None
         if item is None:
             return
+        if self.tool == ROOM:
+            self._finish_room(item)
+            return
         if isinstance(item, LineItem):
             degenerate = item.line().length() < 1
         else:
@@ -1243,6 +1246,33 @@ class PaintScene(QGraphicsScene):
         else:
             center_origin(item)
             self.changed_by_user.emit()
+
+    def _finish_room(self, preview):
+        """Turn the dragged rectangle into a room with double-line walls:
+        an outer and an inner rectangle (the gap is the wall), grouped."""
+        rect = QRectF(preview.rect()).normalized()
+        self.removeItem(preview)
+        if rect.width() < 2 or rect.height() < 2:
+            return
+        t = min(self.sceneRect().width() * 0.02,
+                min(rect.width(), rect.height()) * 0.4)
+        t = max(t, 3.0)
+        wall = QPen(QColor("#333333"), 2)
+        wall.setJoinStyle(Qt.MiterJoin)
+        outer = RectItem(rect)
+        inner = RectItem(rect.adjusted(t, t, -t, -t))
+        for r in (outer, inner):
+            r.setPen(QPen(wall))
+            r.setBrush(QBrush(Qt.NoBrush))
+        group = GroupItem()
+        self.addItem(group)
+        self.clearSelection()
+        for z, r in enumerate((outer, inner)):
+            r.setZValue(z)
+            group.addToGroup(r)
+        center_origin(group)
+        group.setSelected(True)
+        self.changed_by_user.emit()
 
     # ------------------------------------------------------------ pencil
     def pencil_begin(self, point: QPointF):

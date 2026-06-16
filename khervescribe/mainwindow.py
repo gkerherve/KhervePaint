@@ -176,7 +176,7 @@ class MainWindow(QMainWindow):
             bar, "mdi.floor-plan",
             "Room layout — walls, doors, furniture (top view)",
             floorplan, self._set_plan_element,
-            extra=("Room", [("Room — drag to size (the space)",
+            extra=("Room", [("Room",
                              lambda: self._activate_placement_tool(ROOM))]))
         self._build_symbol_dropdown(
             bar, "mdi.flash",

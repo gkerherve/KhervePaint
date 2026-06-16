@@ -998,11 +998,15 @@ def test_room_tool_draws_wall_rect(scene):
     scene.mousePressEvent(_Ev(20, 20))
     scene.mouseMoveEvent(_Ev(220, 170))
     scene.mouseReleaseEvent(_Ev(220, 170))
-    rooms = [i for i in scene.vector_items() if isinstance(i, RectItem)]
-    assert len(rooms) == 1
-    assert rooms[0].brush().style() == Qt.NoBrush      # just the space
-    assert rooms[0].pen().widthF() >= 4                # wall outline
-    assert round(rooms[0].rect().width()) == 200
+    items = scene.vector_items()
+    assert len(items) == 1 and isinstance(items[0], GroupItem)
+    walls = [c for c in items[0].childItems() if isinstance(c, RectItem)]
+    assert len(walls) == 2                              # double-line walls
+    outer = max(walls, key=lambda r: r.rect().width())
+    inner = min(walls, key=lambda r: r.rect().width())
+    assert round(outer.rect().width()) == 200          # dragged size
+    assert inner.rect().width() < outer.rect().width()  # inset by wall depth
+    assert all(r.brush().style() == Qt.NoBrush for r in walls)
 
 
 def test_double_door_meets_at_bottom_centre():

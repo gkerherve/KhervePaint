@@ -182,9 +182,9 @@ other shape.
 
 ## 10b. Room layout (floor plans)
 
-Start a plan with **Room — drag to size** (top of the Room layout
-dropdown): drag out the room's walls (just the empty space). Then drop in
-the rest. The **Room layout** dropdown drops ready-made **top-view**
+Start a plan with **Room** (top of the Room layout dropdown): drag out
+the room and it's drawn with proper **double-line walls** (a grouped
+outer + inner rectangle). Then drop in the rest. The **Room layout** dropdown drops ready-made **top-view**
 plan symbols where you click. They're scaled so a **whole room fits the
 page** — the page width represents about 4.8 m, so a chair is roughly
 a tenth of it — keeping all the furniture in proportion:

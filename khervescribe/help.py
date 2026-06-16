@@ -239,8 +239,9 @@ Bonds snap to a uniform length and 30° angles, so you just click the
 direction.</p>
 
 <h2>10b · Room layout (floor plans)</h2>
-<p>Start with <b>Room — drag to size</b> (top of the dropdown) to drag out
-a room's walls (the empty space), then drop in the rest. The <b>Room
+<p>Start with <b>Room</b> (top of the dropdown): drag it out and it's
+drawn with proper <b>double-line walls</b> (a grouped outer + inner
+rectangle), then drop in the rest. The <b>Room
 layout</b> dropdown drops ready-made <b>top-view</b> plan symbols where
 you click, scaled so a whole room fits the page (the page width is about
 4.8 m, so a chair is ~1/10 of it): <b>walls &amp; openings</b>
