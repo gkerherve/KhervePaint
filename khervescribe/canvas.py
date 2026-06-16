@@ -1248,30 +1248,23 @@ class PaintScene(QGraphicsScene):
             self.changed_by_user.emit()
 
     def _finish_room(self, preview):
-        """Turn the dragged rectangle into a room with double-line walls:
-        an outer and an inner rectangle (the gap is the wall), grouped."""
+        """Turn the dragged rectangle into a room: a thin, solid-filled
+        wall ring (outer rect with an inner rect punched out)."""
         rect = QRectF(preview.rect()).normalized()
         self.removeItem(preview)
         if rect.width() < 2 or rect.height() < 2:
             return
-        t = min(self.sceneRect().width() * 0.02,
-                min(rect.width(), rect.height()) * 0.4)
-        t = max(t, 3.0)
-        wall = QPen(QColor("#333333"), 2)
-        wall.setJoinStyle(Qt.MiterJoin)
-        outer = RectItem(rect)
-        inner = RectItem(rect.adjusted(t, t, -t, -t))
-        for r in (outer, inner):
-            r.setPen(QPen(wall))
-            r.setBrush(QBrush(Qt.NoBrush))
-        group = GroupItem()
-        self.addItem(group)
+        t = max(min(rect.width(), rect.height()) * 0.02, 2.0)   # wall depth
+        path = QPainterPath()
+        path.addRect(rect)
+        path.addRect(rect.adjusted(t, t, -t, -t))    # inner hole -> filled ring
+        item = PathItem(path)
+        item.setBrush(QBrush(QColor("#222222")))     # solid walls
+        item.setPen(QPen(Qt.NoPen))
+        self.addItem(item)
         self.clearSelection()
-        for z, r in enumerate((outer, inner)):
-            r.setZValue(z)
-            group.addToGroup(r)
-        center_origin(group)
-        group.setSelected(True)
+        center_origin(item)
+        item.setSelected(True)
         self.changed_by_user.emit()
 
     # ------------------------------------------------------------ pencil

@@ -999,14 +999,12 @@ def test_room_tool_draws_wall_rect(scene):
     scene.mouseMoveEvent(_Ev(220, 170))
     scene.mouseReleaseEvent(_Ev(220, 170))
     items = scene.vector_items()
-    assert len(items) == 1 and isinstance(items[0], GroupItem)
-    walls = [c for c in items[0].childItems() if isinstance(c, RectItem)]
-    assert len(walls) == 2                              # double-line walls
-    outer = max(walls, key=lambda r: r.rect().width())
-    inner = min(walls, key=lambda r: r.rect().width())
-    assert round(outer.rect().width()) == 200          # dragged size
-    assert inner.rect().width() < outer.rect().width()  # inset by wall depth
-    assert all(r.brush().style() == Qt.NoBrush for r in walls)
+    assert len(items) == 1 and isinstance(items[0], PathItem)
+    assert items[0].brush().style() != Qt.NoBrush      # solid filled walls
+    br = items[0].sceneBoundingRect()
+    assert round(br.width()) == 200 and round(br.height()) == 150  # drag size
+    # thin walls: the hole is most of the room (wall depth ~2% of the side)
+    assert items[0].path().boundingRect().width() == 200
 
 
 def test_double_door_meets_at_bottom_centre():
