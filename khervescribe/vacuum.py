@@ -479,6 +479,644 @@ def build_viewport(w, h):
 
 
 # ---------------------------------------------------------------------------
+# Gauges & pressure
+# ---------------------------------------------------------------------------
+
+def build_pirani_gauge(w, h):
+    """Pirani gauge: circle body with a heated-filament zigzag + stem + tag."""
+    cx = w * 0.5
+    bw, bh = w * 0.60, w * 0.60
+    bx, by = cx - bw * 0.5, h * 0.06
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    fy = by + bh * 0.5
+    x0 = bx + bw * 0.24
+    seg = (bw * 0.52) / 4.0
+    amp = bh * 0.12
+    pts = [(x0, fy)]
+    for i in range(1, 5):
+        pts.append((x0 + seg * i, fy + (amp if i % 2 else -amp)))
+    for i in range(len(pts) - 1):
+        specs.append({"shape": "line", "x1": pts[i][0], "y1": pts[i][1],
+                      "x2": pts[i + 1][0], "y2": pts[i + 1][1],
+                      "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh,
+                  "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
+    specs.append({"shape": "text", "text": "Pi", "x": cx, "y": by + bh * 0.78,
+                  "size": h * 0.085, "color": _ACC})
+    return specs
+
+
+def build_penning_gauge(w, h):
+    """Penning cold-cathode gauge: circle with crossed-field hint + stem."""
+    cx = w * 0.5
+    bw, bh = w * 0.60, w * 0.60
+    bx, by = cx - bw * 0.5, h * 0.06
+    cy = by + bh * 0.5
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    r = bw * 0.22
+    specs.append({"shape": "line", "x1": cx - r, "y1": cy - r,
+                  "x2": cx + r, "y2": cy + r, "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": cx - r, "y1": cy + r,
+                  "x2": cx + r, "y2": cy - r, "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": bx + bw * 0.18, "y1": cy - r * 1.4,
+                  "x2": bx + bw * 0.82, "y2": cy - r * 1.4,
+                  "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": bx + bw * 0.18, "y1": cy + r * 1.4,
+                  "x2": bx + bw * 0.82, "y2": cy + r * 1.4,
+                  "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh,
+                  "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
+    specs.append({"shape": "text", "text": "Pen", "x": cx, "y": by + bh * 0.80,
+                  "size": h * 0.075, "color": _ACC})
+    return specs
+
+
+def build_ion_gauge(w, h):
+    """Bayard-Alpert hot-cathode ion gauge: grid arcs + collector + stem."""
+    cx = w * 0.5
+    bw, bh = w * 0.60, w * 0.60
+    bx, by = cx - bw * 0.5, h * 0.06
+    cy = by + bh * 0.5
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    for f, rot in ((0.46, 0.0), (0.30, 180.0)):
+        gw = bw * f
+        gh = bh * f
+        specs.append({"shape": "halfcircle", "x": cx - gw * 0.5,
+                      "y": cy - gh * 0.5, "w": gw, "h": gh,
+                      "stroke": _ACC, "fill": _NONE, "width": _D,
+                      "rotation": rot})
+    specs.append({"shape": "line", "x1": cx, "y1": cy - bh * 0.30,
+                  "x2": cx, "y2": cy + bh * 0.30, "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh,
+                  "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
+    specs.append({"shape": "text", "text": "IG", "x": bx + bw * 0.80,
+                  "y": by + bh * 0.20, "size": h * 0.075, "color": _ACC})
+    return specs
+
+
+def build_capacitance_manometer(w, h):
+    """Baratron capacitance manometer: capsule with a diaphragm + stem."""
+    cx = w * 0.5
+    bw, bh = w * 0.62, w * 0.62
+    bx, by = cx - bw * 0.5, h * 0.06
+    cy = by + bh * 0.5
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    gap = bh * 0.045
+    x1 = bx + bw * 0.18
+    x2 = bx + bw * 0.82
+    specs.append({"shape": "line", "x1": x1, "y1": cy - gap,
+                  "x2": x2, "y2": cy - gap, "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": x1, "y1": cy + gap,
+                  "x2": x2, "y2": cy + gap, "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh,
+                  "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
+    specs.append({"shape": "text", "text": "CDG", "x": cx, "y": by + bh * 0.80,
+                  "size": h * 0.070, "color": _ACC})
+    return specs
+
+
+def build_bourdon_gauge(w, h):
+    """Bourdon dial gauge: white face, C-shaped tube, needle + short stem."""
+    cx = w * 0.5
+    bw, bh = w * 0.62, w * 0.62
+    bx, by = cx - bw * 0.5, h * 0.06
+    cy = by + bh * 0.5
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": "#ffffff", "width": _W},
+    ]
+    tw, th = bw * 0.50, bh * 0.50
+    tx, ty = cx - tw * 0.5, cy - th * 0.5
+    for rot in (0, 90, 270):
+        specs.append({"shape": "quartercircle", "x": tx, "y": ty,
+                      "w": tw, "h": th, "stroke": _ACC, "fill": _NONE,
+                      "width": _D, "rotation": rot})
+    specs.append({"shape": "line", "x1": cx, "y1": cy,
+                  "x2": cx + bw * 0.26, "y2": cy - bh * 0.20,
+                  "stroke": _OUT, "width": _W})
+    hd = bw * 0.06
+    specs.append({"shape": "circle", "x": cx - hd * 0.5, "y": cy - hd * 0.5,
+                  "w": hd, "h": hd, "stroke": _OUT, "fill": _OUT, "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh,
+                  "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
+    return specs
+
+
+def build_manometer(w, h):
+    """U-tube manometer: two vertical tubes + curved bottom + liquid."""
+    lx = w * 0.34
+    rx = w * 0.66
+    top = h * 0.06
+    bot = h * 0.82
+    specs = [
+        {"shape": "line", "x1": lx - w * 0.05, "y1": top,
+         "x2": lx - w * 0.05, "y2": bot, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": lx + w * 0.05, "y1": top,
+         "x2": lx + w * 0.05, "y2": bot, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": rx - w * 0.05, "y1": top,
+         "x2": rx - w * 0.05, "y2": bot, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": rx + w * 0.05, "y1": top,
+         "x2": rx + w * 0.05, "y2": bot, "stroke": _OUT, "width": _W},
+    ]
+    arc_w = (rx + w * 0.05) - (lx - w * 0.05)
+    arc_h = h * 0.18
+    specs.append({"shape": "halfcircle", "x": lx - w * 0.05,
+                  "y": bot - arc_h * 0.5, "w": arc_w, "h": arc_h,
+                  "stroke": _OUT, "fill": _NONE, "width": _W,
+                  "rotation": 180})
+    l_top = h * 0.30
+    r_top = h * 0.52
+    specs.append({"shape": "rect", "x": lx - w * 0.05, "y": l_top,
+                  "w": w * 0.10, "h": bot - l_top, "stroke": _NONE,
+                  "fill": _STEEL, "width": _D})
+    specs.append({"shape": "rect", "x": rx - w * 0.05, "y": r_top,
+                  "w": w * 0.10, "h": bot - r_top, "stroke": _NONE,
+                  "fill": _STEEL, "width": _D})
+    return specs
+
+
+def build_pressure_transducer(w, h):
+    """ISA transmitter: circle 'PT' with a ticked signal line + stem."""
+    cx = w * 0.5
+    bw, bh = w * 0.60, w * 0.60
+    bx, by = cx - bw * 0.5, h * 0.16
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "text", "text": "PT", "x": cx, "y": by + bh * 0.5,
+         "size": h * 0.090, "color": _ACC},
+    ]
+    sig_top = h * 0.02
+    specs.append({"shape": "line", "x1": cx, "y1": by, "x2": cx, "y2": sig_top,
+                  "stroke": _ACC, "width": _D})
+    for ty in (by * 0.55, by * 0.40):
+        specs.append({"shape": "line", "x1": cx - w * 0.06, "y1": ty + h * 0.02,
+                      "x2": cx + w * 0.06, "y2": ty - h * 0.02,
+                      "stroke": _ACC, "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh,
+                  "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
+    return specs
+
+
+# ---------------------------------------------------------------------------
+# More pumps
+# ---------------------------------------------------------------------------
+
+def build_diaphragm_pump(w, h):
+    """Diaphragm pump: box body, curved diaphragm + two check-valve tris."""
+    bw, bh = w * 0.70, h * 0.56
+    bx, by = (w - bw) * 0.5, h * 0.10
+    cx = w * 0.5
+    cy = by + bh * 0.5
+    specs = [
+        {"shape": "rect", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    dw = bw * 0.74
+    dh = bh * 0.34
+    specs.append({"shape": "halfcircle", "x": cx - dw * 0.5, "y": cy - dh * 0.5,
+                  "w": dw, "h": dh, "stroke": _ACC, "fill": _NONE,
+                  "width": _D, "rotation": 0})
+    tw, th = bw * 0.16, bh * 0.22
+    specs.append({"shape": "triangle", "x": bx + bw * 0.16,
+                  "y": by + bh * 0.18, "w": tw, "h": th,
+                  "stroke": _OUT, "fill": _STEEL, "width": _D, "rotation": 0})
+    specs.append({"shape": "triangle", "x": bx + bw * 0.68,
+                  "y": by + bh * 0.18, "w": tw, "h": th,
+                  "stroke": _OUT, "fill": _STEEL, "width": _D, "rotation": 0})
+    fw, fh = w * 0.16, h * 0.10
+    specs.append({"shape": "rect", "x": cx - fw * 0.5, "y": by + bh,
+                  "w": fw, "h": fh, "stroke": _OUT, "fill": _STEEL,
+                  "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh + fh,
+                  "x2": cx, "y2": h * 0.99, "stroke": _OUT, "width": _W})
+    return specs
+
+
+def build_roots_pump(w, h):
+    """Roots blower: rounded casing with two interlocking figure-8 lobes."""
+    bw, bh = w * 0.74, h * 0.50
+    bx, by = (w - bw) * 0.5, h * 0.10
+    cx = w * 0.5
+    cy = by + bh * 0.5
+    specs = [
+        {"shape": "rounded_rect", "x": bx, "y": by, "w": bw, "h": bh,
+         "radius": bh * 0.30, "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    lobe_d = bh * 0.40
+    off = lobe_d * 0.40
+    lcx = cx - bw * 0.18
+    specs.append({"shape": "circle", "x": lcx - lobe_d * 0.5,
+                  "y": cy - off - lobe_d * 0.5, "w": lobe_d, "h": lobe_d,
+                  "stroke": _ACC, "fill": _NONE, "width": _D})
+    specs.append({"shape": "circle", "x": lcx - lobe_d * 0.5,
+                  "y": cy + off - lobe_d * 0.5, "w": lobe_d, "h": lobe_d,
+                  "stroke": _ACC, "fill": _NONE, "width": _D})
+    rcx = cx + bw * 0.18
+    specs.append({"shape": "circle", "x": rcx - off - lobe_d * 0.5,
+                  "y": cy - lobe_d * 0.5, "w": lobe_d, "h": lobe_d,
+                  "stroke": _ACC, "fill": _NONE, "width": _D})
+    specs.append({"shape": "circle", "x": rcx + off - lobe_d * 0.5,
+                  "y": cy - lobe_d * 0.5, "w": lobe_d, "h": lobe_d,
+                  "stroke": _ACC, "fill": _NONE, "width": _D})
+    fw, fh = w * 0.16, h * 0.10
+    specs.append({"shape": "rect", "x": cx - fw * 0.5, "y": by + bh,
+                  "w": fw, "h": fh, "stroke": _OUT, "fill": _STEEL,
+                  "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh + fh,
+                  "x2": cx, "y2": h * 0.99, "stroke": _OUT, "width": _W})
+    return specs
+
+
+def build_getter_pump(w, h):
+    """NEG getter pump: steel-filled circle with diagonal hatch + stub."""
+    cx = w * 0.5
+    bw, bh = w * 0.62, w * 0.62
+    bx, by = cx - bw * 0.5, h * 0.10
+    specs = [
+        {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
+         "stroke": _OUT, "fill": _STEEL, "width": _W},
+    ]
+    n = 5
+    for i in range(1, n):
+        f = i / n
+        specs.append({"shape": "line",
+                      "x1": bx + bw * f, "y1": by + bh * 0.10,
+                      "x2": bx + bw * 0.10, "y2": by + bh * f,
+                      "stroke": _ACC, "width": _D})
+        specs.append({"shape": "line",
+                      "x1": bx + bw, "y1": by + bh * f,
+                      "x2": bx + bw * f, "y2": by + bh,
+                      "stroke": _ACC, "width": _D})
+    specs.append({"shape": "text", "text": "NEG", "x": cx, "y": by + bh * 0.5,
+                  "size": h * 0.075, "color": _OUT})
+    fw, fh = w * 0.16, h * 0.10
+    specs.append({"shape": "rect", "x": cx - fw * 0.5, "y": by + bh,
+                  "w": fw, "h": fh, "stroke": _OUT, "fill": _STEEL,
+                  "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh + fh,
+                  "x2": cx, "y2": h * 0.99, "stroke": _OUT, "width": _W})
+    return specs
+
+
+def build_sublimation_pump(w, h):
+    """Titanium sublimation pump: chamber with a filament coil + stub."""
+    bw, bh = w * 0.66, h * 0.52
+    bx, by = (w - bw) * 0.5, h * 0.10
+    cx = w * 0.5
+    cy = by + bh * 0.45
+    specs = [
+        {"shape": "rounded_rect", "x": bx, "y": by, "w": bw, "h": bh,
+         "radius": bh * 0.14, "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    x0 = bx + bw * 0.18
+    seg = (bw * 0.64) / 5.0
+    amp = bh * 0.16
+    pts = [(x0, cy)]
+    for i in range(1, 6):
+        pts.append((x0 + seg * i, cy + (amp if i % 2 else -amp)))
+    for i in range(len(pts) - 1):
+        specs.append({"shape": "line", "x1": pts[i][0], "y1": pts[i][1],
+                      "x2": pts[i + 1][0], "y2": pts[i + 1][1],
+                      "stroke": _ACC, "width": _D})
+    specs.append({"shape": "text", "text": "TSP", "x": cx, "y": by + bh * 0.82,
+                  "size": h * 0.070, "color": _ACC})
+    fw, fh = w * 0.16, h * 0.10
+    specs.append({"shape": "rect", "x": cx - fw * 0.5, "y": by + bh,
+                  "w": fw, "h": fh, "stroke": _OUT, "fill": _STEEL,
+                  "width": _D})
+    specs.append({"shape": "line", "x1": cx, "y1": by + bh + fh,
+                  "x2": cx, "y2": h * 0.99, "stroke": _OUT, "width": _W})
+    return specs
+
+
+# ---------------------------------------------------------------------------
+# More valves
+# ---------------------------------------------------------------------------
+
+def build_butterfly_valve(w, h):
+    cx, cy = w * 0.5, h * 0.55
+    r = w * 0.34
+    return [
+        {"shape": "circle", "x": cx - r, "y": cy - r, "w": r * 2, "h": r * 2,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "line", "x1": cx - r * 0.72, "y1": cy + r * 0.72,
+         "x2": cx + r * 0.72, "y2": cy - r * 0.72, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": cx, "y1": cy - r, "x2": cx, "y2": h * 0.08,
+         "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx - w * 0.12, "y1": h * 0.08,
+         "x2": cx + w * 0.12, "y2": h * 0.08, "stroke": _OUT, "width": _W},
+    ]
+
+
+def build_ball_valve(w, h):
+    cx, cy = w * 0.5, h * 0.55
+    bw, bh = w * 0.72, h * 0.42
+    parts = _bowtie(cx, cy, bw, bh)
+    r = bh * 0.34
+    parts += [
+        {"shape": "circle", "x": cx - r, "y": cy - r, "w": r * 2, "h": r * 2,
+         "stroke": _OUT, "fill": _STEEL, "width": _W},
+        {"shape": "line", "x1": cx, "y1": cy - r, "x2": cx, "y2": h * 0.16,
+         "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx, "y1": h * 0.16,
+         "x2": cx + w * 0.3, "y2": h * 0.16, "stroke": _OUT, "width": _W},
+    ]
+    return parts
+
+
+def build_needle_valve(w, h):
+    cx, cy = w * 0.5, h * 0.55
+    bw, bh = w * 0.72, h * 0.42
+    parts = _bowtie(cx, cy, bw, bh)
+    nw = w * 0.1
+    parts += [
+        {"shape": "triangle", "x": cx - nw * 0.5, "y": cy - bh * 0.45,
+         "w": nw, "h": bh * 0.95, "rotation": 180.0,
+         "stroke": _OUT, "fill": _STEEL, "width": _D},
+        {"shape": "line", "x1": cx, "y1": cy - bh * 0.5, "x2": cx,
+         "y2": h * 0.12, "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx - w * 0.13, "y1": h * 0.12,
+         "x2": cx + w * 0.13, "y2": h * 0.12, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": cx, "y1": h * 0.12, "x2": cx, "y2": h * 0.04,
+         "stroke": _OUT, "width": _D},
+    ]
+    return parts
+
+
+def build_solenoid_valve(w, h):
+    cx, cy = w * 0.5, h * 0.55
+    bw, bh = w * 0.72, h * 0.42
+    parts = _bowtie(cx, cy, bw, bh)
+    parts.append({"shape": "line", "x1": cx, "y1": cy - bh * 0.5,
+                  "x2": cx, "y2": h * 0.28, "stroke": _OUT, "width": _D})
+    boxw, boxh = w * 0.38, h * 0.2
+    bx, by = cx - boxw * 0.5, h * 0.08
+    parts += [
+        {"shape": "rect", "x": bx, "y": by, "w": boxw, "h": boxh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "line", "x1": bx, "y1": by + boxh, "x2": bx + boxw, "y2": by,
+         "stroke": _OUT, "width": _D},
+    ]
+    return parts
+
+
+def build_manual_valve(w, h):
+    cx, cy = w * 0.5, h * 0.55
+    bw, bh = w * 0.72, h * 0.42
+    parts = _bowtie(cx, cy, bw, bh)
+    parts.append({"shape": "line", "x1": cx, "y1": cy - bh * 0.5,
+                  "x2": cx, "y2": h * 0.22, "stroke": _OUT, "width": _D})
+    hw, hh = w * 0.42, h * 0.12
+    parts.append({"shape": "ellipse", "x": cx - hw * 0.5, "y": h * 0.16,
+                  "w": hw, "h": hh, "stroke": _OUT, "fill": _BODY, "width": _W})
+    return parts
+
+
+def build_relief_valve(w, h):
+    inx, iny = w * 0.08, h * 0.7
+    cx = w * 0.42
+    parts = [
+        {"shape": "line", "x1": inx, "y1": iny, "x2": cx, "y2": iny,
+         "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": inx, "y1": iny - h * 0.07, "x2": inx,
+         "y2": iny + h * 0.07, "stroke": _OUT, "width": _W},
+        {"shape": "triangle", "x": cx - w * 0.16, "y": iny - h * 0.18,
+         "w": w * 0.32, "h": h * 0.18, "rotation": 0.0,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "triangle", "x": cx - w * 0.16, "y": iny - h * 0.36,
+         "w": w * 0.32, "h": h * 0.18, "rotation": 180.0,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "line", "x1": cx, "y1": iny - h * 0.36, "x2": cx,
+         "y2": h * 0.34, "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx, "y1": h * 0.34, "x2": cx + w * 0.1,
+         "y2": h * 0.3, "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx + w * 0.1, "y1": h * 0.3, "x2": cx - w * 0.1,
+         "y2": h * 0.25, "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx - w * 0.1, "y1": h * 0.25, "x2": cx + w * 0.1,
+         "y2": h * 0.2, "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx + w * 0.1, "y1": h * 0.2, "x2": cx,
+         "y2": h * 0.16, "stroke": _OUT, "width": _D},
+        {"shape": "rect", "x": cx - w * 0.1, "y": h * 0.08, "w": w * 0.2,
+         "h": h * 0.08, "stroke": _OUT, "fill": _STEEL, "width": _W},
+    ]
+    return parts
+
+
+# ---------------------------------------------------------------------------
+# Lines & fittings
+# ---------------------------------------------------------------------------
+
+def build_pipe(w, h):
+    cy = h * 0.5
+    ph = h * 0.32
+    return [
+        {"shape": "rect", "x": w * 0.06, "y": cy - ph * 0.5,
+         "w": w * 0.88, "h": ph, "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "line", "x1": w * 0.06, "y1": cy - ph * 0.9,
+         "x2": w * 0.06, "y2": cy + ph * 0.9, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": w * 0.94, "y1": cy - ph * 0.9,
+         "x2": w * 0.94, "y2": cy + ph * 0.9, "stroke": _OUT, "width": _W},
+    ]
+
+
+def build_tee(w, h):
+    cx = w * 0.5
+    cy = h * 0.62
+    ph = h * 0.26
+    return [
+        {"shape": "rect", "x": w * 0.06, "y": cy - ph * 0.5,
+         "w": w * 0.88, "h": ph, "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "rect", "x": cx - ph * 0.5, "y": h * 0.1,
+         "w": ph, "h": cy - ph * 0.5 - h * 0.1, "stroke": _OUT,
+         "fill": _BODY, "width": _W},
+        {"shape": "line", "x1": w * 0.06, "y1": cy - ph * 0.85,
+         "x2": w * 0.06, "y2": cy + ph * 0.85, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": w * 0.94, "y1": cy - ph * 0.85,
+         "x2": w * 0.94, "y2": cy + ph * 0.85, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": cx - ph * 0.85, "y1": h * 0.1,
+         "x2": cx + ph * 0.85, "y2": h * 0.1, "stroke": _OUT, "width": _W},
+    ]
+
+
+def build_elbow(w, h):
+    ph = h * 0.24
+    cy = h * 0.78
+    cx = w * 0.74
+    return [
+        {"shape": "rect", "x": w * 0.08, "y": cy - ph * 0.5,
+         "w": cx - w * 0.08, "h": ph, "stroke": _OUT, "fill": _BODY,
+         "width": _W},
+        {"shape": "rect", "x": cx - ph * 0.5, "y": h * 0.1,
+         "w": ph, "h": cy - ph * 0.5 - h * 0.1, "stroke": _OUT,
+         "fill": _BODY, "width": _W},
+        {"shape": "quartercircle", "x": cx - ph * 0.5, "y": cy - ph * 0.5,
+         "w": ph, "h": ph, "stroke": _OUT, "fill": _STEEL,
+         "width": _D, "rotation": 0.0},
+        {"shape": "line", "x1": w * 0.08, "y1": cy - ph * 0.85,
+         "x2": w * 0.08, "y2": cy + ph * 0.85, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": cx - ph * 0.85, "y1": h * 0.1,
+         "x2": cx + ph * 0.85, "y2": h * 0.1, "stroke": _OUT, "width": _W},
+    ]
+
+
+def build_reducer(w, h):
+    cy = h * 0.5
+    bigh = h * 0.5
+    smallh = h * 0.26
+    return [
+        {"shape": "rect", "x": w * 0.06, "y": cy - bigh * 0.5,
+         "w": w * 0.22, "h": bigh, "stroke": _OUT, "fill": _BODY,
+         "width": _W},
+        {"shape": "rect", "x": w * 0.72, "y": cy - smallh * 0.5,
+         "w": w * 0.22, "h": smallh, "stroke": _OUT, "fill": _BODY,
+         "width": _W},
+        {"shape": "trapezoid", "x": w * 0.28, "y": cy - bigh * 0.5,
+         "w": w * 0.44, "h": bigh, "rotation": 90.0,
+         "stroke": _OUT, "fill": _STEEL, "width": _W},
+        {"shape": "line", "x1": w * 0.06, "y1": cy - bigh * 0.85,
+         "x2": w * 0.06, "y2": cy + bigh * 0.85, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": w * 0.94, "y1": cy - smallh * 0.85,
+         "x2": w * 0.94, "y2": cy + smallh * 0.85, "stroke": _OUT,
+         "width": _W},
+    ]
+
+
+def build_blank_flange(w, h):
+    cy = h * 0.5
+    ph = h * 0.3
+    capx = w * 0.66
+    capw = w * 0.16
+    caph = h * 0.62
+    return [
+        {"shape": "rect", "x": w * 0.08, "y": cy - ph * 0.5,
+         "w": capx - w * 0.08, "h": ph, "stroke": _OUT, "fill": _BODY,
+         "width": _W},
+        {"shape": "rect", "x": capx, "y": cy - caph * 0.5, "w": capw,
+         "h": caph, "stroke": _OUT, "fill": _STEEL, "width": _W},
+        {"shape": "circle", "x": capx + capw * 0.3, "y": cy - caph * 0.32,
+         "w": w * 0.045, "h": w * 0.045, "stroke": _OUT, "fill": _OUT,
+         "width": _D},
+        {"shape": "circle", "x": capx + capw * 0.3, "y": cy + caph * 0.26,
+         "w": w * 0.045, "h": w * 0.045, "stroke": _OUT, "fill": _OUT,
+         "width": _D},
+        {"shape": "line", "x1": w * 0.08, "y1": cy - ph * 0.85,
+         "x2": w * 0.08, "y2": cy + ph * 0.85, "stroke": _OUT, "width": _W},
+    ]
+
+
+def build_cold_trap(w, h):
+    cx = w * 0.5
+    vw, vh = w * 0.46, h * 0.62
+    vx, vy = cx - vw * 0.5, h * 0.2
+    return [
+        {"shape": "rounded_rect", "x": vx, "y": vy, "w": vw, "h": vh,
+         "radius": w * 0.1, "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "line", "x1": cx - vw * 0.2, "y1": vy, "x2": cx - vw * 0.2,
+         "y2": h * 0.06, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": cx + vw * 0.2, "y1": vy, "x2": cx + vw * 0.2,
+         "y2": h * 0.06, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": vx + vw * 0.18, "y1": vy + vh * 0.4,
+         "x2": vx + vw * 0.82, "y2": vy + vh * 0.4, "stroke": _ACC,
+         "width": _D},
+        {"shape": "line", "x1": vx + vw * 0.18, "y1": vy + vh * 0.6,
+         "x2": vx + vw * 0.82, "y2": vy + vh * 0.6, "stroke": _ACC,
+         "width": _D},
+        {"shape": "line", "x1": vx + vw * 0.18, "y1": vy + vh * 0.8,
+         "x2": vx + vw * 0.82, "y2": vy + vh * 0.8, "stroke": _ACC,
+         "width": _D},
+        {"shape": "text", "text": "LN2", "x": cx - vw * 0.22,
+         "y": vy + vh * 0.18, "size": h * 0.07, "color": _OUT},
+    ]
+
+
+def build_mass_flow_controller(w, h):
+    cy = h * 0.5
+    ph = h * 0.2
+    boxw, boxh = w * 0.5, h * 0.5
+    bx, by = w * 0.5 - boxw * 0.5, cy - boxh * 0.5
+    parts = [
+        {"shape": "line", "x1": w * 0.04, "y1": cy, "x2": bx, "y2": cy,
+         "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": bx + boxw, "y1": cy, "x2": w * 0.96, "y2": cy,
+         "stroke": _OUT, "width": _W},
+        {"shape": "rect", "x": bx, "y": by, "w": boxw, "h": boxh,
+         "stroke": _OUT, "fill": _BODY, "width": _W},
+    ]
+    parts += _bowtie(w * 0.5, by + boxh * 0.62, boxw * 0.4, boxh * 0.3)
+    parts += [
+        {"shape": "line", "x1": w * 0.5, "y1": by + boxh * 0.47,
+         "x2": w * 0.5, "y2": by + boxh * 0.2, "stroke": _OUT, "width": _D},
+        {"shape": "text", "text": "MFC", "x": bx + boxw * 0.18,
+         "y": by + boxh * 0.04, "size": h * 0.13, "color": _OUT},
+        {"shape": "line", "x1": w * 0.04, "y1": cy - ph * 0.7,
+         "x2": w * 0.04, "y2": cy + ph * 0.7, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": w * 0.96, "y1": cy - ph * 0.7,
+         "x2": w * 0.96, "y2": cy + ph * 0.7, "stroke": _OUT, "width": _W},
+    ]
+    return parts
+
+
+def build_regulator(w, h):
+    cx = w * 0.42
+    bodyw, bodyh = w * 0.4, h * 0.34
+    by = h * 0.42
+    domew = bodyw * 1.05
+    return [
+        {"shape": "rect", "x": cx - bodyw * 0.5, "y": by, "w": bodyw,
+         "h": bodyh, "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "halfcircle", "x": cx - domew * 0.5, "y": by - domew * 0.5,
+         "w": domew, "h": domew, "stroke": _OUT, "fill": _STEEL,
+         "width": _W, "rotation": 0.0},
+        {"shape": "line", "x1": cx, "y1": by - domew * 0.5, "x2": cx,
+         "y2": h * 0.08, "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx - w * 0.08, "y1": h * 0.08,
+         "x2": cx + w * 0.08, "y2": h * 0.08, "stroke": _OUT, "width": _W},
+        {"shape": "line", "x1": w * 0.04, "y1": by + bodyh * 0.5,
+         "x2": cx - bodyw * 0.5, "y2": by + bodyh * 0.5, "stroke": _OUT,
+         "width": _W},
+        {"shape": "line", "x1": cx + bodyw * 0.5, "y1": by + bodyh * 0.5,
+         "x2": w * 0.7, "y2": by + bodyh * 0.5, "stroke": _OUT, "width": _W},
+        {"shape": "circle", "x": w * 0.72, "y": by - h * 0.02,
+         "w": w * 0.2, "h": w * 0.2, "stroke": _OUT, "fill": "#ffffff",
+         "width": _W},
+        {"shape": "line", "x1": w * 0.82, "y1": by + h * 0.08,
+         "x2": w * 0.87, "y2": by + h * 0.03, "stroke": _OUT, "width": _D},
+    ]
+
+
+def build_gas_cylinder(w, h):
+    cx = w * 0.5
+    bw = w * 0.62
+    bx = cx - bw * 0.5
+    by = h * 0.16
+    bh = h * 0.74
+    return [
+        {"shape": "rounded_rect", "x": bx, "y": by, "w": bw, "h": bh,
+         "radius": bw * 0.45, "stroke": _OUT, "fill": _BODY, "width": _W},
+        {"shape": "rect", "x": cx - bw * 0.16, "y": h * 0.06,
+         "w": bw * 0.32, "h": h * 0.1, "stroke": _OUT, "fill": _STEEL,
+         "width": _W},
+        {"shape": "line", "x1": cx, "y1": h * 0.06, "x2": cx, "y2": h * 0.02,
+         "stroke": _OUT, "width": _D},
+        {"shape": "line", "x1": cx + bw * 0.16, "y1": h * 0.1,
+         "x2": cx + bw * 0.34, "y2": h * 0.1, "stroke": _OUT, "width": _W},
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Sizes / labels / categories
 # ---------------------------------------------------------------------------
 
@@ -503,6 +1141,36 @@ SIZES = {
     "flange": (140.0, 160.0),
     "bellows": (220.0, 140.0),
     "viewport": (150.0, 150.0),
+    # gauges & pressure
+    "pirani_gauge": (150.0, 170.0),
+    "penning_gauge": (150.0, 170.0),
+    "ion_gauge": (150.0, 170.0),
+    "capacitance_manometer": (150.0, 170.0),
+    "bourdon_gauge": (150.0, 170.0),
+    "manometer": (160.0, 260.0),
+    "pressure_transducer": (150.0, 170.0),
+    # more pumps
+    "diaphragm_pump": (250.0, 280.0),
+    "roots_pump": (250.0, 280.0),
+    "getter_pump": (250.0, 280.0),
+    "sublimation_pump": (250.0, 280.0),
+    # more valves
+    "butterfly_valve": (180.0, 190.0),
+    "ball_valve": (190.0, 190.0),
+    "needle_valve": (180.0, 200.0),
+    "solenoid_valve": (190.0, 200.0),
+    "manual_valve": (190.0, 190.0),
+    "relief_valve": (190.0, 200.0),
+    # lines & fittings
+    "pipe": (240.0, 80.0),
+    "tee": (200.0, 180.0),
+    "elbow": (180.0, 180.0),
+    "reducer": (220.0, 120.0),
+    "blank_flange": (200.0, 140.0),
+    "cold_trap": (200.0, 300.0),
+    "mass_flow_controller": (240.0, 160.0),
+    "regulator": (240.0, 220.0),
+    "gas_cylinder": (180.0, 420.0),
 }
 
 LABELS = {
@@ -524,6 +1192,32 @@ LABELS = {
     "flange": "Flange (CF)",
     "bellows": "Bellows",
     "viewport": "Viewport",
+    "pirani_gauge": "Pirani gauge",
+    "penning_gauge": "Penning gauge",
+    "ion_gauge": "Ion gauge (Bayard-Alpert)",
+    "capacitance_manometer": "Capacitance manometer (Baratron)",
+    "bourdon_gauge": "Bourdon gauge",
+    "manometer": "U-tube manometer",
+    "pressure_transducer": "Pressure transducer",
+    "diaphragm_pump": "Diaphragm pump",
+    "roots_pump": "Roots pump (blower)",
+    "getter_pump": "Getter pump (NEG)",
+    "sublimation_pump": "Titanium sublimation pump",
+    "butterfly_valve": "Butterfly valve",
+    "ball_valve": "Ball valve",
+    "needle_valve": "Needle valve",
+    "solenoid_valve": "Solenoid valve",
+    "manual_valve": "Manual valve",
+    "relief_valve": "Relief valve",
+    "pipe": "Pipe",
+    "tee": "Tee junction",
+    "elbow": "Elbow (90°)",
+    "reducer": "Reducer",
+    "blank_flange": "Blank flange",
+    "cold_trap": "Cold trap (LN2)",
+    "mass_flow_controller": "Mass flow controller",
+    "regulator": "Pressure regulator",
+    "gas_cylinder": "Gas cylinder",
 }
 
 CATEGORIES = [
@@ -531,10 +1225,19 @@ CATEGORIES = [
      ["chamber", "analyser", "xray_source", "ion_gun",
       "electron_gun", "manipulator"]),
     ("Pumps",
-     ["turbo_pump", "ion_pump", "scroll_pump", "rotary_pump", "cryo_pump"]),
-    ("Valves & fittings",
-     ["gate_valve", "angle_valve", "leak_valve", "gauge",
-      "flange", "bellows", "viewport"]),
+     ["turbo_pump", "ion_pump", "scroll_pump", "rotary_pump", "cryo_pump",
+      "diaphragm_pump", "roots_pump", "getter_pump", "sublimation_pump"]),
+    ("Gauges & pressure",
+     ["bourdon_gauge", "pirani_gauge", "penning_gauge", "ion_gauge",
+      "capacitance_manometer", "manometer", "pressure_transducer", "gauge"]),
+    ("Valves",
+     ["gate_valve", "angle_valve", "leak_valve", "butterfly_valve",
+      "ball_valve", "needle_valve", "solenoid_valve", "manual_valve",
+      "relief_valve"]),
+    ("Lines & fittings",
+     ["pipe", "tee", "elbow", "reducer", "flange", "blank_flange",
+      "bellows", "viewport", "cold_trap", "mass_flow_controller",
+      "regulator", "gas_cylinder"]),
 ]
 
 

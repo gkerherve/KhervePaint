@@ -105,10 +105,15 @@ into a new module and import.
                        `LABWARE_PLACE`/`FLOW_PLACE`, placed via
                        `place_<x>_element` → `_place_symbol`). **optics**:
                        beam-path symbols (laser, mirrors, lenses, prism,
-                       grating, detector, monochromator…). **vacuum**:
-                       UHV/surface-science (chamber, hemispherical analyser,
-                       ion/X-ray guns, turbo/ion/scroll/rotary/cryo pumps,
-                       gate/leak valves, gauge, flange, bellows). **labware**:
+                       grating, detector, monochromator…). **vacuum**
+                       (44 symbols, 5 sections): UHV/surface-science —
+                       chamber & sources; pumps (turbo/ion/scroll/rotary/
+                       cryo/diaphragm/Roots/NEG/TSP); gauges & pressure
+                       (Bourdon/Pirani/Penning/Bayard-Alpert/Baratron/
+                       U-tube manometer/transducer); valves (gate/angle/
+                       leak/butterfly/ball/needle/solenoid/manual/relief);
+                       lines & fittings (pipe/tee/elbow/reducer/flanges/
+                       cold trap/MFC/regulator/gas cylinder). **labware**:
                        front-elevation glassware & apparatus (beakers,
                        flasks, burette, condenser, Bunsen, retort stand…).
                        **flowchart**: ANSI/ISO nodes (process, decision

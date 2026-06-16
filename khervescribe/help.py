@@ -273,10 +273,17 @@ editable, scaled so a whole layout fits the page):</p>
 laser, lamp, detector, photodiode, camera, flat/curved mirrors, beam
 splitter, beam path, convex/concave lenses, prism, grating, polarizer,
 aperture, filter, sample, monochromator.</li>
-<li><b>Vacuum</b> — UHV / surface-science (XPS/AES/SIMS): chamber,
-hemispherical analyser, X-ray &amp; ion/electron guns, manipulator,
-turbo/ion/scroll/rotary/cryo pumps, gate/angle/leak valves, gauge,
-flange, bellows, viewport.</li>
+<li><b>Vacuum &amp; pressure</b> — UHV / surface-science (XPS/AES/SIMS),
+now 44 symbols across five groups: <i>chamber &amp; sources</i> (chamber,
+hemispherical analyser, X-ray/ion/electron guns, manipulator);
+<i>pumps</i> (turbo, ion, scroll, rotary, cryo, diaphragm, Roots, getter
+NEG, Ti sublimation); <i>gauges &amp; pressure</i> (Bourdon, Pirani,
+Penning, Bayard-Alpert ion gauge, Baratron capacitance manometer, U-tube
+manometer, pressure transducer); <i>valves</i> (gate, angle, leak,
+butterfly, ball, needle, solenoid, manual, relief); and <i>lines &amp;
+fittings</i> (pipe, tee, elbow, reducer, flange, blank flange, bellows,
+viewport, LN2 cold trap, mass-flow controller, regulator, gas
+cylinder).</li>
 <li><b>Lab glassware</b> — beaker, Erlenmeyer, round-bottom &amp;
 volumetric flasks, test tube, cylinder, funnel, separating funnel,
 condenser, Petri dish, watch glass, burette, pipette, dropper, Bunsen
