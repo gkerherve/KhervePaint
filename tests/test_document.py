@@ -949,11 +949,13 @@ def test_floorplan_all_elements_build(app):
 
 
 def test_science_symbol_modules_build(app):
-    """Optics / vacuum / labware / flowchart palettes are self-consistent
-    and every symbol converts to a real, placeable item."""
-    from khervescribe import optics, vacuum, labware, flowchart
+    """All spec-library palettes are self-consistent and every symbol
+    converts to a real, placeable item."""
+    from khervescribe import (optics, vacuum, labware, flowchart,
+                              network, pid, arrows, biology, maths)
     from khervescribe import ai_assistant
-    for mod in (optics, vacuum, labware, flowchart):
+    for mod in (optics, vacuum, labware, flowchart,
+                network, pid, arrows, biology, maths):
         assert getattr(mod, "REFERENCE_MM", 0) > 0
         cat_names = [n for _title, names in mod.CATEGORIES for n in names]
         assert set(mod.SIZES) == set(mod.LABELS)      # labels complete

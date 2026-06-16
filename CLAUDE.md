@@ -113,9 +113,22 @@ into a new module and import.
                        flasks, burette, condenser, Bunsen, retort stand…).
                        **flowchart**: ANSI/ISO nodes (process, decision
                        diamond, terminator, data, database, connector…)
-                       with centred text labels. To add another such
-                       palette: write the module, then add the tool const +
-                       scene element attr + `place_*` + dropdown wiring.
+                       with centred text labels.
+  - `network.py` / `pid.py` / `arrows.py` / `biology.py` / `maths.py` —
+                       five more palettes in the same shape (general +
+                       science). **network**: IT architecture (server,
+                       database, router, switch, firewall, cloud, user…).
+                       **pid**: P&ID / process flow (tank, column, reactor,
+                       pump, bow-tie valves, instrument bubbles…).
+                       **arrows**: annotation block/curved/bent/circular
+                       arrows, callouts, banner, burst. **biology**: cells,
+                       virus, DNA/RNA helices (sinusoidal polylines),
+                       antibody, well-plate, microscope… **maths**: x-y/3D
+                       axes, number line, plotted curve, vector, angle
+                       marks, and Greek/operator text glyphs (Σ ∫ π ∞ Δ θ).
+                       To add another such palette: write the module, then
+                       add the tool const + scene element attr + `place_*`
+                       + dropdown wiring (search `FLOW_PLACE` for the seam).
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,

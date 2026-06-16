@@ -250,6 +250,25 @@ editable, and scaled so a whole layout fits the page:
   connector, display, plus flow arrows/lines. Each node carries an
   editable text label.
 
+## 10e. Diagram & more science symbols
+
+Five further dropdowns cover general diagrams and more science:
+
+- **Network / IT** — desktop, laptop, mobile, user, printer, server,
+  database, storage, load balancer, router, switch, firewall, modem,
+  Wi-Fi AP, cloud.
+- **P&ID** — process-flow equipment: tank, drum, column, reactor, heat
+  exchanger, hopper, pump, compressor, blower, valves (gate, globe, ball,
+  check, control, 3-way), instrument bubbles, flow meter, gauge.
+- **Arrows & callouts** — block arrows (4 directions + double),
+  curved/bent/circular arrows, rectangular & rounded callouts, ribbon
+  banner, starburst badge.
+- **Biology** — animal cell, bacterium, virus, chromosome, neuron,
+  DNA/RNA, protein, antibody, Petri dish, well plate, microscope,
+  Eppendorf tube, syringe, lab mouse.
+- **Math** — 2D/3D axes, number line, grid graph, curve plot, vector,
+  angle, right angle, and symbol glyphs (brace, Σ, ∫, π, ∞, Δ, θ).
+
 ## 11. Drawing size & publication figures
 
 New documents open at the **ACS single-column** figure size (3.25 in ≈

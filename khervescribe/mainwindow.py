@@ -33,11 +33,13 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
                      ELEC_PLACE, PLAN_PLACE, OPTICS_PLACE, VACUUM_PLACE,
-                     LABWARE_PLACE, FLOW_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR,
+                     LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
+                     ARROW_PLACE, BIO_PLACE, MATH_PLACE,
+                     RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      PaintScene, PaintView)
 from . import (chemistry, electrical, floorplan, flowchart, labware, optics,
-               vacuum)
+               vacuum, network, pid, arrows, biology, maths)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -200,6 +202,26 @@ class MainWindow(QMainWindow):
             bar, "mdi.sitemap",
             "Flowchart — process, decision, connector nodes",
             flowchart, self._set_flow_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.lan",
+            "Network / IT — servers, devices, cloud",
+            network, self._set_net_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.factory",
+            "P&ID — tanks, pumps, valves, instruments (process flow)",
+            pid, self._set_pid_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.arrow-top-right",
+            "Arrows & callouts — block arrows, callouts, banners",
+            arrows, self._set_arrow_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.dna",
+            "Biology — cells, molecules, lab",
+            biology, self._set_bio_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.function-variant",
+            "Math — axes, vectors, graphs & symbols",
+            maths, self._set_math_element)
         bar.addSeparator()
         self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
@@ -460,6 +482,26 @@ class MainWindow(QMainWindow):
     def _set_flow_element(self, name):
         self.scene.flow_element = name
         self._activate_placement_tool(FLOW_PLACE)
+
+    def _set_net_element(self, name):
+        self.scene.net_element = name
+        self._activate_placement_tool(NET_PLACE)
+
+    def _set_pid_element(self, name):
+        self.scene.pid_element = name
+        self._activate_placement_tool(PID_PLACE)
+
+    def _set_arrow_element(self, name):
+        self.scene.arrow_element = name
+        self._activate_placement_tool(ARROW_PLACE)
+
+    def _set_bio_element(self, name):
+        self.scene.bio_element = name
+        self._activate_placement_tool(BIO_PLACE)
+
+    def _set_math_element(self, name):
+        self.scene.math_element = name
+        self._activate_placement_tool(MATH_PLACE)
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

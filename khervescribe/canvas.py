@@ -65,9 +65,15 @@ OPTICS_PLACE = "optics_place"
 VACUUM_PLACE = "vacuum_place"
 LABWARE_PLACE = "labware_place"
 FLOW_PLACE = "flow_place"
+NET_PLACE = "net_place"
+PID_PLACE = "pid_place"
+ARROW_PLACE = "arrow_place"
+BIO_PLACE = "bio_place"
+MATH_PLACE = "math_place"
 #: All spec-library placement tools (drop a symbol on click).
 _PLACE_TOOLS = (PLAN_PLACE, ELEC_PLACE, OPTICS_PLACE, VACUUM_PLACE,
-                LABWARE_PLACE, FLOW_PLACE)
+                LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
+                ARROW_PLACE, BIO_PLACE, MATH_PLACE)
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -554,6 +560,11 @@ class PaintScene(QGraphicsScene):
         self.vacuum_element = "chamber"   # vacuum symbol to place
         self.labware_element = "beaker"   # glassware symbol to place
         self.flow_element = "process"     # flowchart node to place
+        self.net_element = "server"       # network symbol to place
+        self.pid_element = "tank"         # P&ID symbol to place
+        self.arrow_element = "arrow_right"  # annotation arrow to place
+        self.bio_element = "cell"         # biology symbol to place
+        self.math_element = "axes_2d"     # math/graph symbol to place
         self.chem_fixed = True            # ChemDraw-style fixed length + angle
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
@@ -1005,6 +1016,21 @@ class PaintScene(QGraphicsScene):
         elif self.tool == FLOW_PLACE:               # flowchart node
             self._drawing = False
             self.place_flow_element(self.flow_element, pos)
+        elif self.tool == NET_PLACE:                # network symbol
+            self._drawing = False
+            self.place_net_element(self.net_element, pos)
+        elif self.tool == PID_PLACE:                # P&ID symbol
+            self._drawing = False
+            self.place_pid_element(self.pid_element, pos)
+        elif self.tool == ARROW_PLACE:              # annotation arrow
+            self._drawing = False
+            self.place_arrow_element(self.arrow_element, pos)
+        elif self.tool == BIO_PLACE:                # biology symbol
+            self._drawing = False
+            self.place_bio_element(self.bio_element, pos)
+        elif self.tool == MATH_PLACE:               # math / graph symbol
+            self._drawing = False
+            self.place_math_element(self.math_element, pos)
 
     def mouseMoveEvent(self, event):
         if self.tool == CHEM_CHAIN and self._chain_pts is not None:
@@ -1213,6 +1239,31 @@ class PaintScene(QGraphicsScene):
         """Drop a flowchart node symbol."""
         from . import flowchart
         self._place_symbol(flowchart, name, center)
+
+    def place_net_element(self, name: str, center: QPointF):
+        """Drop a network / IT architecture symbol."""
+        from . import network
+        self._place_symbol(network, name, center)
+
+    def place_pid_element(self, name: str, center: QPointF):
+        """Drop a P&ID / process-flow symbol."""
+        from . import pid
+        self._place_symbol(pid, name, center)
+
+    def place_arrow_element(self, name: str, center: QPointF):
+        """Drop an annotation arrow / callout / banner."""
+        from . import arrows
+        self._place_symbol(arrows, name, center)
+
+    def place_bio_element(self, name: str, center: QPointF):
+        """Drop a biology / life-science symbol."""
+        from . import biology
+        self._place_symbol(biology, name, center)
+
+    def place_math_element(self, name: str, center: QPointF):
+        """Drop a math / graph / vector symbol."""
+        from . import maths
+        self._place_symbol(maths, name, center)
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
