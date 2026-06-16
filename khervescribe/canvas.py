@@ -58,9 +58,16 @@ _CHEM_BOND_TOOLS = (CHEM_SINGLE, CHEM_DOUBLE, CHEM_TRIPLE, CHEM_WEDGE,
 _CHEM_RING_TOOLS = (CHEM_BENZENE, CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE)
 _CHEM_PLACE_TOOLS = _CHEM_RING_TOOLS + (CHEM_ATOM,)   # placed on a click
 _CHEM_TOOLS = _CHEM_BOND_TOOLS + _CHEM_PLACE_TOOLS + (CHEM_CHAIN,)
-#: Room-layout / electrical element placement tools.
+#: Room-layout / electrical / science element placement tools.
 PLAN_PLACE = "plan_place"
 ELEC_PLACE = "elec_place"
+OPTICS_PLACE = "optics_place"
+VACUUM_PLACE = "vacuum_place"
+LABWARE_PLACE = "labware_place"
+FLOW_PLACE = "flow_place"
+#: All spec-library placement tools (drop a symbol on click).
+_PLACE_TOOLS = (PLAN_PLACE, ELEC_PLACE, OPTICS_PLACE, VACUUM_PLACE,
+                LABWARE_PLACE, FLOW_PLACE)
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -543,6 +550,10 @@ class PaintScene(QGraphicsScene):
         self.chem_atom = "C"              # label placed by the atom tool
         self.plan_element = "wall"        # room-layout element to place
         self.elec_element = "resistor"    # electrical element to place
+        self.optics_element = "laser"     # optics symbol to place
+        self.vacuum_element = "chamber"   # vacuum symbol to place
+        self.labware_element = "beaker"   # glassware symbol to place
+        self.flow_element = "process"     # flowchart node to place
         self.chem_fixed = True            # ChemDraw-style fixed length + angle
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
@@ -672,7 +683,7 @@ class PaintScene(QGraphicsScene):
     def _tool_pos(self, pos: QPointF) -> QPointF:
         """Snap vector-tool positions; the pencil stays freehand."""
         if (self.snap_enabled
-                and self.tool in _SHAPE_TOOLS + (TEXT, PLAN_PLACE, ELEC_PLACE)
+                and self.tool in _SHAPE_TOOLS + (TEXT,) + _PLACE_TOOLS
                 + _CHEM_TOOLS):
             return self.snap(pos)
         return pos
@@ -982,6 +993,18 @@ class PaintScene(QGraphicsScene):
         elif self.tool == ELEC_PLACE:               # electrical symbol
             self._drawing = False
             self.place_elec_element(self.elec_element, pos)
+        elif self.tool == OPTICS_PLACE:             # optics symbol
+            self._drawing = False
+            self.place_optics_element(self.optics_element, pos)
+        elif self.tool == VACUUM_PLACE:             # vacuum symbol
+            self._drawing = False
+            self.place_vacuum_element(self.vacuum_element, pos)
+        elif self.tool == LABWARE_PLACE:            # glassware symbol
+            self._drawing = False
+            self.place_labware_element(self.labware_element, pos)
+        elif self.tool == FLOW_PLACE:               # flowchart node
+            self._drawing = False
+            self.place_flow_element(self.flow_element, pos)
 
     def mouseMoveEvent(self, event):
         if self.tool == CHEM_CHAIN and self._chain_pts is not None:
@@ -1170,6 +1193,26 @@ class PaintScene(QGraphicsScene):
         """Drop an electrical symbol (component or installation marker)."""
         from . import electrical
         self._place_symbol(electrical, name, center)
+
+    def place_optics_element(self, name: str, center: QPointF):
+        """Drop an optics / photonics symbol (beam-path diagrams)."""
+        from . import optics
+        self._place_symbol(optics, name, center)
+
+    def place_vacuum_element(self, name: str, center: QPointF):
+        """Drop a vacuum / surface-science symbol (UHV systems)."""
+        from . import vacuum
+        self._place_symbol(vacuum, name, center)
+
+    def place_labware_element(self, name: str, center: QPointF):
+        """Drop a lab-glassware / apparatus symbol."""
+        from . import labware
+        self._place_symbol(labware, name, center)
+
+    def place_flow_element(self, name: str, center: QPointF):
+        """Drop a flowchart node symbol."""
+        from . import flowchart
+        self._place_symbol(flowchart, name, center)
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`

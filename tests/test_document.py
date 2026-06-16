@@ -931,7 +931,7 @@ def test_chem_atom_snaps_to_bond_end(scene):
     assert abs(cc.x() - 900) < 1 and abs(cc.y() - 900) < 1
 
 
-def test_floorplan_all_elements_build():
+def test_floorplan_all_elements_build(app):
     from khervescribe import floorplan
     from khervescribe import ai_assistant
     for name in floorplan.SIZES:                  # every element builds specs
@@ -946,6 +946,36 @@ def test_floorplan_all_elements_build():
     # newer reference-based symbols are present
     for n in ("desk", "round_table", "plant", "rug"):
         assert n in floorplan.SIZES
+
+
+def test_science_symbol_modules_build(app):
+    """Optics / vacuum / labware / flowchart palettes are self-consistent
+    and every symbol converts to a real, placeable item."""
+    from khervescribe import optics, vacuum, labware, flowchart
+    from khervescribe import ai_assistant
+    for mod in (optics, vacuum, labware, flowchart):
+        assert getattr(mod, "REFERENCE_MM", 0) > 0
+        cat_names = [n for _title, names in mod.CATEGORIES for n in names]
+        assert set(mod.SIZES) == set(mod.LABELS)      # labels complete
+        assert set(mod.SIZES) == set(cat_names)       # menu wiring complete
+        for name in mod.SIZES:
+            specs = mod.build_specs(name, 120.0, 90.0)
+            assert isinstance(specs, list) and specs
+            for s in specs:
+                assert ai_assistant._spec_to_item(s) is not None
+
+
+def test_science_symbol_place_and_group(scene):
+    """Placing a multi-part science symbol drops a grouped, editable item."""
+    from khervescribe.canvas import GroupItem
+    before = len(scene.vector_items())
+    scene.place_optics_element("monochromator", QPointF(300, 200))
+    scene.place_vacuum_element("chamber", QPointF(300, 400))
+    scene.place_labware_element("beaker", QPointF(500, 200))
+    scene.place_flow_element("decision", QPointF(500, 400))
+    items = scene.vector_items()
+    assert len(items) == before + 4
+    assert any(isinstance(it, GroupItem) for it in items)  # multi-part grouped
 
 
 def test_eraser_clears_raster_to_white(scene):

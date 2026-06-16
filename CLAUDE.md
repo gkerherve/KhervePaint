@@ -96,6 +96,26 @@ into a new module and import.
                        the drawing — e.g. a 480 mm chair on floorplan's
                        4800 mm reference is ~1/10 of the page (NOT mm→dpi,
                        which made real furniture far bigger than the page).
+  - `optics.py` / `vacuum.py` / `labware.py` / `flowchart.py` — four more
+                       spec-library modules with the SAME
+                       `build_specs`/`size_mm`/`REFERENCE_MM`/`SIZES`/
+                       `LABELS`/`CATEGORIES` shape as `floorplan`/
+                       `electrical`, each with its own left-toolbar dropdown
+                       and `PLACE` tool (`OPTICS_PLACE`/`VACUUM_PLACE`/
+                       `LABWARE_PLACE`/`FLOW_PLACE`, placed via
+                       `place_<x>_element` → `_place_symbol`). **optics**:
+                       beam-path symbols (laser, mirrors, lenses, prism,
+                       grating, detector, monochromator…). **vacuum**:
+                       UHV/surface-science (chamber, hemispherical analyser,
+                       ion/X-ray guns, turbo/ion/scroll/rotary/cryo pumps,
+                       gate/leak valves, gauge, flange, bellows). **labware**:
+                       front-elevation glassware & apparatus (beakers,
+                       flasks, burette, condenser, Bunsen, retort stand…).
+                       **flowchart**: ANSI/ISO nodes (process, decision
+                       diamond, terminator, data, database, connector…)
+                       with centred text labels. To add another such
+                       palette: write the module, then add the tool const +
+                       scene element attr + `place_*` + dropdown wiring.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,

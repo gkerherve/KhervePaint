@@ -227,6 +227,29 @@ The **Electrical** dropdown drops standard (IEC/ANSI-style) symbols:
 Two-terminal components have lead stubs so you can wire them together
 with the line/chain tools; everything is grouped and editable.
 
+## 10d. Science symbols
+
+Four further dropdowns drop schematic symbols on click — grouped,
+editable, and scaled so a whole layout fits the page:
+
+- **Optics** — beam-path elements for Raman/FTIR/UV-Vis: laser, lamp,
+  detector, photodiode, camera, flat/curved mirror, beam splitter, beam
+  path, convex/concave lens, prism, grating, polarizer, aperture, filter,
+  sample, monochromator.
+- **Vacuum** — UHV / surface science (XPS/AES/SIMS): chamber,
+  hemispherical analyser, X-ray/ion/electron guns, manipulator,
+  turbo/ion/scroll/rotary/cryo pumps, gate/angle/leak valves, gauge,
+  flange, bellows, viewport.
+- **Lab glassware** — beaker, Erlenmeyer, round-bottom & volumetric
+  flasks, test tube, graduated cylinder, funnel, separating funnel,
+  condenser, Petri dish, watch glass, burette, pipette, dropper, Bunsen
+  burner, hotplate, retort stand, tripod, gauze, gas cylinder, balance,
+  wash bottle.
+- **Flowchart** — process, decision, terminator, data, document,
+  predefined process, preparation, manual input, database, stored data,
+  connector, display, plus flow arrows/lines. Each node carries an
+  editable text label.
+
 ## 11. Drawing size & publication figures
 
 New documents open at the **ACS single-column** figure size (3.25 in ≈

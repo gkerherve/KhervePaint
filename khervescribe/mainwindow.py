@@ -32,10 +32,12 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
                      CIRCLE, DIAMOND, DIMENSION, ELLIPSE, HALFCIRCLE, HEPTAGON,
                      HEXAGON, HOUSE, LIGHTNING, LINE, OCTAGON, PARALLELOGRAM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
-                     ELEC_PLACE, PLAN_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR,
+                     ELEC_PLACE, PLAN_PLACE, OPTICS_PLACE, VACUUM_PLACE,
+                     LABWARE_PLACE, FLOW_PLACE, RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      PaintScene, PaintView)
-from . import chemistry, electrical, floorplan
+from . import (chemistry, electrical, floorplan, flowchart, labware, optics,
+               vacuum)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -182,6 +184,22 @@ class MainWindow(QMainWindow):
             bar, "mdi.flash",
             "Electrical — circuit & installation symbols",
             electrical, self._set_elec_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.flare",
+            "Optics — lasers, mirrors, lenses (beam-path diagrams)",
+            optics, self._set_optics_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.gauge",
+            "Vacuum — UHV chambers, pumps, valves (surface science)",
+            vacuum, self._set_vacuum_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.flask-outline",
+            "Lab glassware — beakers, flasks, apparatus",
+            labware, self._set_labware_element)
+        self._build_symbol_dropdown(
+            bar, "mdi.sitemap",
+            "Flowchart — process, decision, connector nodes",
+            flowchart, self._set_flow_element)
         bar.addSeparator()
         self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
@@ -426,6 +444,22 @@ class MainWindow(QMainWindow):
     def _set_elec_element(self, name):
         self.scene.elec_element = name
         self._activate_placement_tool(ELEC_PLACE)
+
+    def _set_optics_element(self, name):
+        self.scene.optics_element = name
+        self._activate_placement_tool(OPTICS_PLACE)
+
+    def _set_vacuum_element(self, name):
+        self.scene.vacuum_element = name
+        self._activate_placement_tool(VACUUM_PLACE)
+
+    def _set_labware_element(self, name):
+        self.scene.labware_element = name
+        self._activate_placement_tool(LABWARE_PLACE)
+
+    def _set_flow_element(self, name):
+        self.scene.flow_element = name
+        self._activate_placement_tool(FLOW_PLACE)
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

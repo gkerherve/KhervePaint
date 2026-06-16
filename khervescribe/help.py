@@ -265,6 +265,29 @@ switches, ceiling/wall lights, consumer unit, junction box, ceiling fan,
 smoke detector). Two-terminal parts have lead stubs so you can wire them
 with the line/chain tools.</p>
 
+<h2>10d · Science symbols</h2>
+<p>Four more dropdowns drop schematic symbols where you click (grouped,
+editable, scaled so a whole layout fits the page):</p>
+<ul>
+<li><b>Optics</b> — beam-path elements for Raman/FTIR/UV-Vis setups:
+laser, lamp, detector, photodiode, camera, flat/curved mirrors, beam
+splitter, beam path, convex/concave lenses, prism, grating, polarizer,
+aperture, filter, sample, monochromator.</li>
+<li><b>Vacuum</b> — UHV / surface-science (XPS/AES/SIMS): chamber,
+hemispherical analyser, X-ray &amp; ion/electron guns, manipulator,
+turbo/ion/scroll/rotary/cryo pumps, gate/angle/leak valves, gauge,
+flange, bellows, viewport.</li>
+<li><b>Lab glassware</b> — beaker, Erlenmeyer, round-bottom &amp;
+volumetric flasks, test tube, cylinder, funnel, separating funnel,
+condenser, Petri dish, watch glass, burette, pipette, dropper, Bunsen
+burner, hotplate, retort stand, tripod, gauze, gas cylinder, balance,
+wash bottle.</li>
+<li><b>Flowchart</b> — process, decision, terminator, data, document,
+predefined process, preparation, manual input, database, stored data,
+connector, display, plus flow arrows/lines (each node carries an
+editable text label).</li>
+</ul>
+
 <h2>11 · Drawing size &amp; publication figures</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size
 (3.25 in ≈ 82.6 mm) at 300 dpi. <b>File ▸ Drawing Size</b> sets the
