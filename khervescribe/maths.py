@@ -71,7 +71,7 @@ def build_number_line(w, h):
                       "stroke": _OUTLINE, "width": 1.5})
         specs.append({"shape": "text", "text": lab, "x": tx,
                       "y": cy + h * 0.25, "size": min(w, h) * 0.16,
-                      "color": _OUTLINE})
+                      "color": _OUTLINE, "anchor": "center"})
     return specs
 
 
@@ -183,7 +183,7 @@ def build_right_angle(w, h):
 def build_brace(w, h):
     specs = [
         {"shape": "text", "text": "{", "x": w * 0.5, "y": h * 0.5,
-         "size": h * 0.95, "color": _OUTLINE},
+         "size": h * 0.95, "color": _OUTLINE, "anchor": "center"},
     ]
     return specs
 
@@ -191,7 +191,7 @@ def build_brace(w, h):
 def _glyph(w, h, glyph, color=_OUTLINE):
     return [
         {"shape": "text", "text": glyph, "x": w * 0.5, "y": h * 0.5,
-         "size": min(w, h) * 0.7, "color": color},
+         "size": min(w, h) * 0.7, "color": color, "anchor": "center"},
     ]
 
 

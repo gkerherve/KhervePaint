@@ -533,7 +533,7 @@ def build_pirani_gauge(w, h):
     specs.append({"shape": "line", "x1": cx, "y1": by + bh,
                   "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
     specs.append({"shape": "text", "text": "Pi", "x": cx, "y": by + bh * 0.78,
-                  "size": h * 0.085, "color": _ACC})
+                  "size": h * 0.085, "color": _ACC, "anchor": "center"})
     return specs
 
 
@@ -561,7 +561,7 @@ def build_penning_gauge(w, h):
     specs.append({"shape": "line", "x1": cx, "y1": by + bh,
                   "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
     specs.append({"shape": "text", "text": "Pen", "x": cx, "y": by + bh * 0.80,
-                  "size": h * 0.075, "color": _ACC})
+                  "size": h * 0.075, "color": _ACC, "anchor": "center"})
     return specs
 
 
@@ -587,7 +587,7 @@ def build_ion_gauge(w, h):
     specs.append({"shape": "line", "x1": cx, "y1": by + bh,
                   "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
     specs.append({"shape": "text", "text": "IG", "x": bx + bw * 0.80,
-                  "y": by + bh * 0.20, "size": h * 0.075, "color": _ACC})
+                  "y": by + bh * 0.20, "size": h * 0.075, "color": _ACC, "anchor": "center"})
     return specs
 
 
@@ -611,7 +611,7 @@ def build_capacitance_manometer(w, h):
     specs.append({"shape": "line", "x1": cx, "y1": by + bh,
                   "x2": cx, "y2": h * 0.98, "stroke": _OUT, "width": _W})
     specs.append({"shape": "text", "text": "CDG", "x": cx, "y": by + bh * 0.80,
-                  "size": h * 0.070, "color": _ACC})
+                  "size": h * 0.070, "color": _ACC, "anchor": "center"})
     return specs
 
 
@@ -684,7 +684,7 @@ def build_pressure_transducer(w, h):
         {"shape": "circle", "x": bx, "y": by, "w": bw, "h": bh,
          "stroke": _OUT, "fill": _BODY, "width": _W},
         {"shape": "text", "text": "PT", "x": cx, "y": by + bh * 0.5,
-         "size": h * 0.090, "color": _ACC},
+         "size": h * 0.090, "color": _ACC, "anchor": "center"},
     ]
     sig_top = h * 0.02
     specs.append({"shape": "line", "x1": cx, "y1": by, "x2": cx, "y2": sig_top,
@@ -789,7 +789,7 @@ def build_getter_pump(w, h):
                       "x2": bx + bw * f, "y2": by + bh,
                       "stroke": _ACC, "width": _D})
     specs.append({"shape": "text", "text": "NEG", "x": cx, "y": by + bh * 0.5,
-                  "size": h * 0.075, "color": _OUT})
+                  "size": h * 0.075, "color": _OUT, "anchor": "center"})
     fw, fh = w * 0.16, h * 0.10
     specs.append({"shape": "rect", "x": cx - fw * 0.5, "y": by + bh,
                   "w": fw, "h": fh, "stroke": _OUT, "fill": _STEEL,
@@ -820,7 +820,7 @@ def build_sublimation_pump(w, h):
                       "x2": pts[i + 1][0], "y2": pts[i + 1][1],
                       "stroke": _ACC, "width": _D})
     specs.append({"shape": "text", "text": "TSP", "x": cx, "y": by + bh * 0.82,
-                  "size": h * 0.070, "color": _ACC})
+                  "size": h * 0.070, "color": _ACC, "anchor": "center"})
     fw, fh = w * 0.16, h * 0.10
     specs.append({"shape": "rect", "x": cx - fw * 0.5, "y": by + bh,
                   "w": fw, "h": fh, "stroke": _OUT, "fill": _STEEL,
@@ -1079,8 +1079,9 @@ def build_cold_trap(w, h):
         {"shape": "line", "x1": vx + vw * 0.18, "y1": vy + vh * 0.8,
          "x2": vx + vw * 0.82, "y2": vy + vh * 0.8, "stroke": _ACC,
          "width": _D},
-        {"shape": "text", "text": "LN2", "x": cx - vw * 0.22,
-         "y": vy + vh * 0.18, "size": h * 0.07, "color": _OUT},
+        {"shape": "text", "text": "LN2", "x": cx,
+         "y": vy + vh * 0.18, "size": h * 0.07, "color": _OUT,
+         "anchor": "center"},
     ]
 
 
@@ -1101,8 +1102,9 @@ def build_mass_flow_controller(w, h):
     parts += [
         {"shape": "line", "x1": w * 0.5, "y1": by + boxh * 0.47,
          "x2": w * 0.5, "y2": by + boxh * 0.2, "stroke": _OUT, "width": _D},
-        {"shape": "text", "text": "MFC", "x": bx + boxw * 0.18,
-         "y": by + boxh * 0.04, "size": h * 0.13, "color": _OUT},
+        {"shape": "text", "text": "MFC", "x": bx + boxw * 0.5,
+         "y": by + boxh * 0.12, "size": h * 0.13, "color": _OUT,
+         "anchor": "center"},
         {"shape": "line", "x1": w * 0.04, "y1": cy - ph * 0.7,
          "x2": w * 0.04, "y2": cy + ph * 0.7, "stroke": _OUT, "width": _W},
         {"shape": "line", "x1": w * 0.96, "y1": cy - ph * 0.7,

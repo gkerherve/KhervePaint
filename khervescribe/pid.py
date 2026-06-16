@@ -394,8 +394,8 @@ def build_instrument(w, h):
                   "w": d, "h": d,
                   "stroke": OUTLINE, "fill": WHITE, "width": W_OUT})
     specs.append({"shape": "text", "text": "TIC",
-                  "x": cx - r * 0.45, "y": cy - r * 0.30,
-                  "size": h * 0.20, "color": OUTLINE})
+                  "x": cx, "y": cy,
+                  "size": h * 0.20, "color": OUTLINE, "anchor": "center"})
     return specs
 
 
@@ -418,8 +418,8 @@ def build_flow_meter(w, h):
                   "x2": cx + r * 0.55, "y2": cy,
                   "stroke": OUTLINE, "width": W_DET})
     specs.append({"shape": "text", "text": "FE",
-                  "x": cx - r * 0.40, "y": cy - r * 0.55,
-                  "size": h * 0.16, "color": OUTLINE})
+                  "x": cx, "y": cy - r * 0.45,
+                  "size": h * 0.16, "color": OUTLINE, "anchor": "center"})
     return specs
 
 

@@ -967,6 +967,18 @@ def test_science_symbol_modules_build(app):
                 assert ai_assistant._spec_to_item(s) is not None
 
 
+def test_text_anchor_centering(app):
+    """A text spec with anchor='center' is centred on (x, y); default
+    behaviour keeps the top-left corner there (examples rely on that)."""
+    from khervescribe.ai_assistant import _spec_to_item
+    base = {"shape": "text", "text": "Hello", "x": 100.0, "y": 50.0, "size": 14}
+    top_left = _spec_to_item(dict(base))
+    assert abs(top_left.pos().x() - 100.0) < 1 and abs(top_left.pos().y() - 50.0) < 1
+    centred = _spec_to_item(dict(base, anchor="center"))
+    c = centred.mapToScene(centred.boundingRect().center())
+    assert abs(c.x() - 100.0) < 2 and abs(c.y() - 50.0) < 2
+
+
 def test_valve_triangles_meet_at_seat(app):
     """Bow-tie / port triangles are built so their apex lands exactly on the
     seat centre (guards the rotated-box aspect-distortion bug)."""

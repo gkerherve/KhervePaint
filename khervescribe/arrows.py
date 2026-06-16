@@ -19,6 +19,25 @@ FILL = "#dfe7ee"
 ACCENT = "#cfe0f5"
 
 
+def _tri(cx, cy, length, base, direction, fill=FILL):
+    """Filled triangle, apex at (cx, cy), reaching `length` in `direction`
+    ('l','r','u','d'); box dims swapped before 90/270 so it isn't squashed."""
+    if direction in ("u", "d"):
+        if direction == "u":
+            x, y, rot = cx - base * 0.5, cy, 0
+        else:
+            x, y, rot = cx - base * 0.5, cy - length, 180
+        return {"shape": "triangle", "x": x, "y": y, "w": base, "h": length,
+                "stroke": OUTLINE, "fill": fill, "width": 2, "rotation": rot}
+    if direction == "r":
+        cxb, rot = cx - length * 0.5, 90
+    else:
+        cxb, rot = cx + length * 0.5, 270
+    return {"shape": "triangle", "x": cxb - base * 0.5, "y": cy - length * 0.5,
+            "w": base, "h": length, "stroke": OUTLINE, "fill": fill,
+            "width": 2, "rotation": rot}
+
+
 def build_arrow_right(w, h):
     return [{"shape": "arrow_right", "x": 0.0, "y": 0.0, "w": w, "h": h,
              "rotation": 0.0, "stroke": OUTLINE, "fill": FILL, "width": 2}]
@@ -40,16 +59,15 @@ def build_arrow_down(w, h):
 
 
 def build_double_arrow(w, h):
-    head = w * 0.28
-    shaft_y = h * 0.3
-    shaft_h = h * 0.4
+    head = w * 0.26
+    cy = h * 0.5
+    shaft_h = h * 0.42
     return [
-        {"shape": "rect", "x": head, "y": shaft_y, "w": w - 2 * head,
-         "h": shaft_h, "stroke": OUTLINE, "fill": FILL, "width": 2},
-        {"shape": "triangle", "x": 0.0, "y": 0.0, "w": head, "h": h,
-         "rotation": 270.0, "stroke": OUTLINE, "fill": FILL, "width": 2},
-        {"shape": "triangle", "x": w - head, "y": 0.0, "w": head, "h": h,
-         "rotation": 90.0, "stroke": OUTLINE, "fill": FILL, "width": 2},
+        {"shape": "rect", "x": head, "y": cy - shaft_h * 0.5,
+         "w": w - 2 * head, "h": shaft_h,
+         "stroke": OUTLINE, "fill": FILL, "width": 2},
+        _tri(0.0, cy, head, h, "l"),        # left head, apex at far left
+        _tri(w, cy, head, h, "r"),          # right head, apex at far right
     ]
 
 
@@ -83,19 +101,26 @@ def build_bent_arrow(w, h):
 
 
 def build_circular_arrow(w, h):
-    head = min(w, h) * 0.26
-    gap = w * 0.18
-    cw = w
-    ch = h
-    return [
-        {"shape": "halfcircle", "x": 0.0, "y": 0.0, "w": cw, "h": ch,
-         "stroke": OUTLINE, "fill": "none", "width": 2, "rotation": 90.0},
-        {"shape": "halfcircle", "x": gap, "y": 0.0, "w": cw - gap, "h": ch,
-         "stroke": OUTLINE, "fill": "none", "width": 2, "rotation": 270.0},
-        {"shape": "triangle", "x": gap * 0.4, "y": 0.0,
-         "w": head, "h": head, "rotation": 270.0,
-         "stroke": OUTLINE, "fill": FILL, "width": 2},
-    ]
+    """A cycle/refresh arrow: a ~300° ring drawn as a polyline + a V head."""
+    cx, cy = w * 0.5, h * 0.52
+    rx, ry = w * 0.36, h * 0.36
+    a0, a1 = math.radians(70), math.radians(70 + 300)   # gap at the top
+    n = 28
+    pts = [(cx + rx * math.cos(a0 + (a1 - a0) * i / n),
+            cy + ry * math.sin(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
+    specs = [{"shape": "line", "x1": pts[i][0], "y1": pts[i][1],
+              "x2": pts[i + 1][0], "y2": pts[i + 1][1],
+              "stroke": OUTLINE, "width": 2} for i in range(len(pts) - 1)]
+    # V arrowhead at the end, along the tangent
+    end, prev = pts[-1], pts[-2]
+    ang = math.atan2(end[1] - prev[1], end[0] - prev[0])
+    hd = min(w, h) * 0.18
+    for da in (math.radians(150), math.radians(-150)):
+        specs.append({"shape": "line", "x1": end[0], "y1": end[1],
+                      "x2": end[0] + hd * math.cos(ang + da),
+                      "y2": end[1] + hd * math.sin(ang + da),
+                      "stroke": OUTLINE, "width": 2})
+    return specs
 
 
 def build_callout_rect(w, h):
@@ -148,7 +173,7 @@ def build_burst(w, h):
         {"shape": "star", "x": 0.0, "y": 0.0, "w": w, "h": h,
          "rotation": 0.0, "stroke": OUTLINE, "fill": ACCENT, "width": 2},
         {"shape": "text", "text": "NEW!", "x": w * 0.5, "y": h * 0.5,
-         "size": h * 0.18, "color": OUTLINE},
+         "size": h * 0.18, "color": OUTLINE, "anchor": "center"},
     ]
 
 

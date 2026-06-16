@@ -38,7 +38,26 @@ def _label(text, w, h, size=None, color=_OUTLINE):
         "y": h / 2.0,
         "size": size,
         "color": color,
+        "anchor": "center",
     }
+
+
+def _hdisc(x, y, w, h, direction, fill=_LIGHT, width=_W_OUTLINE):
+    """A half-disc whose FINAL bounding box is (x, y, w, h), bulging towards
+    `direction` ('u','d','l','r').  The half-circle primitive bulges up in
+    its own box, so for left/right we swap the box dims before the 90/270
+    rotation — keeping the disc round instead of squashing it."""
+    cx, cy = x + w / 2.0, y + h / 2.0
+    if direction == "u":
+        bx, by, bw, bh, rot = x, y, w, h, 0
+    elif direction == "d":
+        bx, by, bw, bh, rot = x, y, w, h, 180
+    else:                                  # 'l' / 'r': swap dims, rotate
+        bw, bh = h, w
+        bx, by = cx - bw / 2.0, cy - bh / 2.0
+        rot = 90 if direction == "r" else 270
+    return {"shape": "halfcircle", "x": bx, "y": by, "w": bw, "h": bh,
+            "stroke": _OUTLINE, "fill": fill, "width": width, "rotation": rot}
 
 
 # ---------------------------------------------------------------------------
@@ -80,10 +99,13 @@ def build_data(w, h):
 
 
 def build_document(w, h):
-    """Rectangle with a shallow wavy bottom edge (halfcircle bump)."""
+    """Rectangle with a wavy bottom edge (the classic 'document' symbol)."""
     body_h = h * 0.82
+    amp = h * 0.10
     specs = [
-        # body without its bottom edge
+        # filled body (no border; edges drawn separately so the bottom waves)
+        {"shape": "rect", "x": 0.0, "y": 0.0, "w": w, "h": body_h,
+         "stroke": "none", "fill": _LIGHT, "width": _W_OUTLINE},
         {"shape": "line", "x1": 0.0, "y1": 0.0, "x2": w, "y2": 0.0,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
         {"shape": "line", "x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": body_h,
@@ -91,13 +113,14 @@ def build_document(w, h):
         {"shape": "line", "x1": w, "y1": 0.0, "x2": w, "y2": body_h,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
     ]
-    # wavy bottom: a shallow halfcircle bump spanning the width
-    bump_h = h - body_h
-    specs.append(
-        {"shape": "halfcircle", "x": 0.0, "y": body_h - bump_h,
-         "w": w, "h": bump_h * 2.0, "stroke": _OUTLINE, "fill": "none",
-         "width": _W_DETAIL, "rotation": 0.0}
-    )
+    # wavy bottom edge as a sine polyline
+    n = 24
+    pts = [(w * (i / n), body_h + amp * math.sin((i / n) * 2 * math.pi))
+           for i in range(n + 1)]
+    for i in range(len(pts) - 1):
+        specs.append({"shape": "line", "x1": pts[i][0], "y1": pts[i][1],
+                      "x2": pts[i + 1][0], "y2": pts[i + 1][1],
+                      "stroke": _OUTLINE, "width": _W_OUTLINE})
     specs.append(_label("Document", w, h, size=max(8.0, min(h * 0.18, w * 0.12))))
     return specs
 
@@ -141,15 +164,15 @@ def build_database(w, h):
     body_top = rim / 2.0
     body_bot = h - rim / 2.0
     specs = [
-        # body sides
+        # body fill (between the rims) + side lines
+        {"shape": "rect", "x": 0.0, "y": body_top, "w": w, "h": body_bot - body_top,
+         "stroke": "none", "fill": _LIGHT, "width": _W_OUTLINE},
         {"shape": "line", "x1": 0.0, "y1": body_top, "x2": 0.0, "y2": body_bot,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
         {"shape": "line", "x1": w, "y1": body_top, "x2": w, "y2": body_bot,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
-        # curved bottom (downward halfcircle)
-        {"shape": "halfcircle", "x": 0.0, "y": body_bot - rim / 2.0,
-         "w": w, "h": rim, "stroke": _OUTLINE, "fill": _LIGHT,
-         "width": _W_OUTLINE, "rotation": 0.0},
+        # curved bottom (front of the cylinder, bulging down)
+        _hdisc(0.0, body_bot - rim / 2.0, w, rim, "d", _LIGHT),
         # top rim ellipse
         {"shape": "ellipse", "x": 0.0, "y": 0.0, "w": w, "h": rim,
          "stroke": _OUTLINE, "fill": _LIGHT, "width": _W_OUTLINE},
@@ -159,22 +182,21 @@ def build_database(w, h):
 
 
 def build_stored_data(w, h):
-    """Rectangle with one curved (left) side — rect + halfcircle on left."""
+    """Rectangle with a curved left side (stored-data symbol)."""
     bulge = w * 0.16
     return [
-        # top / bottom / right edges
-        {"shape": "line", "x1": bulge / 2.0, "y1": 0.0, "x2": w, "y2": 0.0,
+        # body fill + top/bottom/right edges
+        {"shape": "rect", "x": bulge, "y": 0.0, "w": w - bulge, "h": h,
+         "stroke": "none", "fill": _DATA, "width": _W_OUTLINE},
+        {"shape": "line", "x1": bulge, "y1": 0.0, "x2": w, "y2": 0.0,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
-        {"shape": "line", "x1": bulge / 2.0, "y1": h, "x2": w, "y2": h,
+        {"shape": "line", "x1": bulge, "y1": h, "x2": w, "y2": h,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
         {"shape": "line", "x1": w, "y1": 0.0, "x2": w, "y2": h,
          "stroke": _OUTLINE, "width": _W_OUTLINE},
-        # curved left side: halfcircle opening rightwards
-        {"shape": "halfcircle", "x": -h / 2.0 + bulge / 2.0,
-         "y": h / 2.0 - bulge / 2.0,
-         "w": h, "h": bulge, "stroke": _OUTLINE, "fill": _DATA,
-         "width": _W_OUTLINE, "rotation": 90.0},
-        _label("Data", w, h),
+        # curved left side bulging left (flat edge meets the body at x=bulge)
+        _hdisc(0.0, 0.0, bulge, h, "l", _DATA),
+        _label("Data", w + bulge, h),     # nudge label right of the curve
     ]
 
 
@@ -187,17 +209,25 @@ def build_connector(w, h):
 
 
 def build_display(w, h):
-    """Curved left + curved right — rounded_rect with a right-side bump."""
-    bump = w * 0.16
-    body_w = w - bump
+    """Display symbol: a curved (rounded) left end and a rounded right end."""
+    cap = h * 0.5                  # left half-disc radius worth of width
+    bump = w * 0.18                # right rounded snout
+    body_x = cap
+    body_w = w - cap - bump
     return [
-        {"shape": "rounded_rect", "x": 0.0, "y": 0.0, "w": body_w, "h": h,
-         "radius": h * 0.45, "stroke": _OUTLINE, "fill": _LIGHT,
+        # straight body fill between the two curved ends
+        {"shape": "rect", "x": body_x, "y": 0.0, "w": body_w, "h": h,
+         "stroke": "none", "fill": _LIGHT, "width": _W_OUTLINE},
+        {"shape": "line", "x1": body_x, "y1": 0.0,
+         "x2": body_x + body_w, "y2": 0.0, "stroke": _OUTLINE,
          "width": _W_OUTLINE},
-        # pointed/curved right edge: halfcircle bump opening leftwards
-        {"shape": "halfcircle", "x": body_w - bump, "y": 0.0,
-         "w": bump * 2.0, "h": h, "stroke": _OUTLINE, "fill": _LIGHT,
-         "width": _W_OUTLINE, "rotation": 90.0},
+        {"shape": "line", "x1": body_x, "y1": h,
+         "x2": body_x + body_w, "y2": h, "stroke": _OUTLINE,
+         "width": _W_OUTLINE},
+        # curved left end (bulging left)
+        _hdisc(0.0, 0.0, cap, h, "l", _LIGHT),
+        # rounded right snout (bulging right)
+        _hdisc(body_x + body_w, 0.0, bump, h, "r", _LIGHT),
         _label("Display", w, h, size=max(8.0, min(h * 0.20, w * 0.13))),
     ]
 

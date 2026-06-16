@@ -166,7 +166,12 @@ def _spec_to_item(spec):
         item.setDefaultTextColor(QColor(spec.get("color",
                                                  spec.get("stroke", "#1a1a1a"))))
         item.setFont(QFont("Segoe UI", int(spec.get("size", 14))))
-        item.setPos(x, y)
+        if str(spec.get("anchor", "")).lower() == "center":
+            # treat (x, y) as the text centre rather than its top-left corner
+            br = item.boundingRect()
+            item.setPos(x - br.width() / 2.0, y - br.height() / 2.0)
+        else:
+            item.setPos(x, y)
         center_origin(item)
         if spec.get("rotation"):
             item.setRotation(float(spec["rotation"]))

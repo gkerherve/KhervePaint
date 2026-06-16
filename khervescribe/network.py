@@ -148,30 +148,33 @@ def build_server(w, h):
 
 
 def build_database(w, h):
-    """A cylinder — ellipse top rim + body + curved bottom, with rings."""
-    specs = []
-    rim_h = 0.20 * h
-    specs.append({"shape": "rect", "x": 0.16 * w, "y": 0.10 * h + rim_h / 2,
-                  "w": 0.68 * w, "h": 0.80 * h - rim_h,
-                  "stroke": "none", "fill": DEVICE, "width": W_DET})
-    specs.append({"shape": "line", "x1": 0.16 * w, "y1": 0.10 * h + rim_h / 2,
-                  "x2": 0.16 * w, "y2": 0.90 * h - rim_h / 2,
-                  "stroke": OUTLINE, "width": W_OUT})
-    specs.append({"shape": "line", "x1": 0.84 * w, "y1": 0.10 * h + rim_h / 2,
-                  "x2": 0.84 * w, "y2": 0.90 * h - rim_h / 2,
-                  "stroke": OUTLINE, "width": W_OUT})
-    specs.append({"shape": "halfcircle", "x": 0.16 * w, "y": 0.90 * h - rim_h,
-                  "w": 0.68 * w, "h": rim_h, "rotation": 0.0,
-                  "stroke": OUTLINE, "fill": DEVICE, "width": W_OUT})
-    specs.append({"shape": "ellipse", "x": 0.16 * w, "y": 0.10 * h,
-                  "w": 0.68 * w, "h": rim_h,
-                  "stroke": OUTLINE, "fill": ACCENT, "width": W_OUT})
-    specs.append({"shape": "ellipse", "x": 0.16 * w, "y": 0.38 * h,
-                  "w": 0.68 * w, "h": rim_h,
-                  "stroke": DARK, "fill": "none", "width": W_DET})
-    specs.append({"shape": "ellipse", "x": 0.16 * w, "y": 0.58 * h,
-                  "w": 0.68 * w, "h": rim_h,
-                  "stroke": DARK, "fill": "none", "width": W_DET})
+    """A cylinder — full ellipse top rim, body, front-half bottom curve,
+    plus a couple of platter divider lines."""
+    bx, bw = 0.16 * w, 0.68 * w
+    rim = 0.20 * h
+    top, bot = 0.08 * h, 0.92 * h
+    body_top, body_bot = top + rim / 2, bot - rim / 2
+    specs = [
+        # body fill + side lines
+        {"shape": "rect", "x": bx, "y": body_top, "w": bw,
+         "h": body_bot - body_top, "stroke": "none", "fill": DEVICE,
+         "width": W_DET},
+        {"shape": "line", "x1": bx, "y1": body_top, "x2": bx, "y2": body_bot,
+         "stroke": OUTLINE, "width": W_OUT},
+        {"shape": "line", "x1": bx + bw, "y1": body_top, "x2": bx + bw,
+         "y2": body_bot, "stroke": OUTLINE, "width": W_OUT},
+        # bottom front-half curve (bulging DOWN): rot180 keeps it round
+        {"shape": "halfcircle", "x": bx, "y": body_bot - rim / 2,
+         "w": bw, "h": rim, "stroke": OUTLINE, "fill": DEVICE,
+         "width": W_OUT, "rotation": 180.0},
+        # top rim ellipse
+        {"shape": "ellipse", "x": bx, "y": top, "w": bw, "h": rim,
+         "stroke": OUTLINE, "fill": ACCENT, "width": W_OUT},
+    ]
+    # platter divider (one faint ellipse arc near the top third)
+    specs.append({"shape": "ellipse", "x": bx, "y": top + (body_bot - top) * 0.34,
+                  "w": bw, "h": rim, "stroke": DARK, "fill": "none",
+                  "width": W_DET})
     return specs
 
 
