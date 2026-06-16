@@ -240,8 +240,8 @@ direction.</p>
 
 <h2>10b · Room layout (floor plans)</h2>
 <p>Start with <b>Room</b> (top of the dropdown): drag it out and it's
-drawn with thin <b>solid walls</b> (a filled wall ring), then drop in the
-rest. The <b>Room
+drawn with thin <b>solid walls</b> and an empty square at each corner,
+then drop in the rest. The <b>Room
 layout</b> dropdown drops ready-made <b>top-view</b> plan symbols where
 you click, scaled so a whole room fits the page (the page width is about
 4.8 m, so a chair is ~1/10 of it). They are detailed plan-view blocks

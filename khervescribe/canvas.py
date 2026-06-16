@@ -1248,23 +1248,44 @@ class PaintScene(QGraphicsScene):
             self.changed_by_user.emit()
 
     def _finish_room(self, preview):
-        """Turn the dragged rectangle into a room: a thin, solid-filled
-        wall ring (outer rect with an inner rect punched out)."""
+        """Turn the dragged rectangle into a room: four solid wall bars with
+        an empty (hollow) square at each corner where the walls meet."""
         rect = QRectF(preview.rect()).normalized()
         self.removeItem(preview)
         if rect.width() < 2 or rect.height() < 2:
             return
-        t = max(min(rect.width(), rect.height()) * 0.02, 2.0)   # wall depth
-        path = QPainterPath()
-        path.addRect(rect)
-        path.addRect(rect.adjusted(t, t, -t, -t))    # inner hole -> filled ring
-        item = PathItem(path)
-        item.setBrush(QBrush(QColor("#222222")))     # solid walls
-        item.setPen(QPen(Qt.NoPen))
-        self.addItem(item)
+        x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
+        t = max(min(w, h) * 0.02, 2.0)               # wall depth
+        wall_pen = QPen(QColor("#222222"), 1)
+        wall_pen.setJoinStyle(Qt.MiterJoin)
+        corner_pen = QPen(QColor("#333333"), 2)
+        corner_pen.setJoinStyle(Qt.MiterJoin)
+        parts = []
+        # solid wall bars, stopping short of the corners
+        for r in (QRectF(x + t, y, w - 2 * t, t),            # top
+                  QRectF(x + t, y + h - t, w - 2 * t, t),    # bottom
+                  QRectF(x, y + t, t, h - 2 * t),            # left
+                  QRectF(x + w - t, y + t, t, h - 2 * t)):   # right
+            bar = RectItem(r)
+            bar.setPen(QPen(wall_pen))
+            bar.setBrush(QBrush(QColor("#222222")))
+            parts.append(bar)
+        # empty corner squares
+        for r in (QRectF(x, y, t, t), QRectF(x + w - t, y, t, t),
+                  QRectF(x, y + h - t, t, t),
+                  QRectF(x + w - t, y + h - t, t, t)):
+            sq = RectItem(r)
+            sq.setPen(QPen(corner_pen))
+            sq.setBrush(QBrush(Qt.NoBrush))
+            parts.append(sq)
+        group = GroupItem()
+        self.addItem(group)
         self.clearSelection()
-        center_origin(item)
-        item.setSelected(True)
+        for z, it in enumerate(parts):
+            it.setZValue(z)
+            group.addToGroup(it)
+        center_origin(group)
+        group.setSelected(True)
         self.changed_by_user.emit()
 
     # ------------------------------------------------------------ pencil

@@ -309,8 +309,8 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   dropdown (`PLAN_PLACE` tool, `floorplan.py`) click-places top-view
   walls/doors/furniture (grouped, real-world mm sizes) by category; its
   first entry is a drag-to-size **Room** (`ROOM` rect tool → on release,
-  `_finish_room` builds a thin, solid-filled wall-ring `PathItem` — outer
-  rect with an inner rect punched out). An
+  `_finish_room` builds a grouped wall ring: four thin solid wall bars
+  with an empty (hollow) square at each corner where the walls meet). An
   **Electrical** dropdown (`ELEC_PLACE`, `electrical.py`) likewise places
   circuit + installation symbols. The
   column ends with an **Objects** dropdown (the reusable-object/template
