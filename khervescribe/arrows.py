@@ -196,6 +196,68 @@ def build_burst(w, h):
     ]
 
 
+# ---------------------------------------------------------------------------
+# Thin line connectors (same look as the straight arrow tool, but curved /
+# bent).  Drawn as a thin polyline + a small solid arrowhead at the tip.
+# ---------------------------------------------------------------------------
+def _seg(x1, y1, x2, y2):
+    return {"shape": "line", "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+            "stroke": OUTLINE, "width": 2}
+
+
+def _polyline_head(pts, hsize):
+    """Line specs through `pts` plus a solid arrowhead on the last segment."""
+    specs = [_seg(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1])
+             for i in range(len(pts) - 1)]
+    ex, ey = pts[-1]
+    px, py = pts[-2]
+    specs.append(_head(ex, ey, math.atan2(ey - py, ex - px), hsize,
+                       fill=OUTLINE))
+    return specs
+
+
+def build_connector_curve(w, h):
+    """A gently curved thin arrow (quadratic bezier) — tail bottom-left,
+    head top-right."""
+    x0, y0 = w * 0.05, h * 0.80
+    x1, y1 = w * 0.93, h * 0.30
+    cxp, cyp = w * 0.45, h * 0.02      # control point bows the curve up
+    n = 22
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        mt = 1 - t
+        pts.append((mt * mt * x0 + 2 * mt * t * cxp + t * t * x1,
+                    mt * mt * y0 + 2 * mt * t * cyp + t * t * y1))
+    return _polyline_head(pts, min(w, h) * 0.18)
+
+
+def build_connector_elbow(w, h):
+    """A right-angle (elbow) thin arrow: across, then down to the head."""
+    x0, y0 = w * 0.06, h * 0.18
+    xc = w * 0.85
+    y1 = h * 0.92
+    return _polyline_head([(x0, y0), (xc, y0), (xc, y1)], min(w, h) * 0.16)
+
+
+def build_connector_zigzag(w, h):
+    """A stepped (Z) thin arrow: across, down, across to the head."""
+    x0, y0 = w * 0.06, h * 0.22
+    xm = w * 0.52
+    x1, y1 = w * 0.94, h * 0.78
+    return _polyline_head([(x0, y0), (xm, y0), (xm, y1), (x1, y1)],
+                          min(w, h) * 0.16)
+
+
+def build_connector_u(w, h):
+    """A U-turn thin arrow: up, across, back down to the head."""
+    x0, y0 = w * 0.22, h * 0.94
+    yt = h * 0.10
+    x1 = w * 0.78
+    return _polyline_head([(x0, y0), (x0, yt), (x1, yt), (x1, y0)],
+                          min(w, h) * 0.16)
+
+
 REFERENCE_MM = 1200.0
 
 SIZES = {
@@ -211,6 +273,10 @@ SIZES = {
     "callout_round": (220.0, 150.0),
     "banner": (260.0, 90.0),
     "burst": (160.0, 160.0),
+    "connector_curve": (220.0, 130.0),
+    "connector_elbow": (180.0, 160.0),
+    "connector_zigzag": (200.0, 150.0),
+    "connector_u": (160.0, 170.0),
 }
 
 LABELS = {
@@ -226,6 +292,10 @@ LABELS = {
     "callout_round": "Rounded callout",
     "banner": "Ribbon banner",
     "burst": "Starburst badge",
+    "connector_curve": "Curved connector",
+    "connector_elbow": "Elbow connector",
+    "connector_zigzag": "Z-bend connector",
+    "connector_u": "U-turn connector",
 }
 
 CATEGORIES = [
@@ -235,6 +305,9 @@ CATEGORIES = [
      ["curved_arrow", "bent_arrow", "circular_arrow"]),
     ("Callouts & banners",
      ["callout_rect", "callout_round", "banner", "burst"]),
+    ("Connectors",
+     ["connector_curve", "connector_elbow", "connector_zigzag",
+      "connector_u"]),
 ]
 
 

@@ -307,7 +307,8 @@ valves (gate, globe, ball, check, control, 3-way) plus instrument
 bubbles, flow meter, gauge.</li>
 <li><b>Arrows &amp; callouts</b> — block arrows (4 directions + double),
 curved/bent/circular arrows, rectangular &amp; rounded speech callouts,
-ribbon banner, starburst badge.</li>
+ribbon banner, starburst badge, and thin line connectors (curved,
+elbow, Z-bend, U-turn).</li>
 <li><b>Biology</b> — animal cell, bacterium, virus, chromosome, neuron,
 DNA/RNA, protein, antibody, Petri dish, well plate, microscope,
 Eppendorf tube, syringe, lab mouse.</li>

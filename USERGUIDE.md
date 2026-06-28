@@ -272,7 +272,8 @@ Five further dropdowns cover general diagrams and more science:
   check, control, 3-way), instrument bubbles, flow meter, gauge.
 - **Arrows & callouts** — block arrows (4 directions + double),
   curved/bent/circular arrows, rectangular & rounded callouts, ribbon
-  banner, starburst badge.
+  banner, starburst badge, and thin line **connectors** (curved, elbow,
+  Z-bend, U-turn) that look like the straight arrow tool but bent.
 - **Biology** — animal cell, bacterium, virus, chromosome, neuron,
   DNA/RNA, protein, antibody, Petri dish, well plate, microscope,
   Eppendorf tube, syringe, lab mouse.

@@ -126,7 +126,10 @@ into a new module and import.
                        **pid**: P&ID / process flow (tank, column, reactor,
                        pump, bow-tie valves, instrument bubbles…).
                        **arrows**: annotation block/curved/bent/circular
-                       arrows, callouts, banner, burst. **biology**: cells,
+                       arrows, callouts, banner, burst, plus thin line
+                       **connectors** (curved/elbow/Z-bend/U-turn — a
+                       polyline + solid arrowhead, matching the arrow tool).
+                       **biology**: cells,
                        virus, DNA/RNA helices (sinusoidal polylines),
                        antibody, well-plate, microscope… **maths**: x-y/3D
                        axes, number line, plotted curve, vector, angle
