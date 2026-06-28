@@ -71,18 +71,31 @@ def build_double_arrow(w, h):
     ]
 
 
+def _head(tipx, tipy, ang, size, fill=FILL):
+    """Filled arrowhead, apex at (tipx, tipy), pointing along `ang` (rad).
+    A square box keeps it undistorted under arbitrary rotation."""
+    cx = tipx - size * 0.5 * math.cos(ang)
+    cy = tipy - size * 0.5 * math.sin(ang)
+    return {"shape": "triangle", "x": cx - size * 0.5, "y": cy - size * 0.5,
+            "w": size, "h": size, "rotation": math.degrees(ang) + 90,
+            "stroke": OUTLINE, "fill": fill, "width": 2}
+
+
 def build_curved_arrow(w, h):
-    arc_w = w * 0.85
-    arc_h = h * 0.85
-    head = min(w, h) * 0.3
-    return [
-        {"shape": "quartercircle", "x": w - arc_w, "y": h - arc_h,
-         "w": arc_w, "h": arc_h, "stroke": OUTLINE, "fill": "none",
-         "width": 2, "rotation": 0.0},
-        {"shape": "triangle", "x": (w - arc_w) - head * 0.5, "y": 0.0,
-         "w": head, "h": head, "rotation": 0.0,
-         "stroke": OUTLINE, "fill": FILL, "width": 2},
-    ]
+    """A smooth ~110° arc with a filled arrowhead tangent at its tip."""
+    cx, cy = w * 0.18, h * 0.82
+    rx, ry = w * 0.66, h * 0.66
+    a0, a1 = math.radians(-100), math.radians(8)
+    n = 24
+    pts = [(cx + rx * math.cos(a0 + (a1 - a0) * i / n),
+            cy + ry * math.sin(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
+    specs = [{"shape": "line", "x1": pts[i][0], "y1": pts[i][1],
+              "x2": pts[i + 1][0], "y2": pts[i + 1][1],
+              "stroke": OUTLINE, "width": 2} for i in range(len(pts) - 1)]
+    ex, ey = pts[-1]
+    px, py = pts[-2]
+    specs.append(_head(ex, ey, math.atan2(ey - py, ex - px), min(w, h) * 0.28))
+    return specs
 
 
 def build_bent_arrow(w, h):
@@ -151,21 +164,27 @@ def build_callout_round(w, h):
 
 
 def build_banner(w, h):
-    notch = w * 0.12
-    return [
-        {"shape": "rect", "x": notch, "y": 0.0, "w": w - 2 * notch, "h": h,
-         "stroke": OUTLINE, "fill": FILL, "width": 2},
-        {"shape": "rect", "x": 0.0, "y": h * 0.18, "w": notch,
-         "h": h * 0.64, "stroke": OUTLINE, "fill": ACCENT, "width": 2},
-        {"shape": "rect", "x": w - notch, "y": h * 0.18, "w": notch,
-         "h": h * 0.64, "stroke": OUTLINE, "fill": ACCENT, "width": 2},
-        {"shape": "triangle", "x": 0.0, "y": h * 0.18, "w": notch * 0.6,
-         "h": h * 0.64, "rotation": 90.0,
-         "stroke": OUTLINE, "fill": "none", "width": 1.2},
-        {"shape": "triangle", "x": w - notch * 0.6, "y": h * 0.18,
-         "w": notch * 0.6, "h": h * 0.64, "rotation": 270.0,
-         "stroke": OUTLINE, "fill": "none", "width": 1.2},
+    """A ribbon banner: a rectangle with a fishtail (V-notch) cut into each
+    short end."""
+    notch = w * 0.10
+    cy = h * 0.5
+    specs = [
+        # body fill (border drawn separately so the ends can be notched)
+        {"shape": "rect", "x": 0.0, "y": 0.0, "w": w, "h": h,
+         "stroke": "none", "fill": FILL, "width": 2},
+        # carve the two fishtail notches with background-coloured triangles
+        dict(_tri(notch, cy, notch, h, "r"), stroke="none", fill="#ffffff"),
+        dict(_tri(w - notch, cy, notch, h, "l"), stroke="none", fill="#ffffff"),
     ]
+    # outline of the resulting banner (6 segments)
+    pts = [(0.0, 0.0), (w, 0.0), (w - notch, cy), (w, h), (0.0, h),
+           (notch, cy)]
+    for i in range(len(pts)):
+        x1, y1 = pts[i]
+        x2, y2 = pts[(i + 1) % len(pts)]
+        specs.append({"shape": "line", "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+                      "stroke": OUTLINE, "width": 2})
+    return specs
 
 
 def build_burst(w, h):
