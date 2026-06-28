@@ -32,4 +32,12 @@ def main():
     from .mainwindow import MainWindow
     win = MainWindow()
     win.show()
+
+    # A file path on the command line (e.g. from KherveBook's "Open in
+    # KherveScribe") opens straight away, so the drawing is ready to edit.
+    for arg in app.arguments()[1:]:
+        if not arg.startswith("-") and Path(arg).exists():
+            win.open_path(arg)
+            break
+
     sys.exit(app.exec_())

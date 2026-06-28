@@ -1156,6 +1156,15 @@ class MainWindow(QMainWindow):
             return
         self._load_document(path)
 
+    def open_path(self, path: str) -> bool:
+        """Open a file given on the command line. Used by the launcher and
+        by KherveBook's "Open in KherveScribe", which writes an SVG and runs
+        ``python -m khervescribe <file>`` — editing then Save (Ctrl+S) writes
+        straight back to that file, where KherveBook reloads it."""
+        if not Path(path).exists():
+            return False
+        return self._load_document(str(path))
+
     def _load_document(self, path: str) -> bool:
         ext = Path(path).suffix.lower()
         try:

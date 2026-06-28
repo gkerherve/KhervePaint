@@ -2227,3 +2227,18 @@ def test_load_example_resets_document(window):
     assert window._path is None
     assert len(window.scene.vector_items()) > 5
     assert window._undo_stack.isClean()        # loaded as the clean baseline
+
+
+def test_open_path_loads_svg_for_khervebook_handoff(window, tmp_path):
+    """KherveBook writes an SVG and launches ``khervescribe <file>``; the
+    launcher calls open_path so the drawing opens ready to edit. Saving
+    (Ctrl+S) writes back to the same path, where KherveBook reloads it."""
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">'
+           '<rect x="5" y="5" width="40" height="30" fill="#3776ab"/>'
+           '<ellipse cx="70" cy="30" rx="20" ry="15" fill="#e07b39"/></svg>')
+    f = tmp_path / "handoff.svg"
+    f.write_text(svg, encoding="utf-8")
+    assert window.open_path(str(f)) is True
+    assert window._path == str(f)               # Save (Ctrl+S) writes back here
+    assert len(window.scene.vector_items()) >= 2
+    assert window.open_path(str(tmp_path / "missing.svg")) is False
