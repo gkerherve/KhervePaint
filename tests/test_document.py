@@ -209,6 +209,32 @@ def test_ungroup_restores_items(scene):
     assert len(scene.vector_items()) == 4
 
 
+def test_regroup_after_ungroup_and_deselect(scene):
+    """Group/ungroup must stay reliable across repeats: ungroup re-registers
+    the freed children in the scene's selection (no isSelected desync), so
+    re-grouping works and clearSelection() fully clears (no stuck outline)."""
+    from khervescribe.canvas import GroupItem
+    scene.snap_enabled = False
+    r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(40, 40); scene.addItem(r1)
+    r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(120, 100); scene.addItem(r2)
+    for _ in range(3):
+        scene.clearSelection()
+        for it in scene.vector_items()[:2]:
+            it.setSelected(True)
+        scene.group_selection()
+        groups = [i for i in scene.items() if isinstance(i, GroupItem)]
+        assert len(groups) == 1                       # grouping worked
+        scene.clearSelection(); groups[0].setSelected(True)
+        scene.ungroup_selection()
+        # freed children are properly registered, not desynced
+        assert len(scene.selectedItems()) == 2
+        assert not [i for i in scene.vector_items()
+                    if i.isSelected() and i not in scene.selectedItems()]
+        # deselecting clears every item (no stuck selection outline)
+        scene.clearSelection()
+        assert not [i for i in scene.vector_items() if i.isSelected()]
+
+
 def test_group_preserves_child_positions(scene):
     # Grouping must not snap children into the grid (they kept their pos).
     scene.dpi = 25.4; scene.grid_mm = 20; scene.snap_enabled = True

@@ -719,10 +719,15 @@ class PaintScene(QGraphicsScene):
         self.addItem(group)
         # Reparenting must not snap: addToGroup repositions each child
         # into group coords, and snapping that would shift them.
+        self.clear_handles()
         was_snap = self.snap_enabled
         self.snap_enabled = False
         for z, item in enumerate(ordered):
             item.setZValue(z)
+            # Clear the child's own selection flag before it becomes a group
+            # member — otherwise it stays 'selected' inside the group and,
+            # once ungrouped, is stuck selected but unknown to the scene.
+            item.setSelected(False)
             group.addToGroup(item)
         self.snap_enabled = was_snap
         self.clearSelection()
@@ -730,16 +735,26 @@ class PaintScene(QGraphicsScene):
         self.changed_by_user.emit()
 
     def ungroup_selection(self):
+        self.clear_handles()
         was_snap = self.snap_enabled
         self.snap_enabled = False
-        for item in self.selectedItems():
+        freed = []
+        for item in list(self.selectedItems()):
             if isinstance(item, QGraphicsItemGroup):
                 children = item.childItems()
                 self.destroyItemGroup(item)
                 for child in children:
                     child.setFlags(_ITEM_FLAGS)
-                    child.setSelected(True)
+                    freed.append(child)
         self.snap_enabled = was_snap
+        self.clearSelection()
+        for child in freed:
+            # destroyItemGroup leaves children with a stale 'selected' flag
+            # that the scene never registered; toggle it so setSelected(True)
+            # is a real change the scene records (else selectedItems() stays
+            # empty and re-grouping / deselecting break).
+            child.setSelected(False)
+            child.setSelected(True)
         self.changed_by_user.emit()
 
     def delete_selection(self):
