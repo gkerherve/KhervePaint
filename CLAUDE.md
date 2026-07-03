@@ -150,15 +150,23 @@ into a new module and import.
                        Remove background): floods the modal border colour
                        inward and clears its alpha, so only edge-connected
                        background goes transparent.
-  - `gradient.py`    — two-stop linear/radial gradient fills as
+  - `gradient.py`    — two-stop linear/radial/**sun** gradient fills as
                        ObjectBoundingMode brushes; one spec dict
                        (kind/c1/c2/angle) shared by the JSON snapshot,
                        the SVG writer/parser (`<linearGradient>` defs +
                        url(#id) resolution incl. xlink:href stop chains),
                        the toolbar fill-style selector and the properties
-                       dialog.
+                       dialog. "sun" = off-centre radial highlight (the
+                       light colour c2 at a top-left focal point, the
+                       body colour c1 at the rim) — a sun-lit-sphere
+                       look; detected on read by cx/cy ≠ 0.5 and its
+                       stops are written light-first.
   - `handles.py`     — `SelectionHandles`: resize handles per item type
-                       and a rotate knob (double-click). `Handle`-marked
+                       and a rotate knob (double-click). Lines/arrows
+                       (not dimensions) also get a round mid `_BendHandle`
+                       that sets `LineItem.set_bend()` — drag off the line
+                       to curve it (quadratic through the cursor), drop
+                       back on the line to straighten. `Handle`-marked
                        items, excluded from serialisation/picking.
   - `crop.py`        — `CropSession`: interactive image crop overlay
                        (dim mask + frame + handles); Enter applies,
@@ -225,7 +233,12 @@ Everything lives in one `QGraphicsScene`:
   `canvas.py` that mix in `SnapMixin`, so items snap to the grid both
   on creation and while being moved with the pointer:
   - Two-point tools (`_TWO_POINT_TOOLS`): line, arrow (`ArrowItem`
-    extends `LineItem` and draws a filled head) and dimension
+    extends `LineItem` and draws a filled head) and dimension.
+    `LineItem` carries an optional **bend** control point (`set_bend`;
+    None = straight) that turns it into a quadratic curve — geometry
+    via `curve_path()`, arrowheads follow `end_angle()`, serialised as
+    `"bend"` in JSON and a `<path>` + `kp:bend` in SVG; dimensions
+    never bend
     (`DimensionItem` extends `LineItem`: a live length label plus a
     configurable style — end caps (`cap_style`: arrows/ticks/dots/none),
     optional `extension` witness lines, solid/`dash` line, and label
@@ -262,7 +275,10 @@ Everything lives in one `QGraphicsScene`:
   the handles, plus a cosmetic **dashed outline** drawn around every
   selected top-level item in `PaintView._draw_selection` (in the
   foreground, so it never lingers or exports — and it makes a
-  *multi-*selection visible, which handles alone don't).
+  *multi-*selection visible, which handles alone don't). Lines/arrows
+  are the exception: their dash runs along the line's own geometry
+  (the curve when bent), not a bounding box — a selected line shows
+  endpoint + bend handles, never a rectangle.
 - **Selection handles** (`handles.py`) — selecting one item shows
   resize handles (line/arrow endpoints, polygon vertices, rect/ellipse
   bounding box, uniform-scale corners for path/image/text, or — for a

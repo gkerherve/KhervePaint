@@ -152,7 +152,8 @@ class PropertiesDialog(QDialog):
             end = QColor("#ffffff")
         self.fill_style = QComboBox()
         self.fill_style.addItems(["Solid", "Linear gradient",
-                                  "Radial gradient"])
+                                  "Radial gradient",
+                                  "Sun (lit from top-left)"])
         self.fill_style.setCurrentIndex(
             gradient.FILL_STYLES.index(spec["kind"]) if spec else 0)
         self.fill_color = ColorButton(start)
@@ -177,6 +178,20 @@ class PropertiesDialog(QDialog):
             self.x2 = _spin(ln.x2()); self.y2 = _spin(ln.y2())
             form.addRow("X1", self.x1); form.addRow("Y1", self.y1)
             form.addRow("X2", self.x2); form.addRow("Y2", self.y2)
+            if not isinstance(item, DimensionItem):
+                bend = item.bend()
+                mid = (ln.p1() + ln.p2()) / 2
+                self.curved = QCheckBox("Curved (bend through a control "
+                                        "point)")
+                self.curved.setChecked(bend is not None)
+                ctrl = bend if bend is not None else mid
+                self.bend_x = _spin(ctrl.x()); self.bend_y = _spin(ctrl.y())
+                for w in (self.bend_x.valueChanged,
+                          self.bend_y.valueChanged):
+                    w.connect(lambda *_: self.curved.setChecked(True))
+                form.addRow(self.curved)
+                form.addRow("Bend X", self.bend_x)
+                form.addRow("Bend Y", self.bend_y)
         elif isinstance(item, (RectItem, EllipseItem, RoundedRectItem)):
             form = self._section(layout, "Geometry")
             r = item.rect()
@@ -313,6 +328,11 @@ class PropertiesDialog(QDialog):
         if isinstance(item, LineItem):
             item.setLine(QLineF(self.x1.value(), self.y1.value(),
                                 self.x2.value(), self.y2.value()))
+            if hasattr(self, "curved"):
+                from PyQt5.QtCore import QPointF
+                item.set_bend(
+                    QPointF(self.bend_x.value(), self.bend_y.value())
+                    if self.curved.isChecked() else None)
             if item.isSelected():
                 item.setSelected(False); item.setSelected(True)
         elif isinstance(item, RoundedRectItem):

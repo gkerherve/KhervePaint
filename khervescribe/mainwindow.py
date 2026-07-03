@@ -570,10 +570,12 @@ class MainWindow(QMainWindow):
 
         self._fill_style_combo = QComboBox()
         self._fill_style_combo.addItems(["Fill: Solid", "Fill: Linear",
-                                         "Fill: Radial"])
+                                         "Fill: Radial", "Fill: Sun"])
         self._fill_style_combo.setToolTip(
-            "Fill style for new shapes — solid colour, or a linear/radial "
-            "gradient from the fill colour to the gradient end colour")
+            "Fill style for new shapes — solid colour, a linear/radial "
+            "gradient from the fill colour to the gradient end colour, or "
+            "Sun: an off-centre highlight of the end colour, as if the "
+            "shape were lit from the top-left")
         self._fill_style_combo.currentIndexChanged.connect(
             self._on_fill_style_changed)
         bar.addWidget(self._fill_style_combo)

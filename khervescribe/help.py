@@ -154,7 +154,10 @@ existing item use its properties (below).</p>
 <b>Fill: Linear</b> or <b>Fill: Radial</b> and new shapes are filled
 with a gradient running from the <b>fill colour</b> to the <b>end
 colour</b> swatch beside it (linear gradients run top-to-bottom by
-default). To restyle an existing shape, right-click ▸ <i>Edit
+default). <b>Fill: Sun</b> gives a sun-lit look: an off-centre
+highlight of the end colour (usually white) towards the top-left,
+fading into the fill colour — a circle reads as a lit sphere.
+To restyle an existing shape, right-click ▸ <i>Edit
 properties…</i> ▸ Fill and choose the style, both colours and — for
 linear — the <b>angle</b> (0° = left→right, 90° = top→bottom).
 Gradients survive saving (they become standard SVG gradients).</p>
@@ -173,6 +176,11 @@ into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
       <b>group</b> shows eight handles: corners resize both ways, while
       the <b>side-middle</b> handles stretch it in X only or Y only.
       Resizing <b>snaps to the grid</b> while snapping is on.</li>
+  <li><b>Bend a line or arrow</b>: a selected line/arrow shows a
+      <b>round handle at its midpoint</b> — drag it off the line to
+      curve the line through the cursor (an arrow's head follows the
+      curve). Drag it back onto the straight line to straighten it
+      again.</li>
   <li><b>Rotate</b>: <b>double-click</b> the item and drag the green knob;
       it turns about its own centre.</li>
 </ul>

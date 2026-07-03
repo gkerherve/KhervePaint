@@ -79,7 +79,10 @@ its properties (below).
 **Gradient fills.** Switch the toolbar's fill-style selector to
 **Fill: Linear** or **Fill: Radial** and new shapes are filled with a
 gradient running from the **fill colour** to the **end colour** swatch
-beside it (linear gradients run top-to-bottom by default). To restyle
+beside it (linear gradients run top-to-bottom by default). **Fill: Sun**
+gives the shape a sun-lit look: an off-centre highlight of the end
+colour (usually white) towards the top-left, fading into the fill
+colour — a circle reads as a lit sphere. To restyle
 an existing shape, right-click → *Edit properties…* → Fill and choose
 the style, both colours and — for linear — the **angle** (0° =
 left→right, 90° = top→bottom). Gradients survive saving (they become
@@ -100,6 +103,11 @@ instead. The last pick is shown in the status bar.
   eight handles: corners resize both ways, while the **side-middle**
   handles stretch it in **X only** or **Y only**. Resizing **snaps to the
   grid** while snapping is on (toggle it in the toolbar / View menu).
+- **Bend a line or arrow**: a selected line/arrow shows a **round handle
+  at its midpoint** — drag it off the line to curve the line through the
+  cursor (an arrow's head follows the curve). Drag the handle back onto
+  the straight line to straighten it again. Curves save as standard SVG
+  paths.
 - **Rotate**: **double-click** the item and drag the green knob; it turns
   about its own centre.
 

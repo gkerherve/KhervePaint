@@ -142,9 +142,18 @@ def _gradient_def(ctx, spec) -> str:
         ctx["root"].insert(0, ctx["defs"])
     ctx["n"] += 1
     gid = f"kpgrad{ctx['n']}"
+    stops = ((0, "c1"), (1, "c2"))
     if spec["kind"] == "radial":
         el = ET.SubElement(ctx["defs"], _svg("radialGradient"))
         el.set("cx", "0.5"); el.set("cy", "0.5"); el.set("r", "0.7071")
+    elif spec["kind"] == "sun":       # off-centre highlight, light first
+        el = ET.SubElement(ctx["defs"], _svg("radialGradient"))
+        cx, cy = gradient.SUN_CENTER
+        fx, fy = gradient.SUN_FOCAL
+        el.set("cx", f"{cx:g}"); el.set("cy", f"{cy:g}")
+        el.set("r", f"{gradient.SUN_RADIUS:g}")
+        el.set("fx", f"{fx:g}"); el.set("fy", f"{fy:g}")
+        stops = ((0, "c2"), (1, "c1"))
     else:
         el = ET.SubElement(ctx["defs"], _svg("linearGradient"))
         x1, y1, x2, y2 = gradient.angle_points(spec.get("angle", 90.0))
@@ -152,7 +161,7 @@ def _gradient_def(ctx, spec) -> str:
         el.set("x2", f"{x2:g}"); el.set("y2", f"{y2:g}")
     el.set("id", gid)
     el.set("gradientUnits", "objectBoundingBox")
-    for offset, name in ((0, "c1"), (1, "c2")):
+    for offset, name in stops:
         color = QColor(spec[name])
         stop = ET.SubElement(el, _svg("stop"))
         stop.set("offset", str(offset))
@@ -160,6 +169,27 @@ def _gradient_def(ctx, spec) -> str:
         if color.alpha() < 255:
             stop.set("stop-opacity", f"{color.alphaF():g}")
     return gid
+
+
+def _line_element(parent, item):
+    """A line/arrow as SVG: `<line>` when straight, or — when bent — a
+    quadratic `<path>` (so any viewer draws the curve) whose endpoints
+    and control point ride along in kp: attributes for round-trip."""
+    ln = item.line()
+    bend = item.bend()
+    if bend is None:
+        el = ET.SubElement(parent, _svg("line"))
+        el.set("x1", f"{ln.x1():g}"); el.set("y1", f"{ln.y1():g}")
+        el.set("x2", f"{ln.x2():g}"); el.set("y2", f"{ln.y2():g}")
+        return el
+    el = ET.SubElement(parent, _svg("path"))
+    el.set("d", f"M{ln.x1():g},{ln.y1():g} Q{bend.x():g},{bend.y():g} "
+                f"{ln.x2():g},{ln.y2():g}")
+    el.set("fill", "none")
+    el.set(_kp("x1"), f"{ln.x1():g}"); el.set(_kp("y1"), f"{ln.y1():g}")
+    el.set(_kp("x2"), f"{ln.x2():g}"); el.set(_kp("y2"), f"{ln.y2():g}")
+    el.set(_kp("bend"), f"{bend.x():g} {bend.y():g}")
+    return el
 
 
 def painterpath_to_d(path: QPainterPath) -> str:
@@ -202,17 +232,11 @@ def _item_to_element(parent, item, ctx=None):
             el.set(_kp("dim-suffix"), item.suffix)
         _set_stroke(el, item.pen())
     elif isinstance(item, ArrowItem):
-        ln = item.line()
-        el = ET.SubElement(parent, _svg("line"))
-        el.set("x1", f"{ln.x1():g}"); el.set("y1", f"{ln.y1():g}")
-        el.set("x2", f"{ln.x2():g}"); el.set("y2", f"{ln.y2():g}")
+        el = _line_element(parent, item)
         el.set(_kp("kind"), "arrow")
         _set_stroke(el, item.pen())
     elif isinstance(item, LineItem):
-        ln = item.line()
-        el = ET.SubElement(parent, _svg("line"))
-        el.set("x1", f"{ln.x1():g}"); el.set("y1", f"{ln.y1():g}")
-        el.set("x2", f"{ln.x2():g}"); el.set("y2", f"{ln.y2():g}")
+        el = _line_element(parent, item)
         _set_stroke(el, item.pen())
     elif isinstance(item, RoundedRectItem):
         r = item.rect()
@@ -471,7 +495,13 @@ def _scan_gradients(root) -> dict:
         spec = {"c1": c1.name(QColor.HexArgb), "c2": c2.name(QColor.HexArgb),
                 "angle": 90.0}
         if _localname(el.tag) == "radialGradient":
-            spec["kind"] = "radial"
+            cx, cy = frac(el, "cx", 0.5), frac(el, "cy", 0.5)
+            if abs(cx - 0.5) > 0.01 or abs(cy - 0.5) > 0.01:
+                # off-centre highlight = our "sun" kind (light stop first)
+                spec["kind"] = "sun"
+                spec["c1"], spec["c2"] = spec["c2"], spec["c1"]
+            else:
+                spec["kind"] = "radial"
         else:
             spec["kind"] = "linear"
             dx = frac(el, "x2", 1.0) - frac(el, "x1", 0.0)
@@ -622,6 +652,16 @@ def _build_leaf(el, total: QTransform, style: dict):
 
     if tag == "path":
         kind = el.get(_kp("kind"))
+        if el.get(_kp("bend")) is not None and simple:  # bent line/arrow
+            line = QLineF(float(el.get(_kp("x1"), 0)),
+                          float(el.get(_kp("y1"), 0)),
+                          float(el.get(_kp("x2"), 0)),
+                          float(el.get(_kp("y2"), 0)))
+            item = (ArrowItem if kind == "arrow" else LineItem)(line)
+            bx, by = [float(v) for v in
+                      re.split(r"[\s,]+", el.get(_kp("bend")).strip())]
+            item.set_bend(QPointF(bx, by))
+            return _finalise(_styled(item, style, fill=False), total, style)
         if kind in ARC_KINDS and simple:
             r = QRectF(float(el.get(_kp("ax"), 0)), float(el.get(_kp("ay"), 0)),
                        float(el.get(_kp("aw"), 0)), float(el.get(_kp("ah"), 0)))

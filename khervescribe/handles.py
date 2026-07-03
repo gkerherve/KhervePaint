@@ -28,9 +28,9 @@ from PyQt5.QtGui import QBrush, QColor, QPen, QPolygonF, QTransform
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsLineItem, QGraphicsRectItem)
 
-from .canvas import (ArcShapeItem, EllipseItem, GroupItem, ImageItem,
-                     LineItem, PolygonItem, RectItem, RoundedRectItem,
-                     center_origin)
+from .canvas import (ArcShapeItem, DimensionItem, EllipseItem, GroupItem,
+                     ImageItem, LineItem, PolygonItem, RectItem,
+                     RoundedRectItem, center_origin)
 
 HANDLE_SIZE = 9
 RESIZE, ROTATE = "resize", "rotate"
@@ -59,12 +59,8 @@ class _GuideLine(Handle, QGraphicsLineItem):
         self.setAcceptedMouseButtons(Qt.NoButton)
 
 
-class _RectHandle(Handle, QGraphicsRectItem):
-    def __init__(self, controller, role, parent, color, cursor):
-        super().__init__(parent)
-        s = HANDLE_SIZE
-        self.setRect(-s / 2, -s / 2, s, s)
-        self._init(controller, role, color, cursor)
+class _DragMixin:
+    """Shared init + press/move/release plumbing for drag handles."""
 
     def _init(self, controller, role, color, cursor):
         self.controller = controller
@@ -86,6 +82,25 @@ class _RectHandle(Handle, QGraphicsRectItem):
     def mouseReleaseEvent(self, event):
         self.controller.end()
         event.accept()
+
+
+class _RectHandle(Handle, _DragMixin, QGraphicsRectItem):
+    def __init__(self, controller, role, parent, color, cursor):
+        super().__init__(parent)
+        s = HANDLE_SIZE
+        self.setRect(-s / 2, -s / 2, s, s)
+        self._init(controller, role, color, cursor)
+
+
+class _BendHandle(Handle, _DragMixin, QGraphicsEllipseItem):
+    """Round handle at a line's midpoint: drag it off the line to bend
+    the line into a curve; drag it back onto the line to straighten."""
+
+    def __init__(self, controller, parent):
+        super().__init__(parent)
+        s = HANDLE_SIZE
+        self.setRect(-s / 2, -s / 2, s, s)
+        self._init(controller, "mid", _BLUE, Qt.SizeAllCursor)
 
 
 class _RotateHandle(Handle, QGraphicsEllipseItem):
@@ -169,6 +184,11 @@ class SelectionHandles:
             self.handles = [self._attach(_RotateHandle(self, self._parent()))]
         elif self.kind == "line":
             self.handles = [self._rect_handle(r) for r in ("p1", "p2")]
+            # Dimensions measure a straight span; only plain lines and
+            # arrows get the round mid-handle that bends them.
+            if not isinstance(self.item, DimensionItem):
+                self.handles.append(
+                    self._attach(_BendHandle(self, self._parent())))
         elif self.kind == "polygon":
             count = self.item.polygon().count()
             self.handles = [self._rect_handle(i) for i in range(count)]
@@ -208,6 +228,13 @@ class SelectionHandles:
     def _anchor(self, role) -> QPointF:
         if self.kind == "line":
             ln = self.item.line()
+            if role == "mid":
+                mid = (ln.p1() + ln.p2()) / 2
+                bend = getattr(self.item, "bend", lambda: None)()
+                if bend is None:
+                    return mid
+                # the point the quadratic curve passes through at t=0.5
+                return (mid + bend) / 2
             return ln.p1() if role == "p1" else ln.p2()
         if self.kind == "polygon":
             return self.item.polygon().at(role)
@@ -343,6 +370,18 @@ class SelectionHandles:
 
     def _drag_line(self, role, local):
         ln = self.item.line()
+        if role == "mid":
+            # Bend so the curve passes through the cursor: for a
+            # quadratic, control = 2·M − midpoint. Dropping the handle
+            # back onto the straight line straightens the line again.
+            mid = (ln.p1() + ln.p2()) / 2
+            if ln.length() > 1e-6:
+                off = abs(ln.dx() * (local.y() - ln.y1())
+                          - ln.dy() * (local.x() - ln.x1())) / ln.length()
+            else:
+                off = _dist(local, mid)
+            self.item.set_bend(None if off < 2.0 else local * 2 - mid)
+            return
         if role == "p1":
             ln.setP1(local)
         else:

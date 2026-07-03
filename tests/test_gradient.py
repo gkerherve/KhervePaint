@@ -45,6 +45,10 @@ def _gradient_items(scene):
     ell.setBrush(gradient.radial_brush(QColor("#00ff00"),
                                        QColor("#000000")))
     scene.addItem(ell)
+    sun = EllipseItem(QRectF(250, 40, 80, 80))
+    sun.setBrush(gradient.sun_brush(QColor("#4aa3ff"),
+                                    QColor("#ffffff")))
+    scene.addItem(sun)
 
 
 def _specs(scene):
@@ -65,6 +69,16 @@ def test_spec_round_trip():
     assert back == spec
 
 
+def test_sun_spec_round_trip():
+    spec = gradient.brush_spec(
+        gradient.sun_brush(QColor("#4aa3ff"), QColor("#ffffff")))
+    assert spec["kind"] == "sun"
+    assert spec["c1"] == "#ff4aa3ff"      # body colour
+    assert spec["c2"] == "#ffffffff"      # highlight colour
+    back = gradient.brush_spec(gradient.brush_from_spec(spec))
+    assert back == spec
+
+
 def test_json_snapshot_round_trip(scene, app):
     _gradient_items(scene)
     data = document.scene_to_dict(scene)
@@ -75,6 +89,8 @@ def test_json_snapshot_round_trip(scene, app):
     assert specs["linear"]["c2"] == "#ff0000ff"
     assert abs(specs["linear"]["angle"] - 45.0) < 0.1
     assert specs["radial"]["c1"] == "#ff00ff00"
+    assert specs["sun"]["c1"] == "#ff4aa3ff"
+    assert specs["sun"]["c2"] == "#ffffffff"
 
 
 def test_svg_round_trip(scene, app, tmp_path):
@@ -91,6 +107,8 @@ def test_svg_round_trip(scene, app, tmp_path):
     assert abs(specs["linear"]["angle"] - 45.0) < 0.5
     assert specs["radial"]["c1"] == "#ff00ff00"
     assert specs["radial"]["c2"] == "#ff000000"
+    assert specs["sun"]["c1"] == "#ff4aa3ff"
+    assert specs["sun"]["c2"] == "#ffffffff"
 
 
 def test_external_svg_gradient_imports(app, tmp_path):

@@ -19,7 +19,8 @@ import math
 
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, pyqtSignal
 from PyQt5.QtGui import (QBrush, QColor, QFont, QPainter, QPainterPath,
-                         QPen, QPixmap, QPolygonF, QTextCursor, QTransform)
+                         QPainterPathStroker, QPen, QPixmap, QPolygonF,
+                         QTextCursor, QTransform)
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsItemGroup, QGraphicsLineItem,
                              QGraphicsPathItem, QGraphicsPixmapItem,
@@ -198,9 +199,65 @@ class LabelMixin:
 
 
 class LineItem(NoSelMixin, SnapMixin, QGraphicsLineItem):
+    """A straight segment, optionally **bent** into a quadratic curve:
+    the bend is a control point in item coordinates (None = straight),
+    dragged via the round mid-handle when the line is selected."""
+
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
+        self._bend = None               # QPointF control point, or None
+
+    def bend(self):
+        return QPointF(self._bend) if self._bend is not None else None
+
+    def set_bend(self, point):
+        self.prepareGeometryChange()
+        self._bend = QPointF(point) if point is not None else None
+        self.update()
+
+    def curve_path(self) -> QPainterPath:
+        """The drawn geometry: a straight segment, or the quadratic
+        curve through the bend control point."""
+        ln = self.line()
+        path = QPainterPath(ln.p1())
+        if self._bend is not None:
+            path.quadTo(self._bend, ln.p2())
+        else:
+            path.lineTo(ln.p2())
+        return path
+
+    def end_angle(self) -> float:
+        """Direction (radians) the line arrives at p2 — the curve's end
+        tangent when bent, so arrowheads follow the curve."""
+        ln = self.line()
+        if self._bend is not None:
+            v = ln.p2() - self._bend
+            if abs(v.x()) > 1e-9 or abs(v.y()) > 1e-9:
+                return math.atan2(v.y(), v.x())
+        return math.atan2(ln.dy(), ln.dx())
+
+    def boundingRect(self):
+        if self._bend is None:
+            return super().boundingRect()
+        w = self.pen().widthF() / 2 + 1
+        return self.curve_path().boundingRect().adjusted(-w, -w, w, w)
+
+    def shape(self):
+        if self._bend is None:
+            return super().shape()
+        stroker = QPainterPathStroker()
+        stroker.setWidth(max(self.pen().widthF(), 8.0))
+        return stroker.createStroke(self.curve_path())
+
+    def paint(self, painter, option, widget=None):
+        if self._bend is None:
+            super().paint(painter, option, widget)
+            return
+        option.state = option.state & ~QStyle.State_Selected
+        painter.setPen(self.pen())
+        painter.setBrush(Qt.NoBrush)
+        painter.drawPath(self.curve_path())
 
 
 class RectItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsRectItem):
@@ -226,7 +283,7 @@ class ArrowItem(LineItem):
 
     def _head_polygon(self) -> QPolygonF:
         ln = self.line()
-        angle = math.atan2(ln.dy(), ln.dx())
+        angle = self.end_angle()        # follows the curve when bent
         tip = ln.p2()
         left = tip - QPointF(math.cos(angle - math.pi / 7) * self.HEAD,
                              math.sin(angle - math.pi / 7) * self.HEAD)
@@ -551,7 +608,7 @@ class PaintScene(QGraphicsScene):
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.fill_color = QColor("#4aa3ff")
         self.fill_color2 = QColor("#ffffff")  # gradient end colour
-        self.fill_style = "solid"             # solid | linear | radial
+        self.fill_style = "solid"             # solid | linear | radial | sun
         self.fill_angle = 90.0                # linear gradient direction
         self.fill_enabled = False
         self.bucket_vector = False        # bucket output: raster vs vector
@@ -1498,6 +1555,8 @@ class PaintScene(QGraphicsScene):
         elif isinstance(item, LineItem):       # includes arrow
             ln = item.line()
             item.setLine(QLineF(t.map(ln.p1()), t.map(ln.p2())))
+            if item.bend() is not None:
+                item.set_bend(t.map(item.bend()))
         elif isinstance(item, PathItem):
             item.setPath(t.map(item.path()))
         # rect/ellipse/rounded-rect/text are symmetric: nothing to do
@@ -1678,7 +1737,15 @@ class PaintView(QGraphicsView):
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         for item in items:
-            painter.drawRect(item.sceneBoundingRect().adjusted(-1, -1, 1, 1))
+            if isinstance(item, LineItem):
+                # A line reads as a line, not a box: dash along its own
+                # geometry (the curve when bent) — the endpoint handles
+                # already mark it, so no bounding rectangle.
+                painter.drawPath(
+                    item.sceneTransform().map(item.curve_path()))
+            else:
+                painter.drawRect(
+                    item.sceneBoundingRect().adjusted(-1, -1, 1, 1))
 
     # ------------------------------------------------------------ zoom
     def wheelEvent(self, event):

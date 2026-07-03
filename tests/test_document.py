@@ -1270,13 +1270,24 @@ def test_line_resize_handles(scene):
     scene.refresh_handles()
     handles = scene._sel_handles
     assert handles is not None and handles.kind == "line"
-    assert len(handles.handles) == 2
+    assert len(handles.handles) == 3          # p1, p2 + round bend handle
 
     handles.drag("p2", QPointF(200, 80))      # drag the second endpoint
     assert line.line().p2() == QPointF(200, 80)
     # Handles are not vector items and not serialised.
     assert scene.vector_items() == [line]
     assert document.item_to_dict(line)["x2"] == 200
+
+    # Dragging the mid handle off the line bends it: the curve passes
+    # through the dragged point (its midpoint = (mid + control) / 2).
+    handles.drag("mid", QPointF(100, 150))
+    assert line.bend() is not None
+    mid = (line.line().p1() + line.line().p2()) / 2
+    on_curve = (mid + line.bend()) / 2
+    assert abs(on_curve.x() - 100) < 0.01 and abs(on_curve.y() - 150) < 0.01
+    # Dragging it back onto the straight line straightens the line.
+    handles.drag("mid", mid)
+    assert line.bend() is None
 
 
 def test_box_resize_all_shapes(scene):

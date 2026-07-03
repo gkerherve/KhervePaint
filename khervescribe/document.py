@@ -30,7 +30,7 @@ from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 6      # 6: gradient fills ("gradient" key in brush dicts)
+FORMAT_VERSION = 7      # 7: bent lines/arrows ("bend" control point)
 
 
 # ---------------------------------------------------------------- pens
@@ -143,16 +143,16 @@ def item_to_dict(item) -> dict:
         return {"type": "dimension", "pen": _pen_to_dict(item.pen()),
                 "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
                 **_dimension_to_dict(item), **common}
-    if isinstance(item, ArrowItem):
+    if isinstance(item, (ArrowItem, LineItem)):
         ln = item.line()
-        return {"type": "arrow", "pen": _pen_to_dict(item.pen()),
-                "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
-                **common}
-    if isinstance(item, LineItem):
-        ln = item.line()
-        return {"type": "line", "pen": _pen_to_dict(item.pen()),
-                "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
-                **common}
+        d = {"type": "arrow" if isinstance(item, ArrowItem) else "line",
+             "pen": _pen_to_dict(item.pen()),
+             "x1": ln.x1(), "y1": ln.y1(), "x2": ln.x2(), "y2": ln.y2(),
+             **common}
+        bend = item.bend()
+        if bend is not None:
+            d["bend"] = [bend.x(), bend.y()]
+        return d
     if isinstance(item, RoundedRectItem):
         r = item.rect()
         return {"type": "roundrect", "pen": _pen_to_dict(item.pen()),
@@ -220,6 +220,8 @@ def item_from_dict(d: dict):
         item.setPen(_pen_from_dict(d.get("pen", {})))
         if kind == "dimension":
             _apply_dimension(item, d)
+        elif d.get("bend") is not None:
+            item.set_bend(QPointF(d["bend"][0], d["bend"][1]))
     elif kind in ("rect", "ellipse"):
         cls = RectItem if kind == "rect" else EllipseItem
         item = cls(QRectF(d["x"], d["y"], d["w"], d["h"]))
