@@ -67,7 +67,8 @@ def user_guide_html() -> str:
         ("V", "Pointer — select, move, resize, rotate"),
         ("P", "Pencil — freehand vector stroke"),
         ("X", "Eraser — rub out the raster layer (to white)"),
-        ("K", "Colour picker — sample a colour into the stroke"),
+        ("K", "Colour picker — sample a colour into the stroke "
+              "(Shift+click: into the fill)"),
         ("B", "Bucket — fill an enclosed region"),
         ("L", "Line"), ("A", "Arrow"),
         ("M", "Dimension — measure &amp; label a distance (mm)"),
@@ -149,6 +150,10 @@ to give new shapes a fill, and pick the <b>line width</b> from the
 dropdown — it shows each width as a line, thin to thick, in the current
 stroke colour. These apply to the next thing you draw; to recolour an
 existing item use its properties (below).</p>
+<p>The <b>colour picker</b> (K) samples the pixel under the cursor —
+from anything on the canvas, including an opened or pasted image —
+into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
+<b>fill</b> colour instead. The last pick is shown in the status bar.</p>
 
 <h2>4 · Selecting, moving, resizing, rotating</h2>
 <ul>
@@ -223,6 +228,9 @@ drop a fresh, fully editable copy into the middle of the view.
 like <i>Walls/brick</i>, or open <b>Template Explorer…</b> to create
 folders and rename, move, delete or insert objects. The Objects dropdown
 mirrors your folders as nested sub-menus.</p>
+<p>All the symbol palettes below — and the Objects library — are also
+reachable from the <b>Library</b> menu in the menu bar, mirroring the
+left-toolbar dropdowns.</p>
 
 <h2>10a · Chemistry tools</h2>
 <p>The <b>Chemistry</b> dropdown (left toolbar) draws structures as

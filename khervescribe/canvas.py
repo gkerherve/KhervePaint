@@ -539,8 +539,9 @@ class PaintScene(QGraphicsScene):
     """One scene holding the raster layer plus all vector items."""
 
     changed_by_user = pyqtSignal()
-    #: emitted after the colour-picker samples a colour into the pen.
-    color_picked = pyqtSignal()
+    #: emitted after the colour-picker samples a colour: (hex name,
+    #: "stroke" or "fill" — which colour it landed in).
+    color_picked = pyqtSignal(str, str)
 
     def __init__(self, width: int = 800, height: int = 600, parent=None):
         super().__init__(parent)
@@ -963,7 +964,8 @@ class PaintScene(QGraphicsScene):
                              vector=self.bucket_vector)
             return
         if self.tool == PICKER:                     # eyedropper: one click
-            self._pick_color(event.scenePos())
+            self._pick_color(event.scenePos(),
+                             fill=bool(event.modifiers() & Qt.ShiftModifier))
             return
 
         pos = self._tool_pos(event.scenePos())
@@ -1210,9 +1212,10 @@ class PaintScene(QGraphicsScene):
         painter.end()
         self.raster_item.setPixmap(pixmap)
 
-    def _pick_color(self, pos: QPointF):
-        """Colour picker / eyedropper: set the stroke colour to the colour
-        under the cursor (raster + vector, as drawn)."""
+    def _pick_color(self, pos: QPointF, fill: bool = False):
+        """Colour picker / eyedropper: sample the colour under the cursor
+        (raster, images and vector items, as drawn) into the stroke pen —
+        or into the fill colour when *fill* (Shift+click)."""
         from PyQt5.QtGui import QImage
         img = QImage(1, 1, QImage.Format_ARGB32)
         img.fill(Qt.white)
@@ -1220,8 +1223,12 @@ class PaintScene(QGraphicsScene):
         self.render(painter, QRectF(0, 0, 1, 1),
                     QRectF(pos.x(), pos.y(), 1, 1))
         painter.end()
-        self.pen.setColor(QColor(img.pixel(0, 0)))
-        self.color_picked.emit()
+        color = QColor(img.pixel(0, 0))
+        if fill:
+            self.fill_color = color
+        else:
+            self.pen.setColor(color)
+        self.color_picked.emit(color.name(), "fill" if fill else "stroke")
 
     # ------------------------------------------------ symbol libraries (plan/elec)
     def place_plan_element(self, name: str, center: QPointF):

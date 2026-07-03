@@ -61,7 +61,8 @@ DIRECT_TOOLS = [
     (POINTER, "mdi.cursor-default-outline", "Pointer", "V"),
     (PENCIL, "mdi.pencil", "Pencil", "P"),
     (ERASER, "mdi.eraser", "Eraser (raster)", "X"),
-    (PICKER, "mdi.eyedropper-variant", "Colour picker", "K"),
+    (PICKER, "mdi.eyedropper-variant",
+     "Colour picker — click: stroke, Shift+click: fill", "K"),
     (BUCKET, "mdi.format-color-fill", "Bucket fill", "B"),
     (LINE, "mdi.vector-line", "Line", "L"),
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
@@ -110,6 +111,46 @@ SHAPE_GROUPS = [
     ]),
 ]
 
+#: Symbol-palette libraries, in toolbar order: (menu title, mdi glyph,
+#: toolbar tooltip, spec module, scene attribute holding the armed
+#: element name, placement tool). Drives both the left-toolbar dropdowns
+#: and the Library menu, so the two never drift apart.
+SYMBOL_LIBRARIES = [
+    ("Room layout", "mdi.floor-plan",
+     "Room layout — walls, doors, furniture (top view)",
+     floorplan, "plan_element", PLAN_PLACE),
+    ("Electrical", "mdi.flash",
+     "Electrical — circuit & installation symbols",
+     electrical, "elec_element", ELEC_PLACE),
+    ("Optics", "mdi.flare",
+     "Optics — lasers, mirrors, lenses (beam-path diagrams)",
+     optics, "optics_element", OPTICS_PLACE),
+    ("Vacuum", "mdi.gauge",
+     "Vacuum — UHV chambers, pumps, valves (surface science)",
+     vacuum, "vacuum_element", VACUUM_PLACE),
+    ("Lab glassware", "mdi.flask-outline",
+     "Lab glassware — beakers, flasks, apparatus",
+     labware, "labware_element", LABWARE_PLACE),
+    ("Flowchart", "mdi.sitemap",
+     "Flowchart — process, decision, connector nodes",
+     flowchart, "flow_element", FLOW_PLACE),
+    ("Network / IT", "mdi.lan",
+     "Network / IT — servers, devices, cloud",
+     network, "net_element", NET_PLACE),
+    ("P&&ID", "mdi.factory",
+     "P&ID — tanks, pumps, valves, instruments (process flow)",
+     pid, "pid_element", PID_PLACE),
+    ("Arrows && callouts", "mdi.arrow-top-right",
+     "Arrows & callouts — block arrows, callouts, banners",
+     arrows, "arrow_element", ARROW_PLACE),
+    ("Biology", "mdi.dna",
+     "Biology — cells, molecules, lab",
+     biology, "bio_element", BIO_PLACE),
+    ("Math", "mdi.function-variant",
+     "Math — axes, vectors, graphs & symbols",
+     maths, "math_element", MATH_PLACE),
+]
+
 
 class MainWindow(QMainWindow):
     #: Live top-level windows, so additional ones aren't garbage-collected.
@@ -147,7 +188,7 @@ class MainWindow(QMainWindow):
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
         self.view.item_context.connect(self._show_item_menu)
         self.view.content_dropped.connect(self._on_drop)
-        self.scene.color_picked.connect(self._refresh_color_buttons)
+        self.scene.color_picked.connect(self._on_color_picked)
 
         self._build_tool_bar()
         self._build_ai_dock()           # before the options bar (toggle button)
@@ -176,52 +217,10 @@ class MainWindow(QMainWindow):
         self._add_tool_action(bar, TEXT, icons.icon("mdi.format-text"),
                               "Text", "T")
         self._build_chemistry_dropdown(bar)
-        self._build_symbol_dropdown(
-            bar, "mdi.floor-plan",
-            "Room layout — walls, doors, furniture (top view)",
-            floorplan, self._set_plan_element,
-            extra=("Room", [("Room",
-                             lambda: self._activate_placement_tool(ROOM))]))
-        self._build_symbol_dropdown(
-            bar, "mdi.flash",
-            "Electrical — circuit & installation symbols",
-            electrical, self._set_elec_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.flare",
-            "Optics — lasers, mirrors, lenses (beam-path diagrams)",
-            optics, self._set_optics_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.gauge",
-            "Vacuum — UHV chambers, pumps, valves (surface science)",
-            vacuum, self._set_vacuum_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.flask-outline",
-            "Lab glassware — beakers, flasks, apparatus",
-            labware, self._set_labware_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.sitemap",
-            "Flowchart — process, decision, connector nodes",
-            flowchart, self._set_flow_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.lan",
-            "Network / IT — servers, devices, cloud",
-            network, self._set_net_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.factory",
-            "P&ID — tanks, pumps, valves, instruments (process flow)",
-            pid, self._set_pid_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.arrow-top-right",
-            "Arrows & callouts — block arrows, callouts, banners",
-            arrows, self._set_arrow_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.dna",
-            "Biology — cells, molecules, lab",
-            biology, self._set_bio_element)
-        self._build_symbol_dropdown(
-            bar, "mdi.function-variant",
-            "Math — axes, vectors, graphs & symbols",
-            maths, self._set_math_element)
+        for _title, glyph, tip, module, attr, tool in SYMBOL_LIBRARIES:
+            self._build_symbol_dropdown(bar, glyph, tip, module,
+                                        self._library_picker(attr, tool),
+                                        extra=self._library_extra(module))
         bar.addSeparator()
         self._build_objects_button(bar)
         self._tool_group.actions()[0].setChecked(True)
@@ -286,6 +285,10 @@ class MainWindow(QMainWindow):
         """Zoom controls at the bottom-right of the status bar: a −/+
         pair, a log-scaled slider and a clickable percentage (reset)."""
         bar = self.statusBar()
+        # last eyedropper pick (permanent: the cursor-position message
+        # repaints on every mouse move, so a temporary message would vanish)
+        self._pick_label = QLabel("")
+        bar.addPermanentWidget(self._pick_label)
         out_btn = QToolButton(); out_btn.setText("−"); out_btn.setAutoRaise(True)
         out_btn.setToolTip("Zoom out")
         out_btn.clicked.connect(lambda: self.view.zoom(1 / 1.25))
@@ -391,7 +394,13 @@ class MainWindow(QMainWindow):
         button.setIcon(icons.icon("mdi.molecule"))
         button.setToolTip("Chemistry — bonds, rings, atoms")
         menu = QMenu(button)
+        self._populate_chemistry_menu(menu)
+        button.setMenu(menu)
+        bar.addWidget(button)
 
+    def _populate_chemistry_menu(self, menu):
+        """Fill *menu* with the chemistry tools (shared between the left
+        toolbar dropdown and the Library menu)."""
         menu.addSection("Bonds")
         for tool, label in ((CHEM_SINGLE, "Single bond"),
                             (CHEM_CHAIN, "Chain (connected bonds)"),
@@ -409,9 +418,6 @@ class MainWindow(QMainWindow):
         atoms = menu.addMenu("Atom / group label")
         for sym in chemistry.ATOMS:
             atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
-
-        button.setMenu(menu)
-        bar.addWidget(button)
 
     def _add_grouped_tool(self, menu, tool, label):
         """A checkable tool action in the shared tool group (so it lights up
@@ -447,6 +453,13 @@ class MainWindow(QMainWindow):
         button.setIcon(icons.icon(glyph))
         button.setToolTip(tip)
         menu = QMenu(button)
+        self._populate_symbol_menu(menu, module, on_pick, extra)
+        button.setMenu(menu)
+        bar.addWidget(button)
+
+    def _populate_symbol_menu(self, menu, module, on_pick, extra=None):
+        """Fill *menu* with a spec-library module's elements by category
+        (shared between the toolbar dropdowns and the Library menu)."""
         if extra:
             menu.addSection(extra[0])
             for label, callback in extra[1]:
@@ -456,52 +469,21 @@ class MainWindow(QMainWindow):
             for name in names:
                 menu.addAction(module.LABELS[name],
                                lambda _=False, n=name: on_pick(n))
-        button.setMenu(menu)
-        bar.addWidget(button)
 
-    def _set_plan_element(self, name):
-        self.scene.plan_element = name
-        self._activate_placement_tool(PLAN_PLACE)
+    def _library_picker(self, attr, tool):
+        """An on_pick callback arming *tool* with the chosen element name
+        stored on the scene as *attr*."""
+        def on_pick(name):
+            setattr(self.scene, attr, name)
+            self._activate_placement_tool(tool)
+        return on_pick
 
-    def _set_elec_element(self, name):
-        self.scene.elec_element = name
-        self._activate_placement_tool(ELEC_PLACE)
-
-    def _set_optics_element(self, name):
-        self.scene.optics_element = name
-        self._activate_placement_tool(OPTICS_PLACE)
-
-    def _set_vacuum_element(self, name):
-        self.scene.vacuum_element = name
-        self._activate_placement_tool(VACUUM_PLACE)
-
-    def _set_labware_element(self, name):
-        self.scene.labware_element = name
-        self._activate_placement_tool(LABWARE_PLACE)
-
-    def _set_flow_element(self, name):
-        self.scene.flow_element = name
-        self._activate_placement_tool(FLOW_PLACE)
-
-    def _set_net_element(self, name):
-        self.scene.net_element = name
-        self._activate_placement_tool(NET_PLACE)
-
-    def _set_pid_element(self, name):
-        self.scene.pid_element = name
-        self._activate_placement_tool(PID_PLACE)
-
-    def _set_arrow_element(self, name):
-        self.scene.arrow_element = name
-        self._activate_placement_tool(ARROW_PLACE)
-
-    def _set_bio_element(self, name):
-        self.scene.bio_element = name
-        self._activate_placement_tool(BIO_PLACE)
-
-    def _set_math_element(self, name):
-        self.scene.math_element = name
-        self._activate_placement_tool(MATH_PLACE)
+    def _library_extra(self, module):
+        """Palette-specific extra menu entries (the drag-to-size Room)."""
+        if module is floorplan:
+            return ("Room", [("Room",
+                              lambda: self._activate_placement_tool(ROOM))])
+        return None
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current
@@ -774,12 +756,30 @@ class MainWindow(QMainWindow):
             theme_group.addAction(act)
             theme_menu.addAction(act)
 
+        self._build_library_menu(m)
         self._build_examples_menu(m)
 
         help_menu = m.addMenu("&Help")
         help_menu.addAction("&User Guide", self._user_guide, "F1")
         help_menu.addSeparator()
         help_menu.addAction("&About", self._about)
+
+    def _build_library_menu(self, menubar):
+        """Library ▸ every symbol palette of the left toolbar (chemistry,
+        room layout, electrical, … math) plus the reusable-object library,
+        so the palettes are also reachable from the menu bar."""
+        menu = menubar.addMenu("&Library")
+        chem = menu.addMenu(icons.icon("mdi.molecule"), "Chemistry")
+        self._populate_chemistry_menu(chem)
+        for title, glyph, _tip, module, attr, tool in SYMBOL_LIBRARIES:
+            sub = menu.addMenu(icons.icon(glyph), title)
+            self._populate_symbol_menu(sub, module,
+                                       self._library_picker(attr, tool),
+                                       self._library_extra(module))
+        menu.addSeparator()
+        objects = menu.addMenu(icons.icon("mdi.bookshelf"), "&Objects")
+        objects.aboutToShow.connect(
+            lambda: self._rebuild_objects_menu(objects))
 
     def _build_examples_menu(self, menubar):
         """Examples ▸ <category> ▸ <technique>: labelled A4 schematics."""
@@ -1114,6 +1114,12 @@ class MainWindow(QMainWindow):
             pixmap.fill(QColor(color))
             btn.setIcon(QIcon(pixmap))
         self._refresh_width_icons()      # swatches follow the stroke colour
+
+    def _on_color_picked(self, hexname, target):
+        """The eyedropper sampled a colour: refresh the swatches and say
+        where it landed (stroke, or fill with Shift+click)."""
+        self._refresh_color_buttons()
+        self._pick_label.setText(f"Picked {hexname} → {target}  ")
 
     # ------------------------------------------------------------ files
     def new_document(self):
