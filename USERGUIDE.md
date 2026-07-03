@@ -98,6 +98,10 @@ instead. The last pick is shown in the status bar.
 - **Select** with the pointer: click an item, or drag a rubber-band box
   around several. **Shift+click** (or Ctrl+click) adds an item to the
   selection; Shift/Ctrl+click a selected item to drop it out again.
+  An **unfilled** shape is selected by clicking its **outline** (like in
+  other vector editors) — its empty interior lets clicks through to
+  whatever is visible behind it, such as a bucket fill. Filled or
+  labelled shapes are clickable anywhere inside.
 - **Move**: drag the item.
 - **Resize**: blue handles appear on a selected item — drag a line's
   endpoints, a polygon's vertices, or a box's corners. A **group** shows
@@ -138,9 +142,13 @@ inside them (set it in the Label section).
 ## 7. Bucket fill
 
 Choose the bucket (B), set the fill colour, and click inside an area
-walled off by shape outlines. The toolbar selector chooses whether the
-fill is painted into the **raster** layer or becomes an **editable vector
-path** behind the shapes.
+walled off by shape outlines. By default the fill becomes an **editable
+vector path** behind the shapes — a normal object you can click (its
+area is clickable even under the unfilled shapes that bound it), move,
+restyle and delete. Switch the toolbar selector to **Bucket: Raster**
+to paint the fill permanently into the raster layer instead (raster
+paint cannot be selected or moved afterwards — undo or the eraser are
+the only ways back).
 
 ## 8. Images
 

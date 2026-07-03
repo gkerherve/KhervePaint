@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
 from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt
+from PyQt5.QtGui import QColor
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
@@ -38,6 +39,10 @@ def setup(app):
     view.show()
     r1 = RectItem(QRectF(20, 20, 80, 60))
     r2 = RectItem(QRectF(200, 100, 80, 60))
+    # filled, so their interiors are clickable (unfilled shapes are
+    # picked by their outline only — see OutlinePickMixin)
+    r1.setBrush(QColor("#cc4444"))
+    r2.setBrush(QColor("#44cc44"))
     scene.addItem(r1)
     scene.addItem(r2)
     return scene, view, r1, r2
@@ -96,6 +101,16 @@ def test_modifier_click_on_group_child_toggles_group(setup, app):
     # the group is what got toggled, not the child inside it
     assert group in scene.selectedItems()
     assert child not in scene.selectedItems()
+
+
+def test_modifier_click_on_empty_space_keeps_selection(setup, app):
+    """A Shift/Ctrl+click that misses (lands on empty canvas) must not
+    throw away the selection being built."""
+    scene, view, r1, r2 = setup
+    _click(app, view, 60, 50)
+    _click(app, view, 240, 130, Qt.ShiftModifier)
+    _click(app, view, 380, 20, Qt.ShiftModifier)      # empty corner
+    assert r1.isSelected() and r2.isSelected()
 
 
 def test_plain_click_still_replaces(setup, app):

@@ -171,7 +171,10 @@ into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
   <li><b>Select</b> with the pointer: click an item, or drag a rubber-band
       box around several. <b>Shift+click</b> (or Ctrl+click) adds an item
       to the selection; Shift/Ctrl+click a selected item to drop it out
-      again.</li>
+      again. An <b>unfilled</b> shape is selected by clicking its
+      <b>outline</b> — its empty interior lets clicks through to whatever
+      is visible behind it (such as a bucket fill); filled or labelled
+      shapes are clickable anywhere inside.</li>
   <li><b>Move</b>: drag the item.</li>
   <li><b>Resize</b>: blue handles appear on a selected item — drag a
       line's endpoints, a polygon's vertices, or a box's corners. A
@@ -210,9 +213,11 @@ inside them (set it in the Label section).</p>
 
 <h2>7 · Bucket fill</h2>
 <p>Choose the bucket (B), set the fill colour, and click inside an area
-walled off by shape outlines. The toolbar selector chooses whether the
-fill is painted into the raster layer or becomes an <b>editable vector
-path</b> behind the shapes.</p>
+walled off by shape outlines. By default the fill becomes an
+<b>editable vector path</b> behind the shapes — a normal object you can
+click, move, restyle and delete. Switch the toolbar selector to
+<b>Bucket: Raster</b> to paint it permanently into the raster layer
+instead (raster paint cannot be selected or moved afterwards).</p>
 
 <h2>8 · Images</h2>
 <p>Paste a screenshot or copied image with <b>Ctrl+V</b>, or <b>drag and

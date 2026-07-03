@@ -198,6 +198,33 @@ class LabelMixin:
         self._paint_label(painter)
 
 
+#: Minimum comfortable width of a click target, in scene px.
+_PICK_WIDTH = 8.0
+
+
+def _stroke_only_shape(path: QPainterPath, pen: QPen,
+                       pick: bool = False) -> QPainterPath:
+    """Hit area of *path* drawn as a stroke: just the pen's ribbon, NOT
+    the path's implicit fill region. Qt's default shape() unions in the
+    fill area even for an unfilled item, so a big unfilled curve or arc
+    silently swallowed every click 'inside' it — stealing selection from
+    whatever actually shows there (e.g. a bucket-fill path stacked
+    behind it). With *pick* the ribbon is fattened to a comfortable
+    click width — use that ONLY where boundingRect() does not derive
+    from shape() (Qt's rect/ellipse/path items compute boundingRect
+    from shape() when the pen is wide, so a fat ribbon there would
+    silently inflate geometry, group bounds and exports)."""
+    stroker = QPainterPathStroker()
+    width = max(pen.widthF(), 1e-6)
+    if pick:
+        width = max(width, _PICK_WIDTH)
+    stroker.setWidth(width)
+    stroker.setCapStyle(pen.capStyle())
+    stroker.setJoinStyle(pen.joinStyle())
+    stroker.setMiterLimit(pen.miterLimit())
+    return stroker.createStroke(path)
+
+
 class LineItem(NoSelMixin, SnapMixin, QGraphicsLineItem):
     """A straight segment, optionally **bent** into a quadratic curve:
     the bend is a control point in item coordinates (None = straight),
@@ -238,17 +265,14 @@ class LineItem(NoSelMixin, SnapMixin, QGraphicsLineItem):
         return math.atan2(ln.dy(), ln.dx())
 
     def boundingRect(self):
-        if self._bend is None:
-            return super().boundingRect()
+        # Independent of shape(): the fat pick ribbon below must not
+        # inflate the geometry.
         w = self.pen().widthF() / 2 + 1
         return self.curve_path().boundingRect().adjusted(-w, -w, w, w)
 
     def shape(self):
-        if self._bend is None:
-            return super().shape()
-        stroker = QPainterPathStroker()
-        stroker.setWidth(max(self.pen().widthF(), 8.0))
-        return stroker.createStroke(self.curve_path())
+        # A comfortable click target even for a hairline stroke.
+        return _stroke_only_shape(self.curve_path(), self.pen(), pick=True)
 
     def paint(self, painter, option, widget=None):
         if self._bend is None:
@@ -260,16 +284,69 @@ class LineItem(NoSelMixin, SnapMixin, QGraphicsLineItem):
         painter.drawPath(self.curve_path())
 
 
-class RectItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsRectItem):
+class OutlinePickMixin:
+    """Unfilled (and unlabelled) shapes are picked by their outline
+    only, like in other vector editors: Qt's default shape() would let
+    an empty rectangle/ellipse/curve swallow every click inside it,
+    stealing selection from whatever is actually visible there — most
+    painfully a bucket-fill path stacked behind the shapes that bound
+    it. A filled or labelled shape keeps its clickable interior.
+
+    Because Qt's rect/ellipse/polygon/path items derive boundingRect()
+    from shape() when the pen is wide, the fattened pick ribbon must
+    NOT leak into geometry: boundingRect() is overridden to the
+    exact-pen-width value Qt would have computed (cached — it is called
+    on every repaint)."""
+
+    _pick_cache = None          # (fingerprint, QRectF)
+
+    def _outline_pick(self) -> QPainterPath:
+        raise NotImplementedError
+
+    def _hollow(self) -> bool:
+        return (self.brush().style() == Qt.NoBrush
+                and not getattr(self, "_label", ""))
+
+    def shape(self):
+        if self._hollow():
+            return _stroke_only_shape(self._outline_pick(), self.pen(),
+                                      pick=True)
+        return super().shape()
+
+    def boundingRect(self):
+        if not self._hollow():
+            return super().boundingRect()
+        path = self._outline_pick()
+        key = (self.pen().widthF(), path.elementCount(),
+               path.controlPointRect().getRect())
+        if self._pick_cache is None or self._pick_cache[0] != key:
+            rect = _stroke_only_shape(path, self.pen()).controlPointRect()
+            self._pick_cache = (key, rect)
+        return QRectF(self._pick_cache[1])
+
+
+class RectItem(NoSelMixin, LabelMixin, OutlinePickMixin, SnapMixin,
+               QGraphicsRectItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
 
+    def _outline_pick(self):
+        path = QPainterPath()
+        path.addRect(self.rect())
+        return path
 
-class EllipseItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsEllipseItem):
+
+class EllipseItem(NoSelMixin, LabelMixin, OutlinePickMixin, SnapMixin,
+                  QGraphicsEllipseItem):
     def __init__(self, *a):
         super().__init__(*a)
         self.setFlags(_ITEM_FLAGS)
+
+    def _outline_pick(self):
+        path = QPainterPath()
+        path.addEllipse(self.rect())
+        return path
 
 
 class ArrowItem(LineItem):
@@ -435,7 +512,8 @@ def polygon_for_kind(kind: str, rect: QRectF) -> QPolygonF:
     return QPolygonF([QPointF(x, y) for x, y in pts])
 
 
-class PolygonItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPolygonItem):
+class PolygonItem(NoSelMixin, LabelMixin, OutlinePickMixin, SnapMixin,
+                  QGraphicsPolygonItem):
     """Free or parametric polygon. *kind* is kept for display only;
     geometry is always the vertex list, so SVG-imported polygons and
     triangle/star/etc. behave identically."""
@@ -448,9 +526,19 @@ class PolygonItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPolygonItem):
     def set_rect(self, rect: QRectF):
         self.setPolygon(polygon_for_kind(self.kind, rect))
 
+    def _outline_pick(self):
+        path = QPainterPath()
+        path.addPolygon(self.polygon())
+        path.closeSubpath()
+        return path
 
-class RoundedRectItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPathItem):
+
+class RoundedRectItem(NoSelMixin, LabelMixin, OutlinePickMixin, SnapMixin,
+                      QGraphicsPathItem):
     """A rectangle with rounded corners (radius is a real property)."""
+
+    def _outline_pick(self):
+        return self.path()
 
     def __init__(self, rect=None, radius: float = 12.0):
         super().__init__()
@@ -509,10 +597,14 @@ def arc_path(kind: str, rect: QRectF, flip_h=False, flip_v=False
     return path
 
 
-class ArcShapeItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPathItem):
+class ArcShapeItem(NoSelMixin, LabelMixin, OutlinePickMixin, SnapMixin,
+                   QGraphicsPathItem):
     """Half- or quarter-circle, parametric on a bounding rect plus
     horizontal/vertical flip flags (so it can be mirrored and still
     round-trip)."""
+
+    def _outline_pick(self):
+        return self.path()
 
     def __init__(self, rect=None, kind=HALFCIRCLE):
         super().__init__()
@@ -541,13 +633,16 @@ class ArcShapeItem(NoSelMixin, LabelMixin, SnapMixin, QGraphicsPathItem):
         self.setPath(arc_path(self.kind, self._rect, self.flip_h, self.flip_v))
 
 
-class PathItem(NoSelMixin, SnapMixin, QGraphicsPathItem):
+class PathItem(NoSelMixin, OutlinePickMixin, SnapMixin, QGraphicsPathItem):
     """An arbitrary vector path — the import target for SVG <path> and
     for elements carrying a non-trivial (scaled/sheared) transform."""
 
     def __init__(self, path=None):
         super().__init__(path if path else QPainterPath())
         self.setFlags(_ITEM_FLAGS)
+
+    def _outline_pick(self):
+        return self.path()
 
 
 class ImageItem(NoSelMixin, SnapMixin, QGraphicsPixmapItem):
@@ -611,7 +706,8 @@ class PaintScene(QGraphicsScene):
         self.fill_style = "solid"             # solid | linear | radial | sun
         self.fill_angle = 90.0                # linear gradient direction
         self.fill_enabled = False
-        self.bucket_vector = False        # bucket output: raster vs vector
+        self.bucket_vector = True         # bucket output: vector by default
+        # (raster paint can't be selected, moved or deleted afterwards)
         self.dim_cap = "arrows"           # end-cap style for new dimensions
         self.dim_orientation = "aligned"  # aligned | horizontal | vertical
         self.chem_atom = "C"              # label placed by the atom tool
@@ -909,33 +1005,33 @@ class PaintScene(QGraphicsScene):
         return segments
 
     # ------------------------------------------------------------ selection
-    def _toggle_select(self, scene_pos) -> bool:
+    def _toggle_select(self, scene_pos) -> str:
         """Shift/Ctrl+click multi-select: toggle the top-level item
-        under the cursor in or out of the selection. Returns False when
-        the click should go to Qt instead (a resize handle, an active
-        text edit, or empty space). We toggle on *press* rather than
-        relying on Qt's Ctrl handling, which only toggles on release and
-        aborts if the cursor moved at all in between — real clicks
-        jitter a pixel or two, so it both missed the toggle and nudged
-        the selected items (and Qt gives Shift no role at all)."""
+        under the cursor in or out of the selection. Returns "toggled",
+        "pass" (a resize handle or an active text edit should get the
+        click instead) or "miss" (empty canvas). We toggle on *press*
+        rather than relying on Qt's Ctrl handling, which only toggles on
+        release and aborts if the cursor moved at all in between — real
+        clicks jitter a pixel or two, so it both missed the toggle and
+        nudged the selected items (and Qt gives Shift no role at all)."""
         from .handles import Handle
         for it in self.items(scene_pos):
             if it is self.raster_item:
                 continue
             if isinstance(it, Handle):
-                return False            # the handle drag wins
+                return "pass"           # the handle drag wins
             if isinstance(it, TextItem) and it.textInteractionFlags():
-                return False            # let the text edit take the click
+                return "pass"           # let the text edit take the click
             while it.parentItem() is not None:
                 it = it.parentItem()    # groups select as a whole
             if not (it.flags() & QGraphicsItem.ItemIsSelectable):
-                return False
+                continue                # e.g. crop overlay decoration
             it.setSelected(not it.isSelected())
             # Keep release-time move detection in sync with this press.
             self._press_positions = {i: i.pos()
                                      for i in self.selectedItems()}
-            return True
-        return False
+            return "toggled"
+        return "miss"
 
     # ------------------------------------------------------------ handles
     def clear_handles(self):
@@ -1043,7 +1139,10 @@ class PaintScene(QGraphicsScene):
                     and event.modifiers() & (Qt.ShiftModifier
                                              | Qt.ControlModifier)
                     and not self.crop_active()
-                    and self._toggle_select(event.scenePos())):
+                    and self._toggle_select(event.scenePos()) != "pass"):
+                # "toggled" — done; "miss" — a modifier-click that landed
+                # on empty canvas must NOT clear the selection the user
+                # is building (Qt would), so swallow it either way.
                 event.accept()
                 return
             super().mousePressEvent(event)

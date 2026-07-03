@@ -597,9 +597,11 @@ class MainWindow(QMainWindow):
 
         self._bucket_mode = QComboBox()
         self._bucket_mode.addItems(["Bucket: Raster", "Bucket: Vector"])
+        self._bucket_mode.setCurrentIndex(1)   # vector: fills stay editable
         self._bucket_mode.setToolTip(
-            "Bucket fill output — paint into the raster layer, or create "
-            "an editable vector path")
+            "Bucket fill output — an editable vector path (movable/"
+            "deletable like any shape), or paint baked into the raster "
+            "layer")
         self._bucket_mode.currentIndexChanged.connect(
             lambda i: setattr(self.scene, "bucket_vector", i == 1))
         bar.addWidget(self._bucket_mode)

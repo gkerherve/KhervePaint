@@ -146,6 +146,9 @@ into a new module and import.
                        floods the enclosed region from the click, and
                        applies it either as raster paint or an editable
                        vector `PathItem` (behind the bounding shapes).
+                       Vector is the default (`scene.bucket_vector`
+                       starts True) — raster paint can't be selected,
+                       moved or deleted afterwards.
   - `imageops.py`    — image background removal (right-click an image ▸
                        Remove background): floods the modal border colour
                        inward and clears its alpha, so only edge-connected
@@ -396,7 +399,18 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   Shift/Ctrl+click toggles an item in/out of the selection — handled
   in `PaintScene._toggle_select` on *press* (Qt's native Ctrl toggle
   fires on release and aborts on any click jitter, and Qt ignores
-  Shift entirely).
+  Shift entirely). A modifier-click that lands on empty canvas keeps
+  the selection (a missed click must not nuke it).
+- **Picking** (`OutlinePickMixin` + `_stroke_only_shape` in canvas.py):
+  unfilled, unlabelled shapes hit-test on their **outline only** — Qt's
+  default shape() includes the implicit fill region even for hollow
+  items, letting a big empty curve/arc/rect swallow every click inside
+  it (stealing selection from e.g. a bucket-fill path behind it). The
+  pick ribbon is fattened to ≥8 px for easy clicking of thin strokes,
+  but `boundingRect()` is overridden to the exact-pen-width value —
+  Qt's rect/ellipse/polygon/path items derive boundingRect from
+  shape() when the pen is wide, so a fat ribbon would otherwise
+  silently inflate geometry, group bounds and exports.
 - Select an item to get resize handles; **double-click to rotate** it
   about its centre. Right-click for the context menu (which includes
   Edit properties… for the full per-item editor).
