@@ -98,7 +98,7 @@ instead. The last pick is shown in the status bar.
 
 Right-click any item for its menu: **Edit properties…**, Duplicate,
 Delete, Flip, Bring to front / Send to back, Group / Ungroup, Explode,
-and (for images) Crop.
+and (for images) Crop and Remove background.
 
 The **properties dialog** edits everything about an item — position,
 rotation, opacity, stroke and fill, the exact geometry, and for text the
@@ -133,6 +133,13 @@ point (drop several at once to cascade them). Dropping a **.svg** or
 **.kscribe** file instead opens it as a document. To **crop** an image,
 right-click → *Crop image*, drag the frame handles, then **double-click**
 (or press **Enter**) to apply — **Esc** cancels.
+
+**Remove background** (right-click an image) makes the image's
+background **transparent**: the most common colour along the image edges
+is flooded inward and cleared, so whatever is behind the image shows
+through. Regions of the same colour *inside* the subject are kept — only
+background connected to the edges is removed. Fully undoable, and the
+transparency is preserved when you save.
 
 ## 9. Grid & snap
 

@@ -172,7 +172,7 @@ into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
 <h2>5 · Right-click: properties &amp; more</h2>
 <p>Right-click any item for its menu: <b>Edit properties…</b>,
 Duplicate, Delete, Flip, Bring to front / Send to back, Group / Ungroup,
-Explode, and (for images) Crop.</p>
+Explode, and (for images) Crop and Remove background.</p>
 <p>The <b>properties dialog</b> edits everything about an item — position,
 rotation, opacity, stroke and fill, the exact geometry, and for text the
 content and font. Shapes can also carry a <b>text label</b> drawn centred
@@ -205,6 +205,12 @@ point (drop several to cascade them). Dropping a <b>.svg</b> or
 right-click → <i>Crop image</i>, drag the frame handles, then
 <b>double-click</b> (or press <b>Enter</b>) to apply — <b>Esc</b>
 cancels.</p>
+<p><b>Remove background</b> (right-click an image) makes the image's
+background <b>transparent</b>: the most common colour along the image
+edges is flooded inward and cleared, so whatever is behind the image
+shows through. Same-coloured regions <i>inside</i> the subject are kept
+— only background connected to the edges is removed. Fully undoable,
+and the transparency survives saving.</p>
 
 <h2>9 · Grid &amp; snap</h2>
 <p>The <b>Grid (mm)</b> box sets the physical distance between grid lines

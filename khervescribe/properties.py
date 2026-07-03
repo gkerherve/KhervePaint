@@ -341,6 +341,8 @@ def build_context_menu(window, item) -> QMenu:
     if isinstance(item, ImageItem):
         menu.addAction(icons.icon("mdi.crop"), "Crop image",
                        lambda: window.crop_image(item))
+        menu.addAction(icons.icon("mdi.image-remove"), "Remove background",
+                       lambda: window.remove_image_background(item))
     menu.addSeparator()
     menu.addAction(icons.icon("mdi.content-copy"), "Duplicate",
                    window.duplicate_selection)

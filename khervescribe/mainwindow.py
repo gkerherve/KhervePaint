@@ -1064,6 +1064,20 @@ class MainWindow(QMainWindow):
             "Crop: drag the handles, then double-click (or Enter) to apply "
             "— Esc to cancel")
 
+    def remove_image_background(self, item):
+        """Make *item*'s background transparent: flood the modal border
+        colour inward and clear its alpha (undoable; PNG-embedded alpha
+        survives save in both SVG and legacy JSON)."""
+        from . import imageops
+        result = imageops.remove_background(item.pixmap().toImage())
+        if result is None:
+            self.statusBar().showMessage(
+                "No uniform background found at the image edges")
+            return
+        item.setPixmap(QPixmap.fromImage(result))
+        self.scene.changed_by_user.emit()
+        self.statusBar().showMessage("Background removed — now transparent")
+
     def reorder_item(self, item, where: str):
         """Restack *item*: to front/back, or one step forward/backward.
         z values are first normalised to 0..n-1 in current stacking order
