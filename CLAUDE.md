@@ -146,6 +146,17 @@ into a new module and import.
                        floods the enclosed region from the click, and
                        applies it either as raster paint or an editable
                        vector `PathItem` (behind the bounding shapes).
+  - `imageops.py`    — image background removal (right-click an image ▸
+                       Remove background): floods the modal border colour
+                       inward and clears its alpha, so only edge-connected
+                       background goes transparent.
+  - `gradient.py`    — two-stop linear/radial gradient fills as
+                       ObjectBoundingMode brushes; one spec dict
+                       (kind/c1/c2/angle) shared by the JSON snapshot,
+                       the SVG writer/parser (`<linearGradient>` defs +
+                       url(#id) resolution incl. xlink:href stop chains),
+                       the toolbar fill-style selector and the properties
+                       dialog.
   - `handles.py`     — `SelectionHandles`: resize handles per item type
                        and a rotate knob (double-click). `Handle`-marked
                        items, excluded from serialisation/picking.
