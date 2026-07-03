@@ -96,7 +96,8 @@ instead. The last pick is shown in the status bar.
 ## 4. Selecting, moving, resizing, rotating
 
 - **Select** with the pointer: click an item, or drag a rubber-band box
-  around several.
+  around several. **Shift+click** (or Ctrl+click) adds an item to the
+  selection; Shift/Ctrl+click a selected item to drop it out again.
 - **Move**: drag the item.
 - **Resize**: blue handles appear on a selected item — drag a line's
   endpoints, a polygon's vertices, or a box's corners. A **group** shows

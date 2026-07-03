@@ -908,6 +908,35 @@ class PaintScene(QGraphicsScene):
                 i += 3
         return segments
 
+    # ------------------------------------------------------------ selection
+    def _toggle_select(self, scene_pos) -> bool:
+        """Shift/Ctrl+click multi-select: toggle the top-level item
+        under the cursor in or out of the selection. Returns False when
+        the click should go to Qt instead (a resize handle, an active
+        text edit, or empty space). We toggle on *press* rather than
+        relying on Qt's Ctrl handling, which only toggles on release and
+        aborts if the cursor moved at all in between — real clicks
+        jitter a pixel or two, so it both missed the toggle and nudged
+        the selected items (and Qt gives Shift no role at all)."""
+        from .handles import Handle
+        for it in self.items(scene_pos):
+            if it is self.raster_item:
+                continue
+            if isinstance(it, Handle):
+                return False            # the handle drag wins
+            if isinstance(it, TextItem) and it.textInteractionFlags():
+                return False            # let the text edit take the click
+            while it.parentItem() is not None:
+                it = it.parentItem()    # groups select as a whole
+            if not (it.flags() & QGraphicsItem.ItemIsSelectable):
+                return False
+            it.setSelected(not it.isSelected())
+            # Keep release-time move detection in sync with this press.
+            self._press_positions = {i: i.pos()
+                                     for i in self.selectedItems()}
+            return True
+        return False
+
     # ------------------------------------------------------------ handles
     def clear_handles(self):
         if self._sel_handles is not None:
@@ -1010,6 +1039,13 @@ class PaintScene(QGraphicsScene):
             self._chain_click(event)
             return
         if self.tool == POINTER or event.button() != Qt.LeftButton:
+            if (self.tool == POINTER and event.button() == Qt.LeftButton
+                    and event.modifiers() & (Qt.ShiftModifier
+                                             | Qt.ControlModifier)
+                    and not self.crop_active()
+                    and self._toggle_select(event.scenePos())):
+                event.accept()
+                return
             super().mousePressEvent(event)
             if self.tool == POINTER:
                 self._press_positions = {it: it.pos()

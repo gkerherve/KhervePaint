@@ -169,7 +169,9 @@ into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
 <h2>4 · Selecting, moving, resizing, rotating</h2>
 <ul>
   <li><b>Select</b> with the pointer: click an item, or drag a rubber-band
-      box around several.</li>
+      box around several. <b>Shift+click</b> (or Ctrl+click) adds an item
+      to the selection; Shift/Ctrl+click a selected item to drop it out
+      again.</li>
   <li><b>Move</b>: drag the item.</li>
   <li><b>Resize</b>: blue handles appear on a selected item — drag a
       line's endpoints, a polygon's vertices, or a box's corners. A

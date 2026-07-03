@@ -393,6 +393,10 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   (`LINE_WIDTHS`, drawn by `icons.line_width_icon` in the current stroke
   colour), not a numeric spinner.
 - Pointer tool = rubber-band select + move; other tools draw.
+  Shift/Ctrl+click toggles an item in/out of the selection — handled
+  in `PaintScene._toggle_select` on *press* (Qt's native Ctrl toggle
+  fires on release and aborts on any click jitter, and Qt ignores
+  Shift entirely).
 - Select an item to get resize handles; **double-click to rotate** it
   about its centre. Right-click for the context menu (which includes
   Edit properties… for the full per-item editor).
