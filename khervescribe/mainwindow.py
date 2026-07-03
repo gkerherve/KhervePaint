@@ -568,6 +568,24 @@ class MainWindow(QMainWindow):
         self._fill_btn.clicked.connect(self.pick_fill_color)
         bar.addWidget(self._fill_btn)
 
+        self._fill_style_combo = QComboBox()
+        self._fill_style_combo.addItems(["Fill: Solid", "Fill: Linear",
+                                         "Fill: Radial"])
+        self._fill_style_combo.setToolTip(
+            "Fill style for new shapes — solid colour, or a linear/radial "
+            "gradient from the fill colour to the gradient end colour")
+        self._fill_style_combo.currentIndexChanged.connect(
+            self._on_fill_style_changed)
+        bar.addWidget(self._fill_style_combo)
+
+        self._fill2_btn = QToolButton()
+        self._fill2_btn.setToolTip(
+            "Gradient end colour (the fill fades from the fill colour "
+            "to this one)")
+        self._fill2_btn.clicked.connect(self.pick_fill_color2)
+        self._fill2_btn.setEnabled(False)          # solid by default
+        bar.addWidget(self._fill2_btn)
+
         self._fill_act = QAction(icons.icon("mdi.shape"),
                                  "Fill new shapes", self)
         self._fill_act.setCheckable(True)
@@ -1121,9 +1139,25 @@ class MainWindow(QMainWindow):
             self._fill_act.setChecked(True)
             self._refresh_color_buttons()
 
+    def pick_fill_color2(self):
+        color = QColorDialog.getColor(self.scene.fill_color2, self,
+                                      "Gradient end colour")
+        if color.isValid():
+            self.scene.fill_color2 = color
+            self._fill_act.setChecked(True)
+            self._refresh_color_buttons()
+
+    def _on_fill_style_changed(self, index: int):
+        from .gradient import FILL_STYLES
+        self.scene.fill_style = FILL_STYLES[index]
+        self._fill2_btn.setEnabled(index > 0)
+        if index > 0:                     # choosing a gradient implies fill
+            self._fill_act.setChecked(True)
+
     def _refresh_color_buttons(self):
         for btn, color in ((self._stroke_btn, self.scene.pen.color()),
-                           (self._fill_btn, self.scene.fill_color)):
+                           (self._fill_btn, self.scene.fill_color),
+                           (self._fill2_btn, self.scene.fill_color2)):
             pixmap = QPixmap(22, 22)
             pixmap.fill(QColor(color))
             btn.setIcon(QIcon(pixmap))

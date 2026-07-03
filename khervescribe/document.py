@@ -24,12 +24,13 @@ from PyQt5.QtGui import (QBrush, QColor, QFont, QImage, QPageSize, QPainter,
                          QTransform)
 from PyQt5.QtSvg import QSvgGenerator
 
+from . import gradient
 from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      GroupItem, ImageItem, LabelMixin, LineItem, PaintScene,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 5
+FORMAT_VERSION = 6      # 6: gradient fills ("gradient" key in brush dicts)
 
 
 # ---------------------------------------------------------------- pens
@@ -48,12 +49,17 @@ def _pen_from_dict(d: dict) -> QPen:
 def _brush_to_dict(brush: QBrush):
     if brush.style() == Qt.NoBrush:
         return None
+    spec = gradient.brush_spec(brush)
+    if spec is not None:
+        return {"gradient": spec}
     return {"color": brush.color().name(QColor.HexArgb)}
 
 
 def _brush_from_dict(d) -> QBrush:
     if not d:
         return QBrush(Qt.NoBrush)
+    if "gradient" in d:
+        return gradient.brush_from_spec(d["gradient"])
     return QBrush(QColor(d.get("color", "#ff4aa3ff")))
 
 

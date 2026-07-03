@@ -150,6 +150,14 @@ to give new shapes a fill, and pick the <b>line width</b> from the
 dropdown — it shows each width as a line, thin to thick, in the current
 stroke colour. These apply to the next thing you draw; to recolour an
 existing item use its properties (below).</p>
+<p><b>Gradient fills</b>: switch the toolbar's fill-style selector to
+<b>Fill: Linear</b> or <b>Fill: Radial</b> and new shapes are filled
+with a gradient running from the <b>fill colour</b> to the <b>end
+colour</b> swatch beside it (linear gradients run top-to-bottom by
+default). To restyle an existing shape, right-click ▸ <i>Edit
+properties…</i> ▸ Fill and choose the style, both colours and — for
+linear — the <b>angle</b> (0° = left→right, 90° = top→bottom).
+Gradients survive saving (they become standard SVG gradients).</p>
 <p>The <b>colour picker</b> (K) samples the pixel under the cursor —
 from anything on the canvas, including an opened or pasted image —
 into the <b>stroke</b> colour; <b>Shift+click</b> samples into the

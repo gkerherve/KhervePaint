@@ -76,6 +76,15 @@ each width as a line, thin to thick, drawn in the current stroke colour.
 These apply to the next thing you draw; to recolour an existing item, use
 its properties (below).
 
+**Gradient fills.** Switch the toolbar's fill-style selector to
+**Fill: Linear** or **Fill: Radial** and new shapes are filled with a
+gradient running from the **fill colour** to the **end colour** swatch
+beside it (linear gradients run top-to-bottom by default). To restyle
+an existing shape, right-click → *Edit properties…* → Fill and choose
+the style, both colours and — for linear — the **angle** (0° =
+left→right, 90° = top→bottom). Gradients survive saving (they become
+standard SVG gradients, readable by any SVG tool).
+
 The **colour picker** (K) samples the pixel under the cursor — from
 anything on the canvas, including an opened or pasted image — into the
 **stroke** colour; **Shift+click** samples into the **fill** colour

@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog,
                              QPlainTextEdit, QSpinBox, QToolButton,
                              QVBoxLayout)
 
-from . import icons
+from . import gradient, icons
 from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      GroupItem, ImageItem, LabelMixin, LineItem, PathItem,
                      PolygonItem, RectItem, RoundedRectItem, TextItem,
@@ -140,15 +140,33 @@ class PropertiesDialog(QDialog):
     def _build_fill(self, layout):
         form = self._section(layout, "Fill")
         brush = self.item.brush()
+        spec = gradient.brush_spec(brush)
         self.fill_on = QCheckBox("Fill")
         self.fill_on.setChecked(brush.style() != Qt.NoBrush)
-        start = brush.color() if brush.style() != Qt.NoBrush \
-            else QColor("#4aa3ff")
+        if spec is not None:
+            start = QColor(spec["c1"])
+            end = QColor(spec["c2"])
+        else:
+            start = brush.color() if brush.style() != Qt.NoBrush \
+                else QColor("#4aa3ff")
+            end = QColor("#ffffff")
+        self.fill_style = QComboBox()
+        self.fill_style.addItems(["Solid", "Linear gradient",
+                                  "Radial gradient"])
+        self.fill_style.setCurrentIndex(
+            gradient.FILL_STYLES.index(spec["kind"]) if spec else 0)
         self.fill_color = ColorButton(start)
-        self.fill_color.changed.connect(
-            lambda: self.fill_on.setChecked(True))
+        self.fill_color2 = ColorButton(end)
+        self.fill_angle = _spin(spec["angle"] if spec else 90.0,
+                                -360, 360, 1)
+        for w in (self.fill_style.currentIndexChanged,
+                  self.fill_color.changed, self.fill_color2.changed):
+            w.connect(lambda *_: self.fill_on.setChecked(True))
         form.addRow(self.fill_on)
+        form.addRow("Style", self.fill_style)
         form.addRow("Colour", self.fill_color)
+        form.addRow("End colour", self.fill_color2)
+        form.addRow("Angle °", self.fill_angle)
 
     def _build_geometry(self, layout):
         item = self.item
@@ -266,9 +284,13 @@ class PropertiesDialog(QDialog):
             item.setPen(pen)
 
         if hasattr(self, "fill_on"):
-            item.setBrush(QBrush(self.fill_color.color())
-                          if self.fill_on.isChecked()
-                          else QBrush(Qt.NoBrush))
+            if self.fill_on.isChecked():
+                style = gradient.FILL_STYLES[self.fill_style.currentIndex()]
+                item.setBrush(gradient.brush_for(
+                    style, self.fill_color.color(),
+                    self.fill_color2.color(), self.fill_angle.value()))
+            else:
+                item.setBrush(QBrush(Qt.NoBrush))
 
         self._apply_geometry()
         if isinstance(item, DimensionItem):

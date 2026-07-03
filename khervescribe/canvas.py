@@ -550,6 +550,9 @@ class PaintScene(QGraphicsScene):
         self.pen.setCapStyle(Qt.RoundCap)
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.fill_color = QColor("#4aa3ff")
+        self.fill_color2 = QColor("#ffffff")  # gradient end colour
+        self.fill_style = "solid"             # solid | linear | radial
+        self.fill_angle = 90.0                # linear gradient direction
         self.fill_enabled = False
         self.bucket_vector = False        # bucket output: raster vs vector
         self.dim_cap = "arrows"           # end-cap style for new dimensions
@@ -702,8 +705,11 @@ class PaintScene(QGraphicsScene):
 
     # ------------------------------------------------------------ brushes
     def current_brush(self) -> QBrush:
-        return QBrush(self.fill_color) if self.fill_enabled \
-            else QBrush(Qt.NoBrush)
+        if not self.fill_enabled:
+            return QBrush(Qt.NoBrush)
+        from . import gradient
+        return gradient.brush_for(self.fill_style, self.fill_color,
+                                  self.fill_color2, self.fill_angle)
 
     # ------------------------------------------------------------ grouping
     def group_selection(self):

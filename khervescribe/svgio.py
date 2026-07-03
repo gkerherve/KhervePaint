@@ -37,6 +37,7 @@ from .canvas import (ARC_KINDS, ArcShapeItem, ArrowItem, DimensionItem,
                      EllipseItem, GroupItem, ImageItem, LabelMixin, LineItem,
                      PaintScene, PathItem, PolygonItem, RectItem,
                      RoundedRectItem, TextItem, center_origin)
+from . import gradient
 from .document import cmds_to_painterpath, painterpath_to_cmds
 
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -118,14 +119,47 @@ def _set_stroke(el, pen: QPen):
     el.set("stroke-linejoin", "round")
 
 
-def _set_fill(el, brush: QBrush):
+def _set_fill(el, brush: QBrush, ctx=None):
     if brush is None or brush.style() == Qt.NoBrush:
         el.set("fill", "none")
+        return
+    spec = gradient.brush_spec(brush)
+    if spec is not None and ctx is not None:
+        el.set("fill", f"url(#{_gradient_def(ctx, spec)})")
         return
     color = brush.color()
     el.set("fill", color.name())
     if color.alpha() < 255:
         el.set("fill-opacity", f"{color.alphaF():g}")
+
+
+def _gradient_def(ctx, spec) -> str:
+    """Write *spec* as a <linearGradient>/<radialGradient> in the file's
+    <defs> (created on first use) and return its id. *ctx* is the save
+    context: {"root": svg element, "defs": element|None, "n": counter}."""
+    if ctx["defs"] is None:
+        ctx["defs"] = ET.Element(_svg("defs"))
+        ctx["root"].insert(0, ctx["defs"])
+    ctx["n"] += 1
+    gid = f"kpgrad{ctx['n']}"
+    if spec["kind"] == "radial":
+        el = ET.SubElement(ctx["defs"], _svg("radialGradient"))
+        el.set("cx", "0.5"); el.set("cy", "0.5"); el.set("r", "0.7071")
+    else:
+        el = ET.SubElement(ctx["defs"], _svg("linearGradient"))
+        x1, y1, x2, y2 = gradient.angle_points(spec.get("angle", 90.0))
+        el.set("x1", f"{x1:g}"); el.set("y1", f"{y1:g}")
+        el.set("x2", f"{x2:g}"); el.set("y2", f"{y2:g}")
+    el.set("id", gid)
+    el.set("gradientUnits", "objectBoundingBox")
+    for offset, name in ((0, "c1"), (1, "c2")):
+        color = QColor(spec[name])
+        stop = ET.SubElement(el, _svg("stop"))
+        stop.set("offset", str(offset))
+        stop.set("stop-color", color.name())
+        if color.alpha() < 255:
+            stop.set("stop-opacity", f"{color.alphaF():g}")
+    return gid
 
 
 def painterpath_to_d(path: QPainterPath) -> str:
@@ -141,14 +175,14 @@ def painterpath_to_d(path: QPainterPath) -> str:
     return " ".join(out)
 
 
-def _item_to_element(parent, item):
+def _item_to_element(parent, item, ctx=None):
     if isinstance(item, GroupItem):
         from .handles import Handle
         g = ET.SubElement(parent, _svg("g"))
         _set_common(g, item)
         for child in item.childItems():
             if not isinstance(child, Handle):
-                _item_to_element(g, child)
+                _item_to_element(g, child, ctx)
         return g
 
     if isinstance(item, DimensionItem):
@@ -186,26 +220,26 @@ def _item_to_element(parent, item):
         el.set("x", f"{r.x():g}"); el.set("y", f"{r.y():g}")
         el.set("width", f"{r.width():g}"); el.set("height", f"{r.height():g}")
         el.set("rx", f"{item.radius():g}"); el.set("ry", f"{item.radius():g}")
-        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush(), ctx)
     elif isinstance(item, RectItem):
         r = item.rect()
         el = ET.SubElement(parent, _svg("rect"))
         el.set("x", f"{r.x():g}"); el.set("y", f"{r.y():g}")
         el.set("width", f"{r.width():g}"); el.set("height", f"{r.height():g}")
-        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush(), ctx)
     elif isinstance(item, EllipseItem):
         r = item.rect()
         el = ET.SubElement(parent, _svg("ellipse"))
         el.set("cx", f"{r.center().x():g}"); el.set("cy", f"{r.center().y():g}")
         el.set("rx", f"{r.width() / 2:g}"); el.set("ry", f"{r.height() / 2:g}")
-        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush(), ctx)
     elif isinstance(item, PolygonItem):
         el = ET.SubElement(parent, _svg("polygon"))
         pts = " ".join(f"{p.x():g},{p.y():g}" for p in item.polygon())
         el.set("points", pts)
         if item.kind and item.kind != "polygon":
             el.set(_kp("kind"), item.kind)
-        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush(), ctx)
     elif isinstance(item, ArcShapeItem):
         el = ET.SubElement(parent, _svg("path"))
         el.set("d", painterpath_to_d(item.path()))
@@ -217,11 +251,11 @@ def _item_to_element(parent, item):
             el.set(_kp("flip-h"), "1")
         if item.flip_v:
             el.set(_kp("flip-v"), "1")
-        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush(), ctx)
     elif isinstance(item, PathItem):
         el = ET.SubElement(parent, _svg("path"))
         el.set("d", painterpath_to_d(item.path()))
-        _set_stroke(el, item.pen()); _set_fill(el, item.brush())
+        _set_stroke(el, item.pen()); _set_fill(el, item.brush(), ctx)
     elif isinstance(item, TextItem):
         el = ET.SubElement(parent, _svg("text"))
         el.set("x", "0"); el.set("y", "0")
@@ -318,8 +352,9 @@ def save_svg(scene: PaintScene, path: str):
         img.set(_kp("role"), "raster")
         img.set(f"{{{XLINK_NS}}}href", _pixmap_data_uri(raster))
 
+    ctx = {"root": root, "defs": None, "n": 0}
     for item in scene.vector_items():
-        _item_to_element(root, item)
+        _item_to_element(root, item, ctx)
 
     ET.ElementTree(root).write(path, xml_declaration=True, encoding="utf-8")
 
@@ -379,10 +414,74 @@ def _brush_from_style(s: dict) -> QBrush:
     fill = s.get("fill", "#000000")        # SVG default fill is black
     if fill in (None, "none"):
         return QBrush(Qt.NoBrush)
+    m = re.match(r"url\(\s*['\"]?#([^)'\"]+)['\"]?\s*\)", fill)
+    if m:                                  # paint server: gradient by id
+        spec = s.get("_gradients", {}).get(m.group(1))
+        return (gradient.brush_from_spec(spec) if spec
+                else QBrush(Qt.NoBrush))
     color = _color(fill)
     if "fill-opacity" in s:
         color.setAlphaF(float(s["fill-opacity"]))
     return QBrush(color)
+
+
+def _scan_gradients(root) -> dict:
+    """id -> gradient spec for every two(+)-stop gradient in the tree.
+    Stops may live on a referenced base gradient (xlink:href chains, as
+    Inkscape writes them); only the first and last stop are kept."""
+    els = {e.get("id"): e for e in root.iter()
+           if _localname(e.tag) in ("linearGradient", "radialGradient")
+           and e.get("id")}
+
+    def stops_of(el, depth=0):
+        stops = [c for c in el if _localname(c.tag) == "stop"]
+        if stops or depth > 4:
+            return stops
+        href = _href(el)
+        if href and href.startswith("#") and href[1:] in els:
+            return stops_of(els[href[1:]], depth + 1)
+        return []
+
+    def stop_color(stop):
+        style = {}
+        for decl in (stop.get("style") or "").split(";"):
+            if ":" in decl:
+                k, v = decl.split(":", 1)
+                style[k.strip()] = v.strip()
+        color = _color(stop.get("stop-color")
+                       or style.get("stop-color"), "#000000")
+        opacity = stop.get("stop-opacity") or style.get("stop-opacity")
+        if opacity is not None:
+            color.setAlphaF(float(opacity))
+        return color
+
+    def frac(el, key, default):
+        v = el.get(key)
+        if v is None:
+            return default
+        v = v.strip()
+        return float(v[:-1]) / 100 if v.endswith("%") else float(v)
+
+    specs = {}
+    for gid, el in els.items():
+        stops = stops_of(el)
+        if not stops:
+            continue
+        c1, c2 = stop_color(stops[0]), stop_color(stops[-1])
+        spec = {"c1": c1.name(QColor.HexArgb), "c2": c2.name(QColor.HexArgb),
+                "angle": 90.0}
+        if _localname(el.tag) == "radialGradient":
+            spec["kind"] = "radial"
+        else:
+            spec["kind"] = "linear"
+            dx = frac(el, "x2", 1.0) - frac(el, "x1", 0.0)
+            dy = frac(el, "y2", 0.0) - frac(el, "y1", 0.0)
+            if dx or dy:
+                spec["angle"] = math.degrees(math.atan2(dy, dx)) % 360
+            else:
+                spec["angle"] = 0.0
+        specs[gid] = spec
+    return specs
 
 
 def _parse_transform(text: str) -> QTransform:
@@ -707,7 +806,10 @@ def load_svg(scene: PaintScene, path: str):
     # its referent (glyphs/markers/ticks defined once in <defs>).
     defs = {e.get("id"): e for e in root.iter() if e.get("id")}
 
-    base = {"fill": "#000000", "stroke": "none"}
+    # Gradient defs ride along in the inherited style dict (it is copied
+    # down the tree), so fill="url(#id)" resolves anywhere.
+    base = {"fill": "#000000", "stroke": "none",
+            "_gradients": _scan_gradients(root)}
     z = 0
     for child in root:
         item = _parse_element(child, QTransform(), base, scene, defs)
