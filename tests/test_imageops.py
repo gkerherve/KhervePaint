@@ -21,7 +21,7 @@ import pytest
 from PyQt5.QtGui import QColor, QImage, QPainter
 from PyQt5.QtWidgets import QApplication
 
-from khervescribe.imageops import remove_background
+from khervepaint.imageops import remove_background
 
 
 @pytest.fixture(scope="session")
@@ -67,8 +67,8 @@ def test_undoable_via_mainwindow(app):
     """remove_image_background emits changed_by_user -> a snapshot lands
     on the undo stack, and undo restores the opaque pixmap."""
     from PyQt5.QtGui import QPixmap
-    from khervescribe.canvas import ImageItem
-    from khervescribe.mainwindow import MainWindow
+    from khervepaint.canvas import ImageItem
+    from khervepaint.mainwindow import MainWindow
     win = MainWindow()
     try:
         item = ImageItem(QPixmap.fromImage(_sample(app)))

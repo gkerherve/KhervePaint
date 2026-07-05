@@ -22,8 +22,8 @@ from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPen
 from PyQt5.QtWidgets import QApplication
 
-from khervescribe import document
-from khervescribe.canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem,
+from khervepaint import document
+from khervepaint.canvas import (ArrowItem, EllipseItem, GroupItem, ImageItem,
                                 LineItem, PaintScene, PathItem, PolygonItem,
                                 RectItem, RoundedRectItem, TextItem)
 
@@ -42,7 +42,7 @@ def scene(app):
 def window(app):
     """A MainWindow destroyed immediately (sip.delete) after the test,
     so accumulated top-level widgets don't segfault at interpreter exit."""
-    from khervescribe.mainwindow import MainWindow
+    from khervepaint.mainwindow import MainWindow
     win = MainWindow()
     yield win
     win._undo_stack.setClean()       # avoid the offscreen discard dialog
@@ -78,10 +78,10 @@ def _populated(scene):
 def test_roundtrip_items(scene, tmp_path):
     _populated(scene)
     path = tmp_path / "doc.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
 
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
 
     items = other.vector_items()
     assert len(items) == 4
@@ -108,10 +108,10 @@ def test_roundtrip_grid_settings(scene, tmp_path):
     scene.snap_enabled = False
     scene.infinite = True
     path = tmp_path / "grid.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
 
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     assert other.grid_mm == 3.5
     assert other.show_grid is False
     assert other.snap_enabled is False
@@ -139,7 +139,7 @@ def test_grid_size_is_not_rounded_to_whole_pixels():
 
 
 def test_dimension_on_snapped_grid_reads_exact_mm():
-    from khervescribe.canvas import DimensionItem
+    from khervepaint.canvas import DimensionItem
     scene = PaintScene(2000, 1500)
     scene.dpi = 300
     scene.grid_mm = 1.0
@@ -161,7 +161,7 @@ def test_legacy_pixel_grid_loads(scene, tmp_path):
     path = tmp_path / "legacy.kpaint"
     path.write_text(json.dumps(legacy), encoding="utf-8")
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     # 20 px at 96 dpi -> mm, and that mm yields 20 px spacing back.
     assert other.grid_mm == pytest.approx(20 / 96 * 25.4)
     assert other.grid_size == pytest.approx(20)
@@ -176,7 +176,7 @@ def test_legacy_divisions_grid_loads(scene, tmp_path):
     path = tmp_path / "legacy_div.kpaint"
     path.write_text(json.dumps(legacy), encoding="utf-8")
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     assert other.grid_size == pytest.approx(20)   # 800 / 40, same spacing
 
 
@@ -189,9 +189,9 @@ def test_roundtrip_group(scene, tmp_path):
     assert isinstance(scene.vector_items()[0], GroupItem)
 
     path = tmp_path / "group.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
 
     groups = other.vector_items()
     assert len(groups) == 1
@@ -213,7 +213,7 @@ def test_regroup_after_ungroup_and_deselect(scene):
     """Group/ungroup must stay reliable across repeats: ungroup re-registers
     the freed children in the scene's selection (no isSelected desync), so
     re-grouping works and clearSelection() fully clears (no stuck outline)."""
-    from khervescribe.canvas import GroupItem
+    from khervepaint.canvas import GroupItem
     scene.snap_enabled = False
     r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(40, 40); scene.addItem(r1)
     r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(120, 100); scene.addItem(r2)
@@ -257,7 +257,7 @@ def _two_rect_group(scene):
 
 
 def test_group_resize_anchors_opposite_corner(scene):
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     g = _two_rect_group(scene)
     br = g.sceneBoundingRect()
     h = SelectionHandles(scene, g, RESIZE)
@@ -273,7 +273,7 @@ def test_group_resize_anchors_opposite_corner(scene):
 
 
 def test_group_side_handles_resize_one_axis(scene):
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     # East handle: stretch X only — top, height and left stay; width grows.
     g = _two_rect_group(scene)
     br = g.sceneBoundingRect()
@@ -301,7 +301,7 @@ def test_group_side_handles_resize_one_axis(scene):
 
 
 def test_group_nonuniform_resize_roundtrips(scene):
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     g = _two_rect_group(scene)
     h = SelectionHandles(scene, g, RESIZE)
     e = next(x for x in h.handles if x.role == "e")
@@ -319,7 +319,7 @@ def test_group_nonuniform_resize_roundtrips(scene):
 def test_group_preserves_stacking(scene):
     # Grouping must keep which item is in front (the bug: selection order,
     # not stacking order, decided child z, so a part jumped behind).
-    from khervescribe.handles import Handle
+    from khervepaint.handles import Handle
     bot = RectItem(QRectF(0, 0, 50, 50)); bot.setPos(0, 0); scene.addItem(bot)
     top = RectItem(QRectF(0, 0, 50, 50)); top.setPos(10, 10)
     scene.addItem(top)                       # added later -> on top
@@ -358,7 +358,7 @@ def test_reorder_selection_entry_point(window):
 
 
 def test_scale_resize_snaps_to_grid(scene):
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     from PyQt5.QtGui import QPainterPath
     scene.dpi = 25.4; scene.grid_mm = 20; scene.snap_enabled = True
     pp = QPainterPath(); pp.addRect(0, 0, 40, 40)
@@ -378,7 +378,7 @@ def test_group_handles_are_scene_level(scene):
     # A QGraphicsItemGroup intercepts its children's mouse events, so a
     # group's handles must NOT be its children (or they'd be dead) — they
     # live at scene level and are excluded from vector_items.
-    from khervescribe.handles import SelectionHandles, RESIZE, ROTATE
+    from khervepaint.handles import SelectionHandles, RESIZE, ROTATE
     r1 = RectItem(QRectF(0, 0, 40, 30)); r1.setPos(100, 100); scene.addItem(r1)
     r2 = RectItem(QRectF(0, 0, 40, 30)); r2.setPos(200, 160); scene.addItem(r2)
     r1.setSelected(True); r2.setSelected(True); scene.group_selection()
@@ -394,7 +394,7 @@ def test_group_handles_are_scene_level(scene):
 
 def test_normal_item_handles_stay_children(scene):
     # Non-group items keep child handles so they follow the item.
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     r = RectItem(QRectF(0, 0, 40, 30)); scene.addItem(r); r.setSelected(True)
     h = SelectionHandles(scene, r, RESIZE)
     assert all(hd.parentItem() is r for hd in h.handles)
@@ -402,7 +402,7 @@ def test_normal_item_handles_stay_children(scene):
 
 
 def _scaled_group(scene):
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     scene.dpi = 25.4; scene.grid_mm = 20
     r1 = RectItem(QRectF(0, 0, 30, 20)); r1.setPos(40, 40); scene.addItem(r1)
     r2 = RectItem(QRectF(0, 0, 30, 20)); r2.setPos(120, 100); scene.addItem(r2)
@@ -426,7 +426,7 @@ def test_scaled_group_roundtrips_kpaint(scene):
 
 
 def test_scaled_group_roundtrips_svg(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     target = _scaled_group(scene)
     path = tmp_path / "scaled_group.svg"
     svgio.save_svg(scene, str(path))
@@ -439,7 +439,7 @@ def test_scaled_group_roundtrips_svg(scene, tmp_path):
 
 
 def test_dimension_length_mm():
-    from khervescribe.canvas import DimensionItem
+    from khervepaint.canvas import DimensionItem
     scene = PaintScene(800, 600); scene.dpi = 300
     d = DimensionItem(QLineF(0, 0, 300, 0))     # 300 px = 1 in = 25.4 mm
     scene.addItem(d)
@@ -449,8 +449,8 @@ def test_dimension_length_mm():
 
 
 def test_dimension_roundtrips(scene, tmp_path):
-    from khervescribe.canvas import DimensionItem
-    from khervescribe import svgio
+    from khervepaint.canvas import DimensionItem
+    from khervepaint import svgio
     scene.dpi = 300
     scene.addItem(DimensionItem(QLineF(0, 0, 300, 0)))
     # kpaint
@@ -480,7 +480,7 @@ def test_dimension_orientation_constraint(scene):
 
 
 def test_ruler_dropdown_sets_tool_and_defaults(window):
-    from khervescribe.canvas import DIMENSION
+    from khervepaint.canvas import DIMENSION
     window._set_dim_orientation("vertical")
     assert window.scene.tool == DIMENSION
     assert window.scene.dim_orientation == "vertical"
@@ -490,7 +490,7 @@ def test_ruler_dropdown_sets_tool_and_defaults(window):
 
 
 def test_dimension_label_format():
-    from khervescribe.canvas import DimensionItem
+    from khervepaint.canvas import DimensionItem
     scene = PaintScene(2000, 1500); scene.dpi = 300
     d = DimensionItem(QLineF(0, 0, 118.110236, 0))   # 10 mm at 300 dpi
     scene.addItem(d)
@@ -502,8 +502,8 @@ def test_dimension_label_format():
 
 
 def test_dimension_style_roundtrips(scene, tmp_path):
-    from khervescribe.canvas import DimensionItem
-    from khervescribe import svgio
+    from khervepaint.canvas import DimensionItem
+    from khervepaint import svgio
     scene.dpi = 300
     d = DimensionItem(QLineF(0, 0, 300, 0))
     d.cap_style = "ticks"; d.extension = True; d.dash = True
@@ -565,9 +565,9 @@ def test_roundtrip_new_shapes(scene, tmp_path):
     scene.addItem(tri)
 
     path = tmp_path / "shapes.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
 
     items = other.vector_items()
     a = next(i for i in items if isinstance(i, ArrowItem))
@@ -619,16 +619,16 @@ def test_new_shape_roundtrips_kind(scene, tmp_path):
     house.set_rect(QRectF(0, 0, 60, 60))
     scene.addItem(house)
     path = tmp_path / "house.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     loaded = other.vector_items()[0]
     assert loaded.kind == "house"
     assert loaded.polygon().count() == 5
 
 
 def test_kpaint_image_scale_rotation(scene, tmp_path):
-    from khervescribe.canvas import center_origin
+    from khervepaint.canvas import center_origin
     from PyQt5.QtGui import QPixmap
     pm = QPixmap(30, 20)
     pm.fill(QColor("#0088ff"))
@@ -641,9 +641,9 @@ def test_kpaint_image_scale_rotation(scene, tmp_path):
 
     before = img.sceneBoundingRect()
     path = tmp_path / "imgscale.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     loaded = next(i for i in other.vector_items() if isinstance(i, ImageItem))
     after = loaded.sceneBoundingRect()             # full transform round-trips
     assert abs(after.width() - before.width()) < 0.5
@@ -653,7 +653,7 @@ def test_kpaint_image_scale_rotation(scene, tmp_path):
 
 
 def test_image_resize_snaps_to_grid(scene):
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.handles import SelectionHandles, RESIZE
     from PyQt5.QtGui import QPixmap
     scene.dpi = 25.4                                 # 1 mm == 1 px
     scene.grid_mm = 20                               # -> 20px grid
@@ -683,9 +683,9 @@ def test_roundtrip_image(scene, tmp_path):
     scene.addItem(img)
 
     path = tmp_path / "img.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     loaded = next(i for i in other.vector_items() if isinstance(i, ImageItem))
     assert loaded.pixmap().width() == 20
     assert loaded.pixmap().height() == 12
@@ -702,7 +702,7 @@ def test_svg_export(scene, tmp_path):
 
 
 def test_svg_native_roundtrip(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     from PyQt5.QtGui import QPolygonF
     _populated(scene)
     poly = PolygonItem(kind="star")
@@ -728,7 +728,7 @@ def test_svg_native_roundtrip(scene, tmp_path):
 
 
 def test_ai_chat_hides_code_even_when_truncated():
-    from khervescribe.ai_assistant import prose_only, extract_specs
+    from khervepaint.ai_assistant import prose_only, extract_specs
     truncated = ('Here is the wall design!\n\n```json\n[\n'
                  '{"shape":"rect","x":1,"y":2,"w":3,"h":4}')
     assert prose_only(truncated) == "Here is the wall design!"
@@ -742,7 +742,7 @@ def test_ai_chat_hides_code_even_when_truncated():
 
 
 def test_provider_attaches_pasted_image():
-    from khervescribe import ai_providers as p
+    from khervepaint import ai_providers as p
     msgs = [{"role": "system", "content": "s"},
             {"role": "user", "content": "hi"}]
     claude = p._with_image(msgs, "B64", "Claude")[-1]["content"]
@@ -757,7 +757,7 @@ def test_provider_attaches_pasted_image():
 def test_svg_use_resolves_defs(tmp_path):
     # Inkscape/matplotlib exports render ticks, markers and text via
     # <use href="#id"> referencing <defs>; these were dropped before.
-    from khervescribe import svgio
+    from khervepaint import svgio
     svg = (
         '<svg xmlns="http://www.w3.org/2000/svg" '
         'xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">'
@@ -777,7 +777,7 @@ def test_svg_use_resolves_defs(tmp_path):
 
 
 def test_drop_image_files_place_items(window, tmp_path):
-    from khervescribe.canvas import ImageItem
+    from khervepaint.canvas import ImageItem
     from PyQt5.QtGui import QPixmap, QColor
     paths = []
     for ext in ("png", "bmp"):
@@ -791,7 +791,7 @@ def test_drop_image_files_place_items(window, tmp_path):
 
 
 def test_drop_raw_image_data(window):
-    from khervescribe.canvas import ImageItem
+    from khervepaint.canvas import ImageItem
     from PyQt5.QtGui import QImage, QColor
     img = QImage(12, 12, QImage.Format_ARGB32)
     img.fill(QColor("#aa3333"))
@@ -801,7 +801,7 @@ def test_drop_raw_image_data(window):
 
 
 def test_svg_grid_metadata_roundtrip(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     scene.grid_mm = 2.5
     scene.show_grid = False
     scene.snap_enabled = False
@@ -817,8 +817,8 @@ def test_svg_grid_metadata_roundtrip(scene, tmp_path):
 
 
 def test_object_library_roundtrip(scene, tmp_path, monkeypatch):
-    from khervescribe import library
-    monkeypatch.setenv("KHERVESCRIBE_OBJECTS_DIR", str(tmp_path / "objects"))
+    from khervepaint import library
+    monkeypatch.setenv("KHERVEPAINT_OBJECTS_DIR", str(tmp_path / "objects"))
     _populated(scene)
     dicts = [document.item_to_dict(i) for i in scene.vector_items()]
 
@@ -834,8 +834,8 @@ def test_object_library_roundtrip(scene, tmp_path, monkeypatch):
 
 
 def test_object_name_is_sanitised(scene, tmp_path, monkeypatch):
-    from khervescribe import library
-    monkeypatch.setenv("KHERVESCRIBE_OBJECTS_DIR", str(tmp_path / "objects"))
+    from khervepaint import library
+    monkeypatch.setenv("KHERVEPAINT_OBJECTS_DIR", str(tmp_path / "objects"))
     _populated(scene)
     dicts = [document.item_to_dict(i) for i in scene.vector_items()]
     path = library.save_object(dicts, "wall/../x?:y", dpi=96)
@@ -845,8 +845,8 @@ def test_object_name_is_sanitised(scene, tmp_path, monkeypatch):
 
 
 def test_object_library_folders(scene, tmp_path, monkeypatch):
-    from khervescribe import library
-    monkeypatch.setenv("KHERVESCRIBE_OBJECTS_DIR", str(tmp_path / "objects"))
+    from khervepaint import library
+    monkeypatch.setenv("KHERVEPAINT_OBJECTS_DIR", str(tmp_path / "objects"))
     _populated(scene)
     d = [document.item_to_dict(i) for i in scene.vector_items()]
     library.save_object(d, "Chem/benzene")               # folder via name path
@@ -870,10 +870,10 @@ def test_object_library_folders(scene, tmp_path, monkeypatch):
 
 
 def test_chem_bonds_rings_atoms(scene):
-    from khervescribe.canvas import (PathItem, PolygonItem, EllipseItem,
+    from khervepaint.canvas import (PathItem, PolygonItem, EllipseItem,
                                      TextItem, GroupItem, CHEM_TRIPLE,
                                      CHEM_WEDGE)
-    from khervescribe.handles import Handle
+    from khervepaint.handles import Handle
     scene.dpi = 300
     scene.tool = CHEM_TRIPLE
     b = scene._new_chem_bond(QPointF(0, 0))
@@ -898,8 +898,8 @@ def test_chem_bonds_rings_atoms(scene):
 
 
 def test_chem_bond_roundtrips_svg(scene, tmp_path):
-    from khervescribe import svgio
-    from khervescribe.canvas import PathItem, CHEM_DOUBLE
+    from khervepaint import svgio
+    from khervepaint.canvas import PathItem, CHEM_DOUBLE
     scene.tool = CHEM_DOUBLE
     b = scene._new_chem_bond(QPointF(0, 0))
     scene._update_chem_bond(b, QPointF(0, 0), QPointF(100, 0))
@@ -913,7 +913,7 @@ def test_chem_bond_roundtrips_svg(scene, tmp_path):
 
 
 def test_chem_chain_connects_bonds(scene):
-    from khervescribe.canvas import LineItem, CHEM_CHAIN
+    from khervepaint.canvas import LineItem, CHEM_CHAIN
 
     class _Ev:
         def __init__(self, x, y, btn=Qt.LeftButton):
@@ -941,7 +941,7 @@ def test_chem_chain_connects_bonds(scene):
 
 
 def test_chem_atom_snaps_to_bond_end(scene):
-    from khervescribe.canvas import LineItem, TextItem
+    from khervepaint.canvas import LineItem, TextItem
     scene.dpi = 300
     scene.snap_enabled = True
     bond = LineItem(QLineF(200, 200, 270, 200))      # ~6 mm single bond
@@ -958,8 +958,8 @@ def test_chem_atom_snaps_to_bond_end(scene):
 
 
 def test_floorplan_all_elements_build(app):
-    from khervescribe import floorplan
-    from khervescribe import ai_assistant
+    from khervepaint import floorplan
+    from khervepaint import ai_assistant
     for name in floorplan.SIZES:                  # every element builds specs
         specs = floorplan.build_specs(name, 120.0, 90.0)
         assert isinstance(specs, list) and specs
@@ -977,9 +977,9 @@ def test_floorplan_all_elements_build(app):
 def test_science_symbol_modules_build(app):
     """All spec-library palettes are self-consistent and every symbol
     converts to a real, placeable item."""
-    from khervescribe import (optics, vacuum, labware, flowchart,
+    from khervepaint import (optics, vacuum, labware, flowchart,
                               network, pid, arrows, biology, maths)
-    from khervescribe import ai_assistant
+    from khervepaint import ai_assistant
     for mod in (optics, vacuum, labware, flowchart,
                 network, pid, arrows, biology, maths):
         assert getattr(mod, "REFERENCE_MM", 0) > 0
@@ -996,7 +996,7 @@ def test_science_symbol_modules_build(app):
 def test_text_anchor_centering(app):
     """A text spec with anchor='center' is centred on (x, y); default
     behaviour keeps the top-left corner there (examples rely on that)."""
-    from khervescribe.ai_assistant import _spec_to_item
+    from khervepaint.ai_assistant import _spec_to_item
     base = {"shape": "text", "text": "Hello", "x": 100.0, "y": 50.0, "size": 14}
     top_left = _spec_to_item(dict(base))
     assert abs(top_left.pos().x() - 100.0) < 1 and abs(top_left.pos().y() - 50.0) < 1
@@ -1008,8 +1008,8 @@ def test_text_anchor_centering(app):
 def test_valve_triangles_meet_at_seat(app):
     """Bow-tie / port triangles are built so their apex lands exactly on the
     seat centre (guards the rotated-box aspect-distortion bug)."""
-    from khervescribe import vacuum, pid
-    from khervescribe.ai_assistant import _spec_to_item
+    from khervepaint import vacuum, pid
+    from khervepaint.ai_assistant import _spec_to_item
     cx = cy = 50.0
     for mod in (vacuum, pid):
         for d in ("l", "r", "u", "d"):
@@ -1022,7 +1022,7 @@ def test_valve_triangles_meet_at_seat(app):
 
 def test_science_symbol_place_and_group(scene):
     """Placing a multi-part science symbol drops a grouped, editable item."""
-    from khervescribe.canvas import GroupItem
+    from khervepaint.canvas import GroupItem
     before = len(scene.vector_items())
     scene.place_optics_element("monochromator", QPointF(300, 200))
     scene.place_vacuum_element("chamber", QPointF(300, 400))
@@ -1034,7 +1034,7 @@ def test_science_symbol_place_and_group(scene):
 
 
 def test_eraser_clears_raster_to_white(scene):
-    from khervescribe.canvas import ERASER
+    from khervepaint.canvas import ERASER
     from PyQt5.QtGui import QPixmap
     pm = QPixmap(200, 200)
     pm.fill(Qt.black)
@@ -1057,7 +1057,7 @@ def test_colour_picker_sets_stroke(scene):
 
 
 def test_electrical_all_elements_build_and_place(scene):
-    from khervescribe import electrical
+    from khervepaint import electrical
     for name in electrical.SIZES:
         specs = electrical.build_specs(name, 120.0, 90.0)
         assert isinstance(specs, list) and specs
@@ -1072,7 +1072,7 @@ def test_electrical_all_elements_build_and_place(scene):
 
 
 def test_room_tool_draws_wall_rect(scene):
-    from khervescribe.canvas import ROOM
+    from khervepaint.canvas import ROOM
 
     class _Ev:
         def __init__(self, x, y, b=Qt.LeftButton):
@@ -1101,7 +1101,7 @@ def test_room_tool_draws_wall_rect(scene):
 
 
 def test_double_door_meets_at_bottom_centre():
-    from khervescribe import floorplan
+    from khervepaint import floorplan
     w, h = 1800.0, 900.0
     specs = floorplan.build_double_door(w, h)
     pts = {(round(s["x1"]), round(s["y1"])) for s in specs
@@ -1124,7 +1124,7 @@ def test_floorplan_place_centres_and_groups(scene):
     br = bed[0].sceneBoundingRect()
     assert abs(br.center().x() - 1000) < 2 and abs(br.center().y() - 1000) < 2
     # sized as a fraction of the page: 1500 mm on the 4.8 m reference
-    from khervescribe import floorplan
+    from khervepaint import floorplan
     expect = 1500 * scene.sceneRect().width() / floorplan.REFERENCE_MM
     assert abs(br.width() - expect) < 5
 
@@ -1150,8 +1150,8 @@ def test_chem_fixed_length_and_angle(scene):
 def test_chem_hydrogen_bond_dashes_roundtrip(scene, tmp_path):
     # The dashed H-bond is built from segments so the dashes are geometry
     # and survive the SVG round-trip (no reliance on pen dash style).
-    from khervescribe import svgio
-    from khervescribe.canvas import CHEM_HBOND
+    from khervepaint import svgio
+    from khervepaint.canvas import CHEM_HBOND
     scene.tool = CHEM_HBOND
     b = scene._new_chem_bond(QPointF(0, 0))
     scene._update_chem_bond(b, QPointF(0, 0), QPointF(120, 0))
@@ -1171,8 +1171,8 @@ def _scene_br(item):
 
 
 def test_svg_image_scale_rotation_roundtrip(scene, tmp_path):
-    from khervescribe import svgio
-    from khervescribe.canvas import center_origin
+    from khervepaint import svgio
+    from khervepaint.canvas import center_origin
     from PyQt5.QtGui import QPixmap
     pm = QPixmap(40, 20)
     pm.fill(QColor("#ff0000"))
@@ -1195,8 +1195,8 @@ def test_svg_image_scale_rotation_roundtrip(scene, tmp_path):
 
 
 def test_svg_shape_rotation_sign(scene, tmp_path):
-    from khervescribe import svgio
-    from khervescribe.canvas import center_origin
+    from khervepaint import svgio
+    from khervepaint.canvas import center_origin
     rect = RectItem(QRectF(0, 0, 40, 20))
     rect.setPos(50, 60)
     center_origin(rect)
@@ -1212,7 +1212,7 @@ def test_svg_shape_rotation_sign(scene, tmp_path):
 
 
 def test_svg_import_external_group_and_path(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     svg = '''<?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"
      viewBox="0 0 100 100">
@@ -1239,7 +1239,7 @@ def test_svg_import_external_group_and_path(scene, tmp_path):
 
 
 def test_svg_import_ungroup(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     svg = '''<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
   <g><rect x="0" y="0" width="10" height="10"/>
      <rect x="20" y="20" width="10" height="10"/></g>
@@ -1291,8 +1291,8 @@ def test_line_resize_handles(scene):
 
 
 def test_box_resize_all_shapes(scene):
-    from khervescribe.canvas import ArcShapeItem, RoundedRectItem
-    from khervescribe.handles import SelectionHandles, RESIZE
+    from khervepaint.canvas import ArcShapeItem, RoundedRectItem
+    from khervepaint.handles import SelectionHandles, RESIZE
     builders = [
         lambda: RectItem(QRectF(10, 10, 60, 40)),
         lambda: EllipseItem(QRectF(10, 10, 60, 40)),
@@ -1385,7 +1385,7 @@ def test_copy_paste_and_duplicate(window):
 
 
 def test_properties_dialog_applies(app):
-    from khervescribe.properties import PropertiesDialog
+    from khervepaint.properties import PropertiesDialog
     scene = PaintScene(200, 200)
     rect = RectItem(QRectF(0, 0, 40, 30))
     scene.addItem(rect)
@@ -1412,7 +1412,7 @@ def test_properties_dialog_applies(app):
 
 
 def test_properties_dialog_text(app):
-    from khervescribe.properties import PropertiesDialog
+    from khervepaint.properties import PropertiesDialog
     scene = PaintScene(200, 200)
     text = TextItem("old")
     scene.addItem(text)
@@ -1427,7 +1427,7 @@ def test_properties_dialog_text(app):
 
 
 def test_context_menu_builds(window):
-    from khervescribe.properties import build_context_menu
+    from khervepaint.properties import build_context_menu
     win = window
     rect = RectItem(QRectF(0, 0, 10, 10))
     win.scene.addItem(rect)
@@ -1438,7 +1438,7 @@ def test_context_menu_builds(window):
 
 
 def test_reorder_persists_through_svg(window, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     win = window
     bottom = RectItem(QRectF(0, 0, 10, 10))
     top = EllipseItem(QRectF(0, 0, 10, 10))
@@ -1466,7 +1466,7 @@ def _enclosed_rect_scene():
 
 
 def test_bucket_raster_fills_only_enclosed(app):
-    from khervescribe import fill
+    from khervepaint import fill
     scene = _enclosed_rect_scene()
     fill.bucket_fill(scene, QPointF(100, 100), QColor("#ff0000"),
                      vector=False)
@@ -1476,8 +1476,8 @@ def test_bucket_raster_fills_only_enclosed(app):
 
 
 def test_bucket_vector_creates_path_behind(app):
-    from khervescribe import fill
-    from khervescribe.canvas import PathItem
+    from khervepaint import fill
+    from khervepaint.canvas import PathItem
     scene = _enclosed_rect_scene()
     box = scene.vector_items()[0]
     item = fill.bucket_fill(scene, QPointF(100, 100), QColor("#00aa00"),
@@ -1490,7 +1490,7 @@ def test_bucket_vector_creates_path_behind(app):
 
 
 def test_bucket_unenclosed_leaks_to_edge(app):
-    from khervescribe import fill
+    from khervepaint import fill
     scene = _enclosed_rect_scene()
     # Clicking the surrounding white floods out to the canvas border.
     runs, edge = fill.flood_runs(
@@ -1509,9 +1509,9 @@ def test_shape_label_roundtrip_kpaint(scene, tmp_path):
     scene.addItem(rect)
 
     path = tmp_path / "label.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     loaded = other.vector_items()[0]
     assert loaded.label() == "Start"
     assert loaded.label_font().pointSize() == 18
@@ -1520,7 +1520,7 @@ def test_shape_label_roundtrip_kpaint(scene, tmp_path):
 
 
 def test_shape_label_roundtrip_svg(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     ell = EllipseItem(QRectF(0, 0, 60, 60))
     ell.set_label("Node")
     ell.setPos(40, 40)
@@ -1539,7 +1539,7 @@ def test_shape_label_roundtrip_svg(scene, tmp_path):
 
 
 def test_properties_dialog_label(app):
-    from khervescribe.properties import PropertiesDialog
+    from khervepaint.properties import PropertiesDialog
     scene = PaintScene(200, 200)
     poly = PolygonItem(kind="triangle")
     poly.set_rect(QRectF(0, 0, 60, 60))
@@ -1554,7 +1554,7 @@ def test_properties_dialog_label(app):
 
 def test_crop_session_applies(app):
     from PyQt5.QtGui import QPixmap
-    from khervescribe.crop import CropSession
+    from khervepaint.crop import CropSession
     scene = PaintScene(200, 200)
     pm = QPixmap(40, 30)
     pm.fill(QColor("#00ff00"))
@@ -1637,7 +1637,7 @@ def test_undo_redo_add_move_delete(window):
 
 
 def test_undo_restores_label_and_transform(window):
-    from khervescribe.canvas import center_origin
+    from khervepaint.canvas import center_origin
     win = window
     s = win.scene
     rect = RectItem(QRectF(0, 0, 40, 40))
@@ -1669,7 +1669,7 @@ def test_save_marks_history_clean(window, tmp_path):
 
 
 def test_arc_shapes_roundtrip(scene, tmp_path):
-    from khervescribe.canvas import ArcShapeItem
+    from khervepaint.canvas import ArcShapeItem
     half = ArcShapeItem(QRectF(0, 0, 40, 40), kind="halfcircle")
     half.setPos(10, 10)
     scene.addItem(half)
@@ -1679,9 +1679,9 @@ def test_arc_shapes_roundtrip(scene, tmp_path):
     scene.addItem(quarter)
 
     path = tmp_path / "arcs.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     arcs = [i for i in other.vector_items() if isinstance(i, ArcShapeItem)]
     assert len(arcs) == 2
     h = next(a for a in arcs if a.kind == "halfcircle")
@@ -1692,8 +1692,8 @@ def test_arc_shapes_roundtrip(scene, tmp_path):
 
 
 def test_arc_shape_roundtrip_svg(scene, tmp_path):
-    from khervescribe import svgio
-    from khervescribe.canvas import ArcShapeItem
+    from khervepaint import svgio
+    from khervepaint.canvas import ArcShapeItem
     arc = ArcShapeItem(QRectF(0, 0, 50, 50), kind="halfcircle")
     scene.addItem(arc)
     path = tmp_path / "arc.svg"
@@ -1765,7 +1765,7 @@ def test_mirror_group_swaps_sides(scene):
 
 
 def test_mirror_arc_flips_flag(scene):
-    from khervescribe.canvas import ArcShapeItem
+    from khervepaint.canvas import ArcShapeItem
     arc = ArcShapeItem(QRectF(0, 0, 40, 40), kind="quartercircle")
     scene.addItem(arc)
     arc.setSelected(True)
@@ -1812,7 +1812,7 @@ def test_explode_ellipse_to_arcs(scene):
 
 
 def test_explode_halfcircle(scene):
-    from khervescribe.canvas import ArcShapeItem
+    from khervepaint.canvas import ArcShapeItem
     arc = ArcShapeItem(QRectF(0, 0, 40, 40), kind="halfcircle")
     scene.addItem(arc)
     arc.setSelected(True)
@@ -1864,7 +1864,7 @@ def test_explode_then_regroup_after_delete(window):
 
 
 def test_generated_shape_icons(app):
-    from khervescribe import icons
+    from khervepaint import icons
     # shapes with no Material Design glyph get a drawn icon (not blank,
     # which would otherwise widen the toolbar by falling back to text)
     assert not icons.shape_icon("parallelogram").isNull()
@@ -1874,7 +1874,7 @@ def test_generated_shape_icons(app):
 
 
 def test_ai_extract_specs():
-    from khervescribe.ai_assistant import extract_specs
+    from khervepaint.ai_assistant import extract_specs
     reply = ('Sure, here you go:\n```json\n'
              '[{"shape":"rect","x":10,"y":20,"w":80,"h":40}]\n```\nDone.')
     specs = extract_specs(reply)
@@ -1886,7 +1886,7 @@ def test_ai_extract_specs():
 
 
 def test_ai_extract_truncated_json():
-    from khervescribe.ai_assistant import extract_specs
+    from khervepaint.ai_assistant import extract_specs
     # a long reply cut off mid-array (no closing ]/```): salvage what's whole
     reply = ('Here you go:\n```json\n'
              '[{"shape":"rect","x":0,"y":0,"w":10,"h":10},\n'
@@ -1899,8 +1899,8 @@ def test_ai_extract_truncated_json():
 
 
 def test_ai_apply_specs_creates_items(scene):
-    from khervescribe.ai_assistant import apply_specs
-    from khervescribe.canvas import ArrowItem, PolygonItem
+    from khervepaint.ai_assistant import apply_specs
+    from khervepaint.canvas import ArrowItem, PolygonItem
     specs = [
         {"shape": "rect", "x": 0, "y": 0, "w": 60, "h": 40,
          "stroke": "#112233", "fill": "#abcdef", "label": "Start"},
@@ -1920,7 +1920,7 @@ def test_ai_apply_specs_creates_items(scene):
 
 
 def test_ai_providers_metadata():
-    from khervescribe import ai_providers as p
+    from khervepaint import ai_providers as p
     assert set(p.PROVIDERS) == {"Claude", "ChatGPT", "Mistral",
                                 "Ollama", "Local"}
     assert "Claude" in p.NEEDS_KEY and "Ollama" not in p.NEEDS_KEY
@@ -1942,11 +1942,11 @@ def test_new_window_opens_independent_window(window):
 
 def test_settings_isolated_from_real_store():
     """Guard: the suite must never read/write the developer's real
-    KherveScribe settings (registry on Windows) — conftest redirects all
+    KhervePaint settings (registry on Windows) — conftest redirects all
     app QSettings to a throwaway temp file."""
-    from khervescribe import ai_assistant, mainwindow, style
+    from khervepaint import ai_assistant, mainwindow, style
     for mod in (ai_assistant, mainwindow, style):
-        name = mod.QSettings("Kherve", "KherveScribe").fileName()
+        name = mod.QSettings("Kherve", "KhervePaint").fileName()
         assert name.endswith("settings.ini"), name
         assert "HKEY" not in name.upper(), name
 
@@ -2018,8 +2018,8 @@ def test_ai_history_persists(window):
 
 
 def test_ai_settings_dialog(window):
-    from khervescribe.ai_assistant import AiSettingsDialog
-    from khervescribe import ai_providers as p
+    from khervepaint.ai_assistant import AiSettingsDialog
+    from khervepaint import ai_providers as p
     dlg = AiSettingsDialog(window)
     assert dlg.provider_combo.count() == 5            # five providers
     assert dlg.provider_combo.itemData(0) in p.PROVIDERS
@@ -2033,13 +2033,13 @@ def test_ai_settings_dialog(window):
 
 
 def test_help_content(window):
-    from khervescribe import help as h
+    from khervepaint import help as h
     guide = h.user_guide_html()
     for token in ("User Guide", "Tools", "ACS", "Ctrl+Z", "Bucket",
                   "Explode", "Drawing Size", "Crop", "Undo"):
         assert token in guide
     about = h.about_html()
-    assert "KherveScribe" in about and "GPL-3.0" in about
+    assert "KhervePaint" in about and "GPL-3.0" in about
     dlg = h.UserGuideDialog(window)        # builds without error
     assert dlg.windowTitle()
 
@@ -2075,14 +2075,14 @@ def test_save_adds_to_recent(window, tmp_path):
 def test_dpi_roundtrip_kpaint(scene, tmp_path):
     scene.dpi = 300
     path = tmp_path / "dpi.kpaint"
-    document.save_kscribe(scene, str(path))
+    document.save_kpaint(scene, str(path))
     other = PaintScene(10, 10)
-    document.load_kscribe(other, str(path))
+    document.load_kpaint(other, str(path))
     assert other.dpi == 300
 
 
 def test_dpi_roundtrip_svg(scene, tmp_path):
-    from khervescribe import svgio
+    from khervepaint import svgio
     scene.dpi = 300
     path = tmp_path / "dpi.svg"
     svgio.save_svg(scene, str(path))
@@ -2096,7 +2096,7 @@ def test_dpi_roundtrip_svg(scene, tmp_path):
 
 
 def test_acs_preset_pixels(app):
-    from khervescribe import canvassize
+    from khervepaint import canvassize
     dlg = canvassize.CanvasSizeDialog(current=(800, 600), dpi=96)
     # the ACS single column preset is the first non-Custom entry
     dlg.preset_combo.setCurrentIndex(1)
@@ -2110,7 +2110,7 @@ def test_acs_preset_pixels(app):
 
 
 def test_default_size_is_acs_single_column(app):
-    from khervescribe import canvassize
+    from khervepaint import canvassize
     w, h, dpi = canvassize.default_size()
     assert dpi == 300
     assert abs(w - round(3.25 * 300)) <= 1      # ~975 px
@@ -2118,7 +2118,7 @@ def test_default_size_is_acs_single_column(app):
 
 
 def test_size_dialog_mm_conversion(app):
-    from khervescribe.canvassize import CanvasSizeDialog
+    from khervepaint.canvassize import CanvasSizeDialog
     dlg = CanvasSizeDialog(current=(800, 600), dpi=300)
     dlg.unit_combo.setCurrentText("mm")
     dlg.width_spin.setValue(82.5)               # ACS single column in mm
@@ -2153,7 +2153,7 @@ def test_fit_to_content_shrinks_and_shifts(scene):
 
 
 def test_resize_canvas_is_undoable(window):
-    from khervescribe import canvassize
+    from khervepaint import canvassize
     default_w = canvassize.default_size()[0]
     s = window.scene
     assert s.sceneRect().width() == default_w   # new docs open at the default
@@ -2166,7 +2166,7 @@ def test_resize_canvas_is_undoable(window):
 
 
 def test_pencil_creates_vector_stroke(scene):
-    from khervescribe.canvas import PathItem
+    from khervepaint.canvas import PathItem
     scene.pen = QPen(QColor("#000000"), 4)
     scene.pencil_begin(QPointF(0, 0))
     for x in range(5, 65, 5):
@@ -2192,7 +2192,7 @@ def test_pencil_single_click_makes_no_stroke(scene):
 
 
 def test_pencil_stroke_resizes_with_handles(scene):
-    from khervescribe.canvas import PathItem
+    from khervepaint.canvas import PathItem
     scene.pencil_begin(QPointF(0, 0))
     for x in range(5, 45, 5):
         scene.pencil_extend(QPointF(x, x / 2))
@@ -2211,7 +2211,7 @@ def test_pencil_stroke_resizes_with_handles(scene):
 
 # ------------------------------------------------------------ examples
 def test_examples_registry_covers_techniques():
-    from khervescribe import examples
+    from khervepaint import examples
     names = " ".join(n for _, n, _ in examples.EXAMPLES)
     for tech in ("XPS", "UPS", "AES", "XRD", "LEED", "FTIR", "Raman",
                  "UV-Vis", "NMR", "TGA", "DSC", "BET", "TEM", "SEM", "AFM",
@@ -2227,8 +2227,8 @@ def test_examples_registry_covers_techniques():
 
 
 def test_examples_build_real_items(app):
-    from khervescribe import examples
-    from khervescribe.ai_assistant import apply_specs
+    from khervepaint import examples
+    from khervepaint.ai_assistant import apply_specs
     scene = PaintScene(examples.PAGE_W, examples.PAGE_H)
     for _, name, builder in examples.EXAMPLES:
         scene.new_document(examples.PAGE_W, examples.PAGE_H)
@@ -2248,7 +2248,7 @@ def test_examples_build_real_items(app):
 
 
 def test_example_spec_rotation_is_applied(app):
-    from khervescribe.ai_assistant import apply_specs
+    from khervepaint.ai_assistant import apply_specs
     scene = PaintScene(400, 400)
     items = apply_specs(scene, [{"shape": "triangle", "x": 50, "y": 50,
                                  "w": 40, "h": 40, "rotation": 180}])
@@ -2256,7 +2256,7 @@ def test_example_spec_rotation_is_applied(app):
 
 
 def test_load_example_resets_document(window):
-    from khervescribe import examples
+    from khervepaint import examples
     builder = examples.EXAMPLES[0][2]
     window.load_example(builder, "test")
     assert window.scene.sceneRect().width() == examples.PAGE_W
@@ -2267,7 +2267,7 @@ def test_load_example_resets_document(window):
 
 
 def test_open_path_loads_svg_for_khervebook_handoff(window, tmp_path):
-    """KherveBook writes an SVG and launches ``khervescribe <file>``; the
+    """KherveBook writes an SVG and launches ``khervepaint <file>``; the
     launcher calls open_path so the drawing opens ready to edit. Saving
     (Ctrl+S) writes back to the same path, where KherveBook reloads it."""
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">'

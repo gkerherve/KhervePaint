@@ -5,7 +5,7 @@ ObjectBoundingMode coordinates (0..1 relative to the item's bounding
 rect), so it stretches with the shape when resized. Everything is
 described by one JSON-able spec dict — {"kind": "linear"|"radial"|"sun",
 "c1": "#aarrggbb", "c2": "#aarrggbb", "angle": degrees} — shared by the
-document snapshot (undo / legacy .kscribe) and the SVG writer/parser.
+document snapshot (undo / legacy .kpaint) and the SVG writer/parser.
 "sun" is an off-centre radial highlight (c2, the light colour, at the
 focal point; c1, the body colour, at the rim) that mimics sunlight
 falling on the shape from the top-left.

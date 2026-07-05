@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
 
-CRASH_LOG = Path(tempfile.gettempdir()) / "khervescribe_crash.log"
+CRASH_LOG = Path(tempfile.gettempdir()) / "khervepaint_crash.log"
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    app.setApplicationName("KherveScribe")
+    app.setApplicationName("KhervePaint")
 
     from .style import apply_style
     apply_style(app)
@@ -34,7 +34,7 @@ def main():
     win.show()
 
     # A file path on the command line (e.g. from KherveBook's "Open in
-    # KherveScribe") opens straight away, so the drawing is ready to edit.
+    # KhervePaint") opens straight away, so the drawing is ready to edit.
     for arg in app.arguments()[1:]:
         if not arg.startswith("-") and Path(arg).exists():
             win.open_path(arg)

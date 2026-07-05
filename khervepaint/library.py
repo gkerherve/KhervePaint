@@ -3,7 +3,7 @@
 Saved objects are standalone SVG files in a per-user folder. The left
 toolbar's Objects dropdown lists them by file name (so a "wall.svg"
 appears as "wall") and inserts a fresh, editable copy onto the canvas.
-The folder can be overridden for tests via KHERVESCRIBE_OBJECTS_DIR.
+The folder can be overridden for tests via KHERVEPAINT_OBJECTS_DIR.
 
 Copyright (C) 2026 Gwilherm Kerherve
 
@@ -27,12 +27,12 @@ from .canvas import PaintScene
 
 def objects_dir() -> Path:
     """The folder holding saved objects, created on first use."""
-    override = os.environ.get("KHERVESCRIBE_OBJECTS_DIR")
+    override = os.environ.get("KHERVEPAINT_OBJECTS_DIR")
     if override:
         path = Path(override)
     else:
         base = QStandardPaths.writableLocation(
-            QStandardPaths.AppDataLocation) or str(Path.home() / ".khervescribe")
+            QStandardPaths.AppDataLocation) or str(Path.home() / ".khervepaint")
         path = Path(base) / "objects"
     path.mkdir(parents=True, exist_ok=True)
     return path

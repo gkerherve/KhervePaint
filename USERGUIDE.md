@@ -1,4 +1,4 @@
-# KherveScribe — User Guide
+# KhervePaint — User Guide
 
 A hybrid **raster + vector** drawing app for figures, diagrams and quick
 image edits. This guide takes you from drawing your first shape to
@@ -156,7 +156,7 @@ Paste a screenshot or copied image with **Ctrl+V**, or **drag and drop**
 an image file (PNG, JPEG, BMP, GIF, WebP, TIFF — any format Qt can read)
 straight onto the canvas — it drops in as a movable picture at the drop
 point (drop several at once to cascade them). Dropping a **.svg** or
-**.kscribe** file instead opens it as a document. To **crop** an image,
+**.kpaint** file instead opens it as a document. To **crop** an image,
 right-click → *Crop image*, drag the frame handles, then **double-click**
 (or press **Enter**) to apply — **Esc** cancels.
 
@@ -345,7 +345,7 @@ resizes.
   SVG-compatible so it opens in any SVG viewer. Re-opening it brings every
   shape back editable; an imported external SVG is even broken into
   editable items you can ungroup.
-- **Open** reads `.svg` or a `.png` image (older `.kscribe`/`.kpaint`
+- **Open** reads `.svg` or a `.png` image (older `.kpaint`/`.kscribe`
   files still open via *All files*). Recent files are under **File ▸ Open
   Recent**.
 - **Export** (Ctrl+E) writes a flattened **PNG** or single-page **PDF**
@@ -413,4 +413,4 @@ Ctrl+Shift+' snap · F1 user guide
 
 ---
 
-KherveScribe · GPL-3.0 · <https://github.com/gkerherve/KherveScribe>
+KhervePaint · GPL-3.0 · <https://github.com/gkerherve/KhervePaint>

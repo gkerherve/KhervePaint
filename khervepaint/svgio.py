@@ -5,7 +5,7 @@ Two directions:
 * **Write** (`save_svg`) emits clean, standard SVG: one element per
   native item, geometry in local coordinates with a `translate`/
   `rotate` transform, the raster layer as an embedded `<image>`, and
-  KherveScribe-specific bits (grid settings, polygon kind, arrow flag)
+  KhervePaint-specific bits (grid settings, polygon kind, arrow flag)
   under a private ``kp:`` namespace so our own files round-trip
   losslessly while staying readable by any SVG tool.
 

@@ -22,8 +22,8 @@ from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication
 
-from khervescribe import document, gradient, svgio
-from khervescribe.canvas import EllipseItem, PaintScene, RectItem
+from khervepaint import document, gradient, svgio
+from khervepaint.canvas import EllipseItem, PaintScene, RectItem
 
 
 @pytest.fixture(scope="session")

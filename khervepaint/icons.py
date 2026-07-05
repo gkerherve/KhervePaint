@@ -41,8 +41,8 @@ def icon(name: str, color: str = None) -> QIcon:
 
 
 def app_icon() -> QIcon:
-    """Window/taskbar icon: a 'K' wordmark over 'scribe' on a rounded
-    tile (reads 'K scribe', not 'KS')."""
+    """Window/taskbar icon: a 'K' wordmark over 'paint' on a rounded
+    tile (reads 'K paint', not 'KP')."""
     from PyQt5.QtCore import Qt, QRectF
     from PyQt5.QtGui import QColor, QFont, QPainter, QPixmap
 
@@ -65,7 +65,7 @@ def app_icon() -> QIcon:
     small.setItalic(True)
     p.setFont(small)
     p.drawText(QRectF(0, size * 0.60, size, size * 0.34),
-               Qt.AlignCenter, "scribe")
+               Qt.AlignCenter, "paint")
     p.end()
     return QIcon(pm)
 

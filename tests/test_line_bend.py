@@ -21,8 +21,8 @@ import pytest
 from PyQt5.QtCore import QLineF, QPointF
 from PyQt5.QtWidgets import QApplication
 
-from khervescribe import document, svgio
-from khervescribe.canvas import ArrowItem, LineItem, PaintScene
+from khervepaint import document, svgio
+from khervepaint.canvas import ArrowItem, LineItem, PaintScene
 
 
 @pytest.fixture(scope="session")

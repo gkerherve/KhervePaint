@@ -1,7 +1,7 @@
 """Built-in Examples menu — labelled schematics of lab techniques.
 
 Each example loads a detailed, fully labelled instrument schematic onto
-an A4 page; every element is a real, editable KherveScribe item (built
+an A4 page; every element is a real, editable KhervePaint item (built
 from the same shape-spec format the AI assistant uses), so a sketch is a
 starting point you can restyle, relabel and export. The drawing toolkit
 lives in `example_kit.py` and the builders in `example_sketches.py`.

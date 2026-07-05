@@ -22,7 +22,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
-from khervescribe.canvas import (GroupItem, LineItem, PaintScene, PaintView,
+from khervepaint.canvas import (GroupItem, LineItem, PaintScene, PaintView,
                                  RectItem)
 
 

@@ -1,6 +1,6 @@
-""".kscribe (de)serialisation and PNG import/export.
+""".kpaint (de)serialisation and PNG import/export.
 
-`.kscribe` is JSON: format/version header, canvas size, grid settings,
+`.kpaint` is JSON: format/version header, canvas size, grid settings,
 the raster layer as a base64 PNG, and the vector items (recursively
 through groups). All item properties must round-trip — when adding a
 property, update item_to_dict() and item_from_dict() together and
@@ -309,7 +309,7 @@ def _pixmap_from_b64(text: str) -> QPixmap:
 # ---------------------------------------------------------------- files
 def scene_to_dict(scene: PaintScene) -> dict:
     rect = scene.sceneRect()
-    return {"format": "kscribe", "version": FORMAT_VERSION,
+    return {"format": "kpaint", "version": FORMAT_VERSION,
             "width": int(rect.width()), "height": int(rect.height()),
             "dpi": getattr(scene, "dpi", 96),
             "grid": {"mm": scene.grid_mm, "show": scene.show_grid,
@@ -319,8 +319,8 @@ def scene_to_dict(scene: PaintScene) -> dict:
 
 
 def dict_to_scene(data: dict, scene: PaintScene):
-    if data.get("format") not in ("kscribe", "kpaint"):   # kpaint = pre-rename
-        raise ValueError("not a KherveScribe document")
+    if data.get("format") not in ("kpaint", "kscribe"):  # kscribe = old name
+        raise ValueError("not a KhervePaint document")
     width = data.get("width", 800)
     scene.new_document(width, data.get("height", 600))
     scene.dpi = data.get("dpi", 96)
@@ -341,12 +341,12 @@ def dict_to_scene(data: dict, scene: PaintScene):
         scene.addItem(item_from_dict(item_dict))
 
 
-def save_kscribe(scene: PaintScene, path: str):
+def save_kpaint(scene: PaintScene, path: str):
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(scene_to_dict(scene), fh, indent=1)
 
 
-def load_kscribe(scene: PaintScene, path: str):
+def load_kpaint(scene: PaintScene, path: str):
     with open(path, encoding="utf-8") as fh:
         dict_to_scene(json.load(fh), scene)
 
@@ -385,7 +385,7 @@ def export_svg(scene: PaintScene, path: str):
     generator.setFileName(path)
     generator.setSize(QSize(int(rect.width()), int(rect.height())))
     generator.setViewBox(QRectF(0, 0, rect.width(), rect.height()))
-    generator.setTitle("KherveScribe export")
+    generator.setTitle("KhervePaint export")
     painter = QPainter(generator)
     painter.setRenderHint(QPainter.Antialiasing)
     scene.render(painter, source=rect)

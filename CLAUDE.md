@@ -1,6 +1,6 @@
-# KherveScribe — notes for Claude
+# KhervePaint — notes for Claude
 
-KherveScribe is a hybrid raster + vector drawing app built on PyQt5 —
+KhervePaint is a hybrid raster + vector drawing app built on PyQt5 —
 a native desktop app in the Kherve family (KherveFitting, KherveSheet,
 KhervePDF, KherveDOC, KhervePlot, KherveDraw, KherveBook). One canvas
 mixes a raster layer (open a PNG, paint on it with the pencil) and
@@ -10,25 +10,25 @@ edited with a pointer tool, with grid + snap-to-grid and grouping.
 ## Build / run
 
 - Python 3.12 / 3.13 with PyQt5 (+ qtawesome for icons).
-- Run via `python KherveScribe.py` or `python -m khervescribe`.
-- Crash log: `%TEMP%/khervescribe_crash.log`.
+- Run via `python KhervePaint.py` or `python -m khervepaint`.
+- Crash log: `%TEMP%/khervepaint_crash.log`.
 - **Version string** is derived at runtime in `_version.py` from
   `git rev-list --count HEAD` and `git rev-parse --short HEAD`,
   cached with `lru_cache`. Falls back to `_FALLBACK = "0.1.0"`
-  outside a git checkout. Title bar reads `KherveScribe v0.1.N+sha`.
+  outside a git checkout. Title bar reads `KhervePaint v0.1.N+sha`.
   The version bumps automatically on every commit — never edit a
   version constant by hand.
 
 ## File size policy
 
-Every module in `khervescribe/` should stay near **1500 lines**. If a
+Every module in `khervepaint/` should stay near **1500 lines**. If a
 change would push a file meaningfully past that, split the new code
 into a new module and import.
 
 ## Project layout
 
-- `KherveScribe.py` — entry script.
-- `khervescribe/` — package; `python -m khervescribe` is the alternative entry.
+- `KhervePaint.py` — entry script.
+- `khervepaint/` — package; `python -m khervepaint` is the alternative entry.
   - `__init__.py`    — `APP_NAME`, version import.
   - `__main__.py`    — module entry point.
   - `_version.py`    — git-based version string.
@@ -37,18 +37,18 @@ into a new module and import.
                        KherveBook; theme persists via QSettings).
   - `icons.py`       — qtawesome MDI icon wrapper with fallback.
   - `mainwindow.py`  — `MainWindow` shell: menus, tool/option toolbars,
-                       open PNG / .kscribe, save, export PNG.
+                       open PNG / .kpaint, save, export PNG.
   - `canvas.py`      — `PaintScene` + `PaintView`: raster layer at the
                        bottom (pencil paints into its pixmap), vector
                        items on top, tool state machine in the scene's
                        mouse events, grid overlay in the view, snapping,
                        group/ungroup, zoom.
-  - `document.py`    — `.kscribe` JSON (de)serialisation: vector items
+  - `document.py`    — `.kpaint` JSON (de)serialisation: vector items
                        (recursively through groups), raster layer as
                        base64 PNG; flattened export to PNG and
                        single-page PDF (QPdfWriter, page sized to the
                        canvas at 96 dpi). Owns the path<->command-list
-                       helpers used by both .kscribe and svgio.
+                       helpers used by both .kpaint and svgio.
   - `svgio.py`       — default format: editable SVG writer + parser
                        (breaks groups/paths/transforms into native
                        items). Resolves `<use href="#id">` against a
@@ -58,7 +58,7 @@ into a new module and import.
                        path helpers from document.
   - `library.py`     — reusable-object/template library: save the current
                        selection as a named standalone SVG in a per-user
-                       objects folder (`KHERVESCRIBE_OBJECTS_DIR` override
+                       objects folder (`KHERVEPAINT_OBJECTS_DIR` override
                        for tests), now **folder-aware** (sub-folders via a
                        `Folder/Name` save path; `iter_objects`/`list_folders`
                        /`create`/`rename`/`move`/`delete`). Driven by the
@@ -183,7 +183,7 @@ into a new module and import.
                        column (3.25 in in mm) at 300 dpi. Sets `scene.dpi`
                        and drives `resize_canvas`/`fit_to_content`
                        (undoable).
-                       `scene.dpi` round-trips (.kscribe/SVG) and drives
+                       `scene.dpi` round-trips (.kpaint/SVG) and drives
                        physical export size (PNG dpi, PDF page, SVG inch
                        width with px viewBox).
   - `undo.py`        — `SnapshotCommand`: whole-document snapshot
@@ -230,7 +230,7 @@ Everything lives in one `QGraphicsScene`:
   it (raster mode). The **pencil** is a *vector* freehand tool: it
   builds a `QPainterPath` as you drag (`pencil_begin/extend/end`) and
   drops a `PathItem` stroke — selectable, movable, resizable (scale
-  handles), rotatable, and saved to .kscribe/SVG like any path. It does
+  handles), rotatable, and saved to .kpaint/SVG like any path. It does
   NOT snap to grid while drawing.
 - **Vector tools** create `QGraphicsItem` subclasses defined in
   `canvas.py` that mix in `SnapMixin`, so items snap to the grid both
@@ -262,7 +262,7 @@ Everything lives in one `QGraphicsScene`:
   - `ImageItem` is a movable bitmap on the vector layer (paste, or
     drag-and-drop an image file/data onto the canvas — `PaintView`
     accepts drops and emits `content_dropped`, which `MainWindow._on_drop`
-    turns into `ImageItem`s at the drop point; a dropped `.svg`/`.kscribe`
+    turns into `ImageItem`s at the drop point; a dropped `.svg`/`.kpaint`
     opens as a document instead); crop
     it via the right-click menu (`crop.py`).
   - Rect/ellipse/rounded-rect/polygon also carry an optional centred
@@ -288,7 +288,7 @@ Everything lives in one `QGraphicsScene`:
   **group** (`gbox`) — eight corner+side handles that resize it in X
   and/or Y by folding a non-uniform scale into the group's `transform()`
   about the opposite handle; that transform round-trips exactly in
-  `.kscribe` via a `"matrix"` field and is baked into children on SVG
+  `.kpaint` via a `"matrix"` field and is baked into children on SVG
   load). Double-clicking enters rotate mode (a knob spins it about its
   centre). The scene owns one `SelectionHandles`; handles are
   `Handle`-marked, rebuilt on pointer mouse-release, dropped when
@@ -301,7 +301,7 @@ Everything lives in one `QGraphicsScene`:
   handles keep groups resizable/rotatable.
 - **Grid** is drawn in `PaintView.drawForeground` so it never appears
   in PNG exports. Grid size / show / snap live on the scene and
-  round-trip through `.kscribe`.
+  round-trip through `.kpaint`.
 - **Groups** use `QGraphicsItemGroup` via a snap-aware subclass;
   Ctrl+G / Ctrl+Shift+G.
 - **Explode** (`explode_selection`, Ctrl+Shift+E / context menu) breaks
@@ -334,13 +334,13 @@ back into editable items. Opening an external SVG breaks it into native
 items — `<g>` → `GroupItem` (ungroupable), primitives → their items,
 `<path>` / scaled-or-sheared elements → `PathItem`. Export (Ctrl+E)
 writes flattened PNG/PDF. Save As offers **only `.svg`**; the older
-`.kscribe`/`.kpaint` JSON files still *open* (via *All files*) but are no
+`.kpaint`/`.kscribe` JSON files still *open* (via *All files*) but are no
 longer offered for saving.
 
 The JSON serialisation in `document.py` (`scene_to_dict`/`dict_to_scene`)
 is still the in-memory snapshot format that powers **undo/redo**, and
-remains the on-disk shape of legacy `.kscribe`/`.kpaint` files:
-`{"format": "kscribe", "version":
+remains the on-disk shape of legacy `.kpaint`/`.kscribe` files:
+`{"format": "kpaint", "version":
 1, "width", "height", "grid": {"size", "show", "snap"}, "raster":
 "<base64 PNG>", "items": [...]}`. Each item dict has `"type"`
 (`line|arrow|rect|roundrect|ellipse|polygon|path|text|image|group`),

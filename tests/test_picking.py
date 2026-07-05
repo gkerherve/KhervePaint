@@ -25,8 +25,8 @@ from PyQt5.QtGui import QColor, QPainterPath, QPen
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
-from khervescribe import fill
-from khervescribe.canvas import (ArcShapeItem, PaintScene, PaintView,
+from khervepaint import fill
+from khervepaint.canvas import (ArcShapeItem, PaintScene, PaintView,
                                  PathItem, RectItem)
 
 

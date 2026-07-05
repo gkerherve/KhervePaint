@@ -30,14 +30,14 @@ from .canvas import (ARC_KINDS, POLYGON_KINDS, ArcShapeItem, ArrowItem,
                      EllipseItem, LineItem, PolygonItem, RectItem,
                      RoundedRectItem, TextItem, center_origin)
 
-_SETTINGS = ("Kherve", "KherveScribe")
+_SETTINGS = ("Kherve", "KhervePaint")
 
 #: AI shape name -> internal kind / handling.
 _ALIASES = {"rectangle": "rect", "rounded_rectangle": "rounded_rect",
             "block_arrow": "arrow_right", "half_circle": "halfcircle",
             "quarter_circle": "quartercircle"}
 
-SYSTEM_PROMPT = """You are a drawing assistant inside KherveScribe, a \
+SYSTEM_PROMPT = """You are a drawing assistant inside KhervePaint, a \
 vector drawing app. Help the user create and arrange shapes.
 
 The canvas is {w}x{h} pixels; the origin (0,0) is the top-left corner. \
