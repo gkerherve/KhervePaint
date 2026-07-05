@@ -977,12 +977,12 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------ drag & drop
     def _on_drop(self, paths, image, scene_pos):
-        """Drop handler: a dropped .svg/.kpaint (or legacy .kscribe) opens
-        as a document; any image (file in any Qt-supported format, or raw
-        image data dragged from another app) is placed as a movable image
-        item at the drop point. Multiple images cascade and select together."""
+        """Drop handler: a dropped .svg/.kpaint opens as a document; any
+        image (file in any Qt-supported format, or raw image data dragged
+        from another app) is placed as a movable image item at the drop
+        point. Multiple images cascade and select together."""
         docs = [p for p in paths
-                if Path(p).suffix.lower() in (".svg", ".kpaint", ".kscribe")]
+                if Path(p).suffix.lower() in (".svg", ".kpaint")]
         if docs:
             if self._confirm_discard():
                 self._load_document(docs[0])
@@ -1200,7 +1200,7 @@ class MainWindow(QMainWindow):
             self, "Open", "",
             "All supported (*.svg *.png);;SVG image (*.svg);;"
             "PNG image (*.png);;"
-            "All files (*)")          # old .kpaint/.kscribe via All files
+            "All files (*)")          # legacy .kpaint via All files
         if not path:
             return
         self._load_document(path)
@@ -1286,7 +1286,7 @@ class MainWindow(QMainWindow):
             self.save_file_as()
             return
         try:
-            if Path(self._path).suffix.lower() in (".kpaint", ".kscribe"):
+            if Path(self._path).suffix.lower() == ".kpaint":
                 document.save_kpaint(self.scene, self._path)
             else:
                 svgio.save_svg(self.scene, self._path)

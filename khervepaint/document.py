@@ -319,7 +319,7 @@ def scene_to_dict(scene: PaintScene) -> dict:
 
 
 def dict_to_scene(data: dict, scene: PaintScene):
-    if data.get("format") not in ("kpaint", "kscribe"):  # kscribe = old name
+    if data.get("format") != "kpaint":
         raise ValueError("not a KhervePaint document")
     width = data.get("width", 800)
     scene.new_document(width, data.get("height", 600))

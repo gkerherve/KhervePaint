@@ -41,8 +41,8 @@ def icon(name: str, color: str = None) -> QIcon:
 
 
 def app_icon() -> QIcon:
-    """Window/taskbar icon: a 'K' wordmark over 'paint' on a rounded
-    tile (reads 'K paint', not 'KP')."""
+    """Window/taskbar icon: a big 'K' with 'Paint' small below it, on a
+    yellow rounded tile (the KhervePaint wordmark)."""
     from PyQt5.QtCore import Qt, QRectF
     from PyQt5.QtGui import QColor, QFont, QPainter, QPixmap
 
@@ -52,20 +52,20 @@ def app_icon() -> QIcon:
     p = QPainter(pm)
     p.setRenderHint(QPainter.Antialiasing)
     p.setPen(Qt.NoPen)
-    p.setBrush(QColor("#2f6f9f"))
+    p.setBrush(QColor("#f5b301"))          # KhervePaint yellow
     p.drawRoundedRect(QRectF(10, 10, size - 20, size - 20), 44, 44)
 
-    p.setPen(QColor("#ffffff"))
-    big = QFont("Segoe UI", 132)
+    p.setPen(QColor("#2b2b2b"))            # dark ink for contrast on yellow
+    big = QFont("Segoe UI", 142)
     big.setBold(True)
     p.setFont(big)
-    p.drawText(QRectF(0, 6, size, size * 0.64), Qt.AlignCenter, "K")
+    p.drawText(QRectF(0, 0, size, size * 0.66), Qt.AlignCenter, "K")
 
-    small = QFont("Segoe UI", 52)
-    small.setItalic(True)
+    small = QFont("Segoe UI", 46)
+    small.setBold(True)
     p.setFont(small)
-    p.drawText(QRectF(0, size * 0.60, size, size * 0.34),
-               Qt.AlignCenter, "paint")
+    p.drawText(QRectF(0, size * 0.62, size, size * 0.30),
+               Qt.AlignCenter, "Paint")
     p.end()
     return QIcon(pm)
 

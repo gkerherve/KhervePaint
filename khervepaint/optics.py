@@ -19,6 +19,8 @@ _METAL = "#dfe7ee"
 _GLASS = "#e8f0f5"
 _BEAM = "#d9534f"
 _DETECTOR = "#cfd6de"
+_LIGHT = "#fde7b0"   # soft light-cone / glow fill
+_RAY = "#e8a317"     # warm light ray
 
 _W2 = 2.0    # outline width
 _W1 = 1.2    # detail width
@@ -333,6 +335,191 @@ def build_monochromator(w, h):
     return specs
 
 
+# --- Lighting / illumination ----------------------------------------
+def build_light_cone(w, h):
+    """A cone of light to shine down onto an object: a source dot at the
+    top widening into a pale beam with edge rays."""
+    cx = 0.5 * w
+    return [
+        {"shape": "triangle", "x": 0.12 * w, "y": 0.14 * h, "w": 0.76 * w,
+         "h": 0.80 * h, "rotation": 0, "stroke": _RAY, "fill": _LIGHT,
+         "width": _W1},
+        {"shape": "line", "x1": cx, "y1": 0.16 * h, "x2": 0.33 * w,
+         "y2": 0.9 * h, "stroke": _RAY, "width": _W1},
+        {"shape": "line", "x1": cx, "y1": 0.16 * h, "x2": 0.67 * w,
+         "y2": 0.9 * h, "stroke": _RAY, "width": _W1},
+        {"shape": "circle", "x": cx - 0.06 * w, "y": 0.04 * h, "w": 0.12 * w,
+         "h": 0.12 * w, "stroke": _OUTLINE, "fill": _RAY, "width": _W1},
+    ]
+
+
+def build_spotlight(w, h):
+    """A focused spotlight: lamp head casting a narrow cone onto a hotspot."""
+    cx = 0.5 * w
+    return [
+        {"shape": "trapezoid", "x": 0.10 * w, "y": 0.28 * h, "w": 0.80 * w,
+         "h": 0.52 * h, "rotation": 0, "stroke": _RAY, "fill": _LIGHT,
+         "width": _W1},
+        {"shape": "trapezoid", "x": 0.30 * w, "y": 0.04 * h, "w": 0.40 * w,
+         "h": 0.24 * h, "rotation": 0, "stroke": _OUTLINE, "fill": _METAL,
+         "width": _W2},
+        {"shape": "circle", "x": cx - 0.06 * w, "y": 0.15 * h, "w": 0.12 * w,
+         "h": 0.12 * w, "stroke": _OUTLINE, "fill": _RAY, "width": _W1},
+        {"shape": "ellipse", "x": 0.20 * w, "y": 0.82 * h, "w": 0.60 * w,
+         "h": 0.13 * h, "stroke": _RAY, "fill": _LIGHT, "width": _W1},
+    ]
+
+
+def build_floodlight(w, h):
+    """A broad floodlight: rectangular fixture with a wide light spread."""
+    return [
+        {"shape": "trapezoid", "x": 0.02 * w, "y": 0.32 * h, "w": 0.96 * w,
+         "h": 0.60 * h, "rotation": 0, "stroke": _RAY, "fill": _LIGHT,
+         "width": _W1},
+        {"shape": "rect", "x": 0.24 * w, "y": 0.06 * h, "w": 0.52 * w,
+         "h": 0.24 * h, "stroke": _OUTLINE, "fill": _METAL, "width": _W2},
+        {"shape": "line", "x1": 0.42 * w, "y1": 0.06 * h, "x2": 0.42 * w,
+         "y2": 0.30 * h, "stroke": _OUTLINE, "width": _W1},
+        {"shape": "line", "x1": 0.58 * w, "y1": 0.06 * h, "x2": 0.58 * w,
+         "y2": 0.30 * h, "stroke": _OUTLINE, "width": _W1},
+        {"shape": "line", "x1": 0.24 * w, "y1": 0.18 * h, "x2": 0.12 * w,
+         "y2": 0.18 * h, "stroke": _OUTLINE, "width": _W2},
+        {"shape": "line", "x1": 0.76 * w, "y1": 0.18 * h, "x2": 0.88 * w,
+         "y2": 0.18 * h, "stroke": _OUTLINE, "width": _W2},
+    ]
+
+
+def build_desk_lamp(w, h):
+    """An adjustable desk lamp shining a cone of light onto the bench."""
+    return [
+        {"shape": "ellipse", "x": 0.08 * w, "y": 0.90 * h, "w": 0.44 * w,
+         "h": 0.08 * h, "stroke": _OUTLINE, "fill": _METAL, "width": _W2},
+        {"shape": "line", "x1": 0.30 * w, "y1": 0.90 * h, "x2": 0.34 * w,
+         "y2": 0.40 * h, "stroke": _OUTLINE, "width": _W2},
+        {"shape": "line", "x1": 0.34 * w, "y1": 0.40 * h, "x2": 0.60 * w,
+         "y2": 0.22 * h, "stroke": _OUTLINE, "width": _W2},
+        {"shape": "trapezoid", "x": 0.48 * w, "y": 0.12 * h, "w": 0.34 * w,
+         "h": 0.20 * h, "rotation": 0, "stroke": _OUTLINE, "fill": _METAL,
+         "width": _W2},
+        {"shape": "triangle", "x": 0.44 * w, "y": 0.30 * h, "w": 0.50 * w,
+         "h": 0.52 * h, "rotation": 0, "stroke": _RAY, "fill": _LIGHT,
+         "width": _W1},
+    ]
+
+
+def build_bulb(w, h):
+    """An incandescent light bulb (glass + filament + screw base) with
+    emitted rays."""
+    cx = 0.5 * w
+    d = 0.52 * w
+    gx, gy = cx - d / 2.0, 0.10 * h
+    ccy = gy + d / 2.0
+    specs = [
+        {"shape": "circle", "x": gx, "y": gy, "w": d, "h": d,
+         "stroke": _OUTLINE, "fill": _LIGHT, "width": _W2},
+        {"shape": "line", "x1": cx - 0.09 * w, "y1": gy + d * 0.72,
+         "x2": cx - 0.03 * w, "y2": gy + d * 0.45, "stroke": _RAY,
+         "width": _W1},
+        {"shape": "line", "x1": cx - 0.03 * w, "y1": gy + d * 0.45,
+         "x2": cx + 0.03 * w, "y2": gy + d * 0.55, "stroke": _RAY,
+         "width": _W1},
+        {"shape": "line", "x1": cx + 0.03 * w, "y1": gy + d * 0.55,
+         "x2": cx + 0.09 * w, "y2": gy + d * 0.30, "stroke": _RAY,
+         "width": _W1},
+        {"shape": "rect", "x": cx - 0.12 * w, "y": gy + d - 0.005 * h,
+         "w": 0.24 * w, "h": 0.16 * h, "stroke": _OUTLINE, "fill": _METAL,
+         "width": _W1},
+    ]
+    for i in (1, 2):
+        y = gy + d + 0.05 * h * i
+        specs.append({"shape": "line", "x1": cx - 0.12 * w, "y1": y,
+                      "x2": cx + 0.12 * w, "y2": y, "stroke": _OUTLINE,
+                      "width": _W1})
+    for a in (-70, -35, 0, 35, 70):
+        ang = math.radians(a - 90)
+        r0, r1 = d * 0.60, d * 0.85
+        specs.append({"shape": "line",
+                      "x1": cx + r0 * math.cos(ang), "y1": ccy + r0 * math.sin(ang),
+                      "x2": cx + r1 * math.cos(ang), "y2": ccy + r1 * math.sin(ang),
+                      "stroke": _RAY, "width": _W1})
+    return specs
+
+
+def build_led(w, h):
+    """An LED (domed emitter on two leads) with the two emitted-light arrows."""
+    cx = 0.5 * w
+    dw, dh = 0.5 * w, 0.42 * h
+    dx, dy = cx - dw / 2.0, 0.28 * h
+    return [
+        {"shape": "halfcircle", "x": dx, "y": dy, "w": dw, "h": dh,
+         "rotation": 0, "stroke": _OUTLINE, "fill": _LIGHT, "width": _W2},
+        {"shape": "line", "x1": dx, "y1": dy + dh, "x2": dx + dw, "y2": dy + dh,
+         "stroke": _OUTLINE, "width": _W2},
+        {"shape": "line", "x1": cx - 0.1 * w, "y1": dy + dh, "x2": cx - 0.1 * w,
+         "y2": 0.94 * h, "stroke": _OUTLINE, "width": _W2},
+        {"shape": "line", "x1": cx + 0.1 * w, "y1": dy + dh, "x2": cx + 0.1 * w,
+         "y2": 0.94 * h, "stroke": _OUTLINE, "width": _W2},
+        {"shape": "arrow", "x1": dx + 0.20 * dw, "y1": dy + 0.05 * dh,
+         "x2": dx - 0.10 * dw, "y2": dy - 0.28 * dh, "stroke": _RAY,
+         "width": _W1},
+        {"shape": "arrow", "x1": dx + 0.42 * dw, "y1": dy - 0.05 * dh,
+         "x2": dx + 0.14 * dw, "y2": dy - 0.36 * dh, "stroke": _RAY,
+         "width": _W1},
+    ]
+
+
+def build_ring_light(w, h):
+    """A ring illuminator: an annulus of LEDs shining inward on a sample."""
+    cx, cy = 0.5 * w, 0.5 * h
+    m = min(w, h)
+    r, ri = 0.44 * m, 0.24 * m
+    specs = [
+        {"shape": "circle", "x": cx - r, "y": cy - r, "w": 2 * r, "h": 2 * r,
+         "stroke": _OUTLINE, "fill": _LIGHT, "width": _W2},
+        {"shape": "circle", "x": cx - ri, "y": cy - ri, "w": 2 * ri,
+         "h": 2 * ri, "stroke": _OUTLINE, "fill": "#ffffff", "width": _W1},
+    ]
+    rm, dd = (r + ri) / 2.0, 0.035 * m
+    for i in range(12):
+        a = math.radians(i * 30)
+        dx, dy = cx + rm * math.cos(a), cy + rm * math.sin(a)
+        specs.append({"shape": "circle", "x": dx - dd, "y": dy - dd,
+                      "w": 2 * dd, "h": 2 * dd, "stroke": _OUTLINE,
+                      "fill": _RAY, "width": _W1})
+    for i in range(4):
+        a = math.radians(i * 90 + 45)
+        specs.append({"shape": "line",
+                      "x1": cx + ri * 0.95 * math.cos(a),
+                      "y1": cy + ri * 0.95 * math.sin(a),
+                      "x2": cx + ri * 0.30 * math.cos(a),
+                      "y2": cy + ri * 0.30 * math.sin(a),
+                      "stroke": _RAY, "width": _W1})
+    return specs
+
+
+def build_shine(w, h):
+    """A sparkle / glint to drop on an object to show it is lit or shiny."""
+    cx, cy = 0.5 * w, 0.5 * h
+    m = min(w, h)
+    specs = []
+    for a in (0, 90, 180, 270):
+        ang = math.radians(a)
+        specs.append({"shape": "line", "x1": cx, "y1": cy,
+                      "x2": cx + 0.46 * m * math.cos(ang),
+                      "y2": cy + 0.46 * m * math.sin(ang),
+                      "stroke": _RAY, "width": _W2})
+    for a in (45, 135, 225, 315):
+        ang = math.radians(a)
+        specs.append({"shape": "line", "x1": cx, "y1": cy,
+                      "x2": cx + 0.26 * m * math.cos(ang),
+                      "y2": cy + 0.26 * m * math.sin(ang),
+                      "stroke": _RAY, "width": _W1})
+    dd = 0.12 * m
+    specs.append({"shape": "circle", "x": cx - dd, "y": cy - dd, "w": 2 * dd,
+                  "h": 2 * dd, "stroke": _RAY, "fill": _LIGHT, "width": _W1})
+    return specs
+
+
 # --- registry / metadata --------------------------------------------
 SIZES = {
     "laser": (140.0, 60.0),
@@ -353,6 +540,14 @@ SIZES = {
     "filter": (90.0, 70.0),
     "sample": (70.0, 70.0),
     "monochromator": (160.0, 120.0),
+    "light_cone": (120.0, 140.0),
+    "spotlight": (120.0, 140.0),
+    "floodlight": (140.0, 120.0),
+    "desk_lamp": (130.0, 150.0),
+    "bulb": (90.0, 130.0),
+    "led": (80.0, 120.0),
+    "ring_light": (110.0, 110.0),
+    "shine": (90.0, 90.0),
 }
 
 LABELS = {
@@ -374,6 +569,14 @@ LABELS = {
     "filter": "Filter",
     "sample": "Sample",
     "monochromator": "Monochromator",
+    "light_cone": "Light cone",
+    "spotlight": "Spotlight",
+    "floodlight": "Floodlight",
+    "desk_lamp": "Desk lamp",
+    "bulb": "Light bulb",
+    "led": "LED",
+    "ring_light": "Ring light",
+    "shine": "Shine / glint",
 }
 
 CATEGORIES = [
@@ -386,6 +589,9 @@ CATEGORIES = [
       "aperture", "filter"]),
     ("Components",
      ["sample", "monochromator"]),
+    ("Lighting",
+     ["light_cone", "spotlight", "floodlight", "desk_lamp", "bulb", "led",
+      "ring_light", "shine"]),
 ]
 
 

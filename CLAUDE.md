@@ -105,7 +105,10 @@ into a new module and import.
                        `LABWARE_PLACE`/`FLOW_PLACE`, placed via
                        `place_<x>_element` → `_place_symbol`). **optics**:
                        beam-path symbols (laser, mirrors, lenses, prism,
-                       grating, detector, monochromator…). **vacuum**
+                       grating, detector, monochromator…) plus a **Lighting**
+                       section (spotlight, floodlight, light cone, desk lamp,
+                       bulb, LED, ring light, shine — for illuminating
+                       objects). **vacuum**
                        (44 symbols, 5 sections): UHV/surface-science —
                        chamber & sources; pumps (turbo/ion/scroll/rotary/
                        cryo/diaphragm/Roots/NEG/TSP); gauges & pressure
@@ -334,12 +337,12 @@ back into editable items. Opening an external SVG breaks it into native
 items — `<g>` → `GroupItem` (ungroupable), primitives → their items,
 `<path>` / scaled-or-sheared elements → `PathItem`. Export (Ctrl+E)
 writes flattened PNG/PDF. Save As offers **only `.svg`**; the older
-`.kpaint`/`.kscribe` JSON files still *open* (via *All files*) but are no
+`.kpaint` JSON files still *open* (via *All files*) but are no
 longer offered for saving.
 
 The JSON serialisation in `document.py` (`scene_to_dict`/`dict_to_scene`)
 is still the in-memory snapshot format that powers **undo/redo**, and
-remains the on-disk shape of legacy `.kpaint`/`.kscribe` files:
+remains the on-disk shape of legacy `.kpaint` files:
 `{"format": "kpaint", "version":
 1, "width", "height", "grid": {"size", "show", "snap"}, "raster":
 "<base64 PNG>", "items": [...]}`. Each item dict has `"type"`

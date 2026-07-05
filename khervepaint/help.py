@@ -309,7 +309,9 @@ editable, scaled so a whole layout fits the page):</p>
 <li><b>Optics</b> — beam-path elements for Raman/FTIR/UV-Vis setups:
 laser, lamp, detector, photodiode, camera, flat/curved mirrors, beam
 splitter, beam path, convex/concave lenses, prism, grating, polarizer,
-aperture, filter, sample, monochromator.</li>
+aperture, filter, sample, monochromator; plus a <b>Lighting</b> group
+for illuminating objects (spotlight, floodlight, light cone, desk lamp,
+bulb, LED, ring light, shine).</li>
 <li><b>Vacuum &amp; pressure</b> — UHV / surface-science (XPS/AES/SIMS),
 now 44 symbols across five groups: <i>chamber &amp; sources</i> (chamber,
 hemispherical analyser, X-ray/ion/electron guns, manipulator);
@@ -377,7 +379,7 @@ fills and canvas resizes.</p>
       brings every shape back editable; an imported external SVG is even
       broken into editable items you can ungroup.</li>
   <li><b>Open</b> reads <code>.svg</code> or a <code>.png</code> image
-      (older <code>.kpaint</code>/<code>.kscribe</code> files still open
+      (older <code>.kpaint</code> files still open
       via <i>All files</i>). Recent files are under <b>File ▸ Open
       Recent</b>.</li>
   <li><b>Export</b> (Ctrl+E) writes a flattened <b>PNG</b> or single-page
