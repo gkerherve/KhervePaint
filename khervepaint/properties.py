@@ -18,9 +18,9 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor, QFont, QIcon, QPen, QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog,
                              QDialogButtonBox, QDoubleSpinBox, QFontComboBox,
-                             QFormLayout, QGroupBox, QLabel, QLineEdit, QMenu,
-                             QPlainTextEdit, QSpinBox, QToolButton,
-                             QVBoxLayout)
+                             QFormLayout, QGroupBox, QHBoxLayout, QLabel,
+                             QLineEdit, QMenu, QPlainTextEdit, QSpinBox,
+                             QToolButton, QVBoxLayout)
 
 from . import gradient, icons
 from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
@@ -83,9 +83,13 @@ class PropertiesDialog(QDialog):
         super().__init__(parent)
         self.item = item
         self.setWindowTitle("Item properties")
-        self.setMinimumWidth(320)
+        self.setMinimumWidth(560)
         layout = QVBoxLayout(self)
 
+        # Sections register themselves in self._boxes; they are then
+        # dealt across two side-by-side columns so the dialog stays
+        # short instead of growing into one tall stack.
+        self._boxes = []
         self._build_common(layout)
         if not isinstance(item, (TextItem, ImageItem, GroupItem)):
             self._build_stroke(layout)
@@ -99,6 +103,22 @@ class PropertiesDialog(QDialog):
         if isinstance(item, LabelMixin):
             self._build_label(layout)
 
+        columns = QHBoxLayout()
+        left, right = QVBoxLayout(), QVBoxLayout()
+        columns.addLayout(left)
+        columns.addLayout(right)
+        layout.addLayout(columns)
+        # Greedy balance: drop each section into whichever column is
+        # currently the shorter (by summed row count).
+        heights = [0, 0]
+        for box, form in self._boxes:
+            rows = max(form.rowCount(), 1)
+            side = 0 if heights[0] <= heights[1] else 1
+            (left if side == 0 else right).addWidget(box)
+            heights[side] += rows
+        left.addStretch(1)
+        right.addStretch(1)
+
         buttons = QDialogButtonBox(QDialogButtonBox.Ok
                                    | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._apply_and_accept)
@@ -109,7 +129,9 @@ class PropertiesDialog(QDialog):
     def _section(self, parent_layout, title) -> QFormLayout:
         box = QGroupBox(title)
         form = QFormLayout(box)
-        parent_layout.addWidget(box)
+        # Register for two-column placement; weight ~ number of rows so
+        # the greedy balancer keeps the two columns roughly even.
+        self._boxes.append((box, form))
         return form
 
     def _build_common(self, layout):
