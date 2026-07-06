@@ -27,6 +27,47 @@ THEMES = {
         border="#3a4149", text="#e6e9ec", editor="#23282e",
         hover="#37404a", pressed="#415060", select="#4aa3ff",
         icon="#cfd6dd", gutter="#6ab0f3", dark=True),
+    # --- The yellow family (KhervePaint's signature colour) ---------------
+    "Butter": dict(
+        window="#fdf6d3", chrome="#faefb8", card="#fffdf4",
+        border="#e7d9a0", text="#413815", editor="#fdf8e0",
+        hover="#f5e7a6", pressed="#eeda8b", select="#c99e28",
+        icon="#7c6620", gutter="#b98d1c", dark=False),
+    "Cream": dict(
+        window="#faf4df", chrome="#f4ebcb", card="#fffef8",
+        border="#e2d4ac", text="#443b22", editor="#f9f2d8",
+        hover="#eee2bb", pressed="#e5d5a3", select="#b78f2a",
+        icon="#6f5d33", gutter="#a0791b", dark=False),
+    "Lemon": dict(
+        window="#fdf8bf", chrome="#fbf29a", card="#fffef1",
+        border="#e6d878", text="#3f3b0f", editor="#fdfaca",
+        hover="#f6ec8a", pressed="#efe16c", select="#cba614",
+        icon="#7a6a12", gutter="#ba960e", dark=False),
+    "Sunflower": dict(
+        window="#fdef94", chrome="#fce572", card="#fffdef",
+        border="#ecd257", text="#463c0e", editor="#fdf5b4",
+        hover="#f8e669", pressed="#f1da4d", select="#d4a30f",
+        icon="#7d6510", gutter="#c39109", dark=False),
+    "Honey": dict(
+        window="#fbeab0", chrome="#f7e094", card="#fffcee",
+        border="#e1c56e", text="#48380f", editor="#fcf1c6",
+        hover="#f2db86", pressed="#ebcf69", select="#c8941a",
+        icon="#7a5c14", gutter="#b8830e", dark=False),
+    "Amber": dict(
+        window="#fce6b4", chrome="#f8d891", card="#fffbef",
+        border="#e6c079", text="#4a3514", editor="#fcecc6",
+        hover="#f3d78d", pressed="#ecc972", select="#cf8c1a",
+        icon="#7d5714", gutter="#bd7a0f", dark=False),
+    "Gold": dict(
+        window="#f6e492", chrome="#f0d96f", card="#fffceb",
+        border="#d6b950", text="#443410", editor="#f8ecb0",
+        hover="#edd162", pressed="#e5c547", select="#b8860b",
+        icon="#6d500d", gutter="#a87409", dark=False),
+    "Mustard": dict(
+        window="#eee0a6", chrome="#e5d28d", card="#fbf6e2",
+        border="#ccb566", text="#3e3210", editor="#efe6b4",
+        hover="#ddcc80", pressed="#d2be6a", select="#997c1a",
+        icon="#63500f", gutter="#8a6b0f", dark=False),
     "Slate": dict(
         window="#e8ebef", chrome="#dde2e8", card="#ffffff",
         border="#c5ccd4", text="#2e3440", editor="#f0f3f6",
@@ -59,8 +100,12 @@ THEMES = {
         icon="#000000", gutter="#0000cc", dark=False),
 }
 
-DEFAULT_THEME = "Light"
+DEFAULT_THEME = "Butter"
 _SETTINGS = ("Kherve", "KhervePaint")
+# v2 key: the previous "theme" key was auto-written on every launch,
+# pinning everyone to the old default. A fresh key lets the new yellow
+# default take effect; only an explicit choice (View > Theme) is saved.
+_THEME_KEY = "theme_v2"
 _current = DEFAULT_THEME
 
 
@@ -181,17 +226,22 @@ def tokens(name: str = None) -> dict:
 
 
 def saved_theme() -> str:
-    name = QSettings(*_SETTINGS).value("theme", DEFAULT_THEME)
+    name = QSettings(*_SETTINGS).value(_THEME_KEY, DEFAULT_THEME)
     return name if name in THEMES else DEFAULT_THEME
 
 
 def apply_style(app, name: str = None):
-    """Apply theme *name* (default: the saved one) and persist it."""
+    """Apply theme *name* (or the saved one at startup).
+
+    Only an explicit *name* (a user choice from the Theme menu) is
+    persisted — startup must not overwrite the saved value, so the
+    default stays the default until the user picks something."""
     global _current
     _current = name or saved_theme()
     t = tokens(_current)
     app.setPalette(_palette(t))
     app.setStyleSheet(_template(t))
-    QSettings(*_SETTINGS).setValue("theme", _current)
+    if name is not None:
+        QSettings(*_SETTINGS).setValue(_THEME_KEY, name)
     from . import icons
     icons.set_icon_color(t["icon"])
