@@ -48,68 +48,8 @@ def icon(name: str, color: str = None) -> QIcon:
         return QIcon()
 
 
-# The wordmark letters are drawn as stroked vector paths (not text) so
-# the mark renders identically on every platform without depending on a
-# system font. Each glyph is built in a unit box (x, y in 0..1) and
-# transformed into place by _stroke. Caps fill the box height; lowercase
-# glyphs sit on the baseline (y=1) at *xh* of the cap height.
-
-
-def _glyph_K():
-    w = 0.82
-    path = QPainterPath()
-    path.moveTo(0.0, 0.0); path.lineTo(0.0, 1.0)          # stem
-    path.moveTo(0.0, 0.52); path.lineTo(w, 0.0)           # upper arm
-    path.moveTo(0.0, 0.52); path.lineTo(w, 1.0)           # lower arm
-    return path, w
-
-
-def _glyph_P():
-    w = 0.70
-    path = QPainterPath()
-    path.moveTo(0.0, 0.0); path.lineTo(0.0, 1.0)          # stem
-    path.moveTo(0.0, 0.0)                                  # bowl
-    path.cubicTo(w * 1.25, 0.02, w * 1.25, 0.52, 0.0, 0.54)
-    return path, w
-
-
-def _glyph_a(xh):
-    w = 0.72
-    top = 1.0 - xh
-    path = QPainterPath()
-    path.addEllipse(QRectF(0.0, top, w, xh))              # bowl
-    path.moveTo(w, top); path.lineTo(w, 1.0)              # right stem
-    return path, w
-
-
-def _glyph_i(xh):
-    w = 0.20
-    top = 1.0 - xh
-    path = QPainterPath()
-    path.moveTo(w / 2, top); path.lineTo(w / 2, 1.0)      # stem
-    path.moveTo(w / 2, top - 0.20)                        # dot (round cap)
-    path.lineTo(w / 2, top - 0.19)
-    return path, w
-
-
-def _glyph_n(xh):
-    w = 0.66
-    top = 1.0 - xh
-    path = QPainterPath()
-    path.moveTo(0.0, top); path.lineTo(0.0, 1.0)          # left stem
-    path.moveTo(0.0, top + 0.12)                          # arch + right leg
-    path.cubicTo(0.0, top, w, top, w, top + 0.12)
-    path.lineTo(w, 1.0)
-    return path, w
-
-
-def _glyph_t(xh):
-    w = 0.42
-    top = 1.0 - xh
-    path = QPainterPath()
-    path.moveTo(w * 0.40, top - 0.16); path.lineTo(w * 0.40, 0.96)   # stem
-    path.moveTo(0.0, top); path.lineTo(w, top)            # crossbar
-    return path, w
+# The brush schematic is a stroked vector path (font-independent); the
+# "KPaint" wordmark itself is drawn with a normal system font.
 
 
 def _stroke(p, path, color, box, weight):
@@ -143,20 +83,24 @@ def _paint_tile(p, s):
     return rect
 
 
-def _paint_wordmark(p, rect):
-    """Draw 'KPaint' on one baseline: capital K, capital P, then 'aint'."""
-    xh = 0.66
-    items = [_glyph_K(), _glyph_P(), _glyph_a(xh), _glyph_i(xh),
-             _glyph_n(xh), _glyph_t(xh)]
-    gap = 0.10
-    total = sum(w for _path, w in items) + gap * (len(items) - 1)
-    pad_x, pad_y = rect.width() * 0.11, rect.height() * 0.22
-    ch = min(rect.height() - 2 * pad_y, (rect.width() - 2 * pad_x) / total)
-    x = rect.x() + (rect.width() - total * ch) / 2.0
-    top = rect.y() + (rect.height() - ch) / 2.0
-    for path, gw in items:
-        _stroke(p, path, _INK, QRectF(x, top, gw * ch, ch), 0.15)
-        x += (gw + gap) * ch
+def _paint_wordmark(p, rect, text):
+    """Draw *text* centred in *rect* with a normal bold system font,
+    scaled up to the largest size that still fits the tile width."""
+    from PyQt5.QtGui import QFont, QFontMetricsF
+    avail = rect.width() * 0.80
+    font = QFont("Segoe UI")
+    font.setBold(True)
+    size = 1.0
+    while size < rect.height():
+        font.setPointSizeF(size + 0.5)
+        fm = QFontMetricsF(font)
+        if fm.horizontalAdvance(text) > avail or fm.height() > rect.height():
+            break
+        size += 0.5
+    font.setPointSizeF(size)
+    p.setFont(font)
+    p.setPen(QColor(_INK))
+    p.drawText(rect, Qt.AlignCenter, text)
 
 
 def _paint_brush(p, box):
@@ -189,7 +133,7 @@ def _paint_kpaint(size):
     s = float(size)
     rect = _paint_tile(p, s)
     x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
-    _paint_wordmark(p, QRectF(x, y + h * 0.05, w, h * 0.44))
+    _paint_wordmark(p, QRectF(x, y + h * 0.05, w, h * 0.44), "KPaint")
     bw, bh = w * 0.34, h * 0.40
     _paint_brush(p, QRectF(x + (w - bw) / 2.0, y + h * 0.54, bw, bh))
     p.end()
