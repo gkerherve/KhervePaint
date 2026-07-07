@@ -61,18 +61,20 @@ Each spec is an object:
   "c1":hex,"c2":hex,"angle":deg}. "sun" is a lit-sphere highlight (c2 =
   light colour) — use it to make a circle look like a 3D ball.
 
-For chemistry, prefer the high-level "molecule" shape — it makes a real
-3D ball-and-stick model the user can rotate (double-click) and edit:
-- {"shape":"molecule","name":"ethanol","x":cx,"y":cy} places a known
-  molecule/crystal from the library (water, methane, methanol, ethanol,
-  acetic_acid, benzene, toluene, phenol, glucose, pet, bcc, fcc,
-  perovskite…).
-- For anything else, give the HEAVY-atom skeleton and let hydrogens +
-  3D geometry be added automatically:
-  {"shape":"molecule","atoms":["C","C","O"],"bonds":[[0,1,1],[1,2,1]],
-   "x":cx,"y":cy}  (bonds are [atom_i, atom_j, order]; order 1/2/3; do
-  NOT list H's). Optional "as":"structural"|"lewis"|"condensed" draws the
-  2D formula instead of the 3D model.
+For chemistry, use the high-level "molecule" shape — it makes a real 3D
+ball-and-stick model the user can rotate (double-click) and edit. ALWAYS
+include the heavy-atom skeleton so it works even for an unusual name:
+  {"shape":"molecule","name":"propan-2-ol","atoms":["C","C","C","O"],
+   "bonds":[[0,1,1],[1,2,1],[1,3,1]],"x":cx,"y":cy}
+- "atoms" = the HEAVY atoms only (no H's), as element symbols.
+- "bonds" = [atom_i, atom_j, order] with order 1/2/3 (default 1).
+- Hydrogens and correct 3D geometry are added automatically.
+- "name" is optional (used to fetch a curated model for common
+  molecules/crystals like water, methane, ethanol, benzene, glucose, pet,
+  bcc, fcc, perovskite — but ALWAYS also give atoms/bonds as a fallback).
+- Optional "as":"structural"|"lewis"|"condensed" draws the 2D formula.
+For a ring molecule (benzene, cyclohexane…) prefer a library "name"; the
+skeleton builder is best for chains and branched molecules.
 Use "molecule" whenever the user asks for a molecule or crystal.
 
 Two low-level shapes also exist for flat, non-rotatable sketches only:
@@ -235,6 +237,12 @@ def _spec_to_item(spec):
     return item
 
 
+def _bond_triple(b):
+    """Normalise a bond entry to [i, j, order] (order defaults to single)."""
+    b = list(b)
+    return [int(b[0]), int(b[1]), int(b[2]) if len(b) > 2 else 1]
+
+
 def _place_ai_molecule(scene, spec):
     """Place a high-level `molecule` spec as a tagged, 3D-rotatable group.
 
@@ -245,14 +253,17 @@ def _place_ai_molecule(scene, spec):
     from . import molecules
     from PyQt5.QtCore import QPointF
     name = spec.get("name")
+    key = molecules.resolve_name(name)             # tolerant name lookup
     atoms = bonds = None
-    if name and (name in molecules._MODELS or name in molecules._POLYMERS):
-        atoms, bonds, _e, _r = molecules.model_data(name)
+    if key:                                        # a library model (best)
+        atoms, bonds, _e, _r = molecules.model_data(key)
+        name = key
     elif spec.get("atoms"):
         raw = spec["atoms"]
-        links = [list(b) for b in spec.get("bonds", [])]
+        links = [_bond_triple(b) for b in spec.get("bonds", [])]
         if raw and isinstance(raw[0], str):        # heavy-atom skeleton
-            atoms, bonds = molecules.build_molecule(list(raw), links)
+            atoms, bonds = molecules.build_molecule(
+                [str(e) for e in raw], links)
         else:                                      # explicit 3D atoms
             atoms = [list(a) for a in raw]
             bonds = links

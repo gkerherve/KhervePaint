@@ -136,6 +136,36 @@ def test_system_prompt_builds_without_crashing():
         prompt.format(w=800, h=600, summary="x")   # .format would crash
 
 
+def test_name_resolver_handles_synonyms():
+    assert molecules.resolve_name("propan-2-ol") == "isopropanol"
+    assert molecules.resolve_name("2-propanol") == "isopropanol"
+    assert molecules.resolve_name("Propan-2-ol molecule") == "isopropanol"
+    assert molecules.resolve_name("table salt") == "nacl"
+    assert molecules.resolve_name("acetylene") == "ethyne"
+    assert molecules.resolve_name("BENZENE") == "benzene"
+    assert molecules.resolve_name("carbon dioxide") == "carbon_dioxide"
+    assert molecules.resolve_name("nonsense-xyz") is None
+
+
+def test_ai_molecule_by_synonym_name_draws(scene):
+    # regression: the AI used the IUPAC name "propan-2-ol" (library key is
+    # "isopropanol"), which drew 0 shapes; it must resolve and draw now.
+    created = ai_assistant.apply_specs(
+        scene, [{"shape": "molecule", "name": "propan-2-ol",
+                 "x": 300, "y": 240}])
+    assert len(created) == 1 and created[0].mol_atoms
+    assert scene.enter_orbit_mode(created[0])
+    scene._exit_orbit()
+
+
+def test_ai_molecule_bonds_without_order(scene):
+    # bonds given as [i, j] (no order) default to single
+    created = ai_assistant.apply_specs(scene, [{
+        "shape": "molecule", "atoms": ["C", "C", "O"],
+        "bonds": [[0, 1], [1, 2]], "x": 300, "y": 240}])
+    assert len(created) == 1 and len(created[0].mol_atoms) > 3
+
+
 def test_ai_molecule_by_name_is_rotatable(scene):
     created = ai_assistant.apply_specs(
         scene, [{"shape": "molecule", "name": "ethanol", "x": 300, "y": 240}])

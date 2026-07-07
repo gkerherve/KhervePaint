@@ -1242,15 +1242,53 @@ def delete_atom(atoms, bonds, index):
     bonds[:] = kept
 
 
-def delete_atom(atoms, bonds, index):
-    """Remove atom *index* and any bonds to it, re-indexing the rest."""
-    atoms.pop(index)
-    kept = []
-    for i, j, o in bonds:
-        if i == index or j == index:
-            continue
-        kept.append([i - (i > index), j - (j > index), o])
-    bonds[:] = kept
+#: Common / IUPAC synonyms -> library key, for AI name lookups.
+_NAME_ALIASES = {
+    "propan-2-ol": "isopropanol", "2-propanol": "isopropanol",
+    "isopropyl alcohol": "isopropanol", "rubbing alcohol": "isopropanol",
+    "propan-1-ol": "propanol", "1-propanol": "propanol",
+    "n-propanol": "propanol", "propyl alcohol": "propanol",
+    "ethyl alcohol": "ethanol", "ethan-1-ol": "ethanol",
+    "methyl alcohol": "methanol", "wood alcohol": "methanol",
+    "ethanoic acid": "acetic_acid", "vinegar": "acetic_acid",
+    "methanoic acid": "formic_acid",
+    "co2": "carbon_dioxide", "ethane-1,2-diol": "ethylene_glycol",
+    "glycol": "ethylene_glycol", "methoxymethane": "dimethyl_ether",
+    "table salt": "nacl", "sodium chloride": "nacl", "salt": "nacl",
+    "rock salt": "nacl", "caesium chloride": "cscl", "cesium chloride": "cscl",
+    "ccl4": "tetrachloromethane", "carbon tetrachloride": "tetrachloromethane",
+    "dcm": "dichloromethane", "methylene chloride": "dichloromethane",
+    "trichloromethane": "chloroform",
+    "ethylene": "ethene", "propylene": "propene", "acetylene": "ethyne",
+    "propanone": "acetone", "propan-2-one": "acetone",
+    "ethanal": "acetaldehyde", "methanal": "formaldehyde",
+    "aminobenzene": "aniline", "methylbenzene": "toluene",
+    "carbolic acid": "phenol", "dextrose": "glucose",
+    "aminomethane": "methylamine", "aminoethane": "ethylamine",
+    "teflon": "ptfe", "polyethylene terephthalate": "pet",
+    "polythene": "polyethylene", "poly(vinyl chloride)": "pvc",
+}
+
+
+def resolve_name(name):
+    """Best-effort map a molecule/crystal *name* to a library key, tolerating
+    spaces/hyphens/case, a trailing 'molecule'/'crystal', and common
+    synonyms. Returns the key, or None if nothing matches."""
+    if not name:
+        return None
+    n = str(name).strip().lower()
+    for suffix in (" molecule", " crystal", " structure", " unit cell",
+                   " repeat unit", " cell"):
+        if n.endswith(suffix):
+            n = n[:-len(suffix)].strip()
+    key = n.replace(" ", "_").replace("-", "_")
+    if key in _MODELS or key in _POLYMERS:
+        return key
+    if n in _NAME_ALIASES:
+        return _NAME_ALIASES[n]
+    if key in _NAME_ALIASES:
+        return _NAME_ALIASES[key]
+    return None
 
 
 def size_mm(name):
