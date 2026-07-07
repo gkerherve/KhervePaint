@@ -344,11 +344,22 @@ Five further dropdowns cover general diagrams and more science:
 
   For more control, right-click ▸ **Molecule builder…** opens a window
   with a **view toolbar** (Front / Back / Left / Right / Top / Bottom /
-  Isometric icons), a **bond-length** slider, and an **atom palette**:
-  click a sphere to select it, then click an element (H, C, N, O, F, P, S,
-  Cl, Br) to bond a new atom on — choose the bond order, or delete the
-  selected atom — to build your own molecule. Bonds are drawn longer by
-  default so the sticks are clear; the slider spreads the atoms further.
+  Isometric — each a little cube with the viewed face shaded), a
+  **bond-length** slider, and an **atom palette**:
+
+  - **Click a sphere** to select it — the status line shows how many bonds
+    that atom still has free (the builder knows each element's valence:
+    carbon 4, nitrogen 3, oxygen 2, hydrogen and the halogens 1…).
+  - **Click an element** (H, C, N, O, F, P, S, Cl, Br) to bond a new atom
+    onto the selected one, at the chosen **bond order** (single/double/
+    triple). A full atom is left alone. Extending a chain grows a straight
+    zig-zag, so a pentane chain stays straight instead of curling up.
+  - **Drag a sphere** to move that atom and open up a bond angle by hand;
+    **drag the background** to rotate the whole model.
+  - **Delete atom** removes the selected sphere.
+
+  Bonds are drawn longer by default so the sticks are clear; the slider
+  spreads the atoms further.
 
   The **AI Chat** can build these too — ask it for a molecule (from
   methane up to a PET repeat unit) or a 3D structure (BCC/FCC), and it

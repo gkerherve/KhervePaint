@@ -363,10 +363,12 @@ up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
 (simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl).
 <b>Double-click</b> a placed model to <b>rotate it in 3D on the canvas</b>
 (drag to spin, Esc to finish). Right-click ▸ <b>Molecule builder…</b> opens
-a window with a view toolbar (Front/Back/Left/Right/Top/Bottom/Isometric),
-a bond-length slider and an atom palette — click a sphere then an element
-to bond atoms on and build your own molecule. The AI Chat can build
-molecules and 3D structures on request too.</li>
+a window with a cube-face view toolbar, a bond-length slider and an atom
+palette: click a sphere to select it (the status shows its free bonds —
+the builder tracks each element's valence), click an element to bond a new
+atom on at the chosen order, drag a sphere to bend a bond angle, or drag
+the background to rotate. Chains build straight, not into rings. The AI
+Chat can build molecules and 3D structures on request too.</li>
 </ul>
 
 <h2>11 · Drawing size &amp; publication figures</h2>

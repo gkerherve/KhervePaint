@@ -166,16 +166,23 @@ into a new module and import.
                        the 3D data + a re-projection at any orientation.
   - `molview.py`     — `MoleculeViewer` = the **Molecule builder** dialog
                        (right-click a placed model ▸ Molecule builder…).
-                       Horizontal **view toolbar** of icon buttons
-                       (front/back/left/right/top/bottom/iso), a
+                       Horizontal **view toolbar** of 3D cube-face icons
+                       (`icons.view_cube_icon`, the viewed face shaded), a
                        **bond-length** slider (spreads atoms via
                        `_model`'s `bond_scale`), and an **atom palette** —
                        the `_Preview` is a `QGraphicsView` so spheres
                        hit-test (`tag_atoms` puts an `_atom` index on each
-                       sphere spec); click a sphere to select it, click an
-                       element to `add_bonded_atom`, or delete. Crystals are
-                       not editable (fixed lattice), just rotatable. OK
-                       hands `(az, el, bond, atoms, bonds)` back to
+                       sphere spec). Click a sphere to select it (status
+                       shows `free_valence` — the builder knows each
+                       element's `VALENCE` and refuses to over-bond), click
+                       an element to `add_bonded_atom` (single-neighbour
+                       anchors extend as a straight trans zig-zag, not a
+                       ring), **drag a sphere** to move that atom via
+                       `drag_atom` (layout `frozen` by `fit_params` mid-drag
+                       so nothing else shifts), drag the background to
+                       orbit, or delete. Crystals are not editable (fixed
+                       lattice), just rotatable. OK hands
+                       `(az, el, bond, atoms, bonds)` back to
                        `PaintScene.reorient_model`.
                        **On-canvas 3D rotation**: double-clicking a placed
                        model (a `GroupItem` tagged `mol_name`/`mol_az`/
