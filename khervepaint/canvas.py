@@ -729,6 +729,10 @@ class PaintScene(QGraphicsScene):
         self._chain_pts = None            # vertices of an in-progress chain
         self._chain_preview = None        # rubber-band segment to the cursor
         self._erase_last = None           # previous eraser point while dragging
+        self._orbit_item = None           # molecule being 3D-rotated in place
+        self._orbit_last = None           # last drag point while orbiting
+        self._orbiting = False            # an orbit drag is in progress
+        self._orbit_dirty = False         # orbit changed the doc (commit once)
 
         # The grid is specified as a physical distance in millimetres
         # between adjacent lines; the pixel spacing is derived from the
@@ -1133,6 +1137,15 @@ class PaintScene(QGraphicsScene):
 
     # ------------------------------------------------------------ tools
     def mousePressEvent(self, event):
+        if self._orbit_item is not None:
+            if (self.tool == POINTER and event.button() == Qt.LeftButton
+                    and self._top_level_at(event.scenePos())
+                    is self._orbit_item):
+                self._orbiting = True         # grab the molecule and spin it
+                self._orbit_last = event.scenePos()
+                event.accept()
+                return
+            self._exit_orbit()                # any other press ends orbiting
         if self.tool == CHEM_CHAIN:
             self._chain_click(event)
             return
@@ -1253,6 +1266,10 @@ class PaintScene(QGraphicsScene):
             self.place_mol_element(self.mol_element, pos)
 
     def mouseMoveEvent(self, event):
+        if self._orbiting:
+            self._orbit_drag(event.scenePos())
+            event.accept()
+            return
         if self.tool == CHEM_CHAIN and self._chain_pts is not None:
             last = self._chain_pts[-1]
             self._chain_preview.setLine(
@@ -1594,7 +1611,69 @@ class PaintScene(QGraphicsScene):
             self.changed_by_user.emit()
         return top
 
+    # ---------------------------------------------- on-canvas 3D rotation
+    def enter_orbit_mode(self, item):
+        """Start rotating a placed molecule/crystal *item* in 3D directly on
+        the canvas: drag anywhere on it to spin; click off it (or press Esc,
+        or switch tool) to finish. Returns True if *item* is a 3D model."""
+        if not getattr(item, "mol_name", None):
+            return False
+        self.clear_handles()
+        self.clearSelection()
+        item.setSelected(True)
+        self._orbit_item = item
+        self._orbit_dirty = False
+        for view in self.views():
+            view.viewport().setCursor(Qt.OpenHandCursor)
+        return True
+
+    def _exit_orbit(self):
+        if self._orbit_item is None:
+            return
+        self._orbit_item = None
+        self._orbiting = False
+        self._orbit_last = None
+        for view in self.views():
+            view.set_tool_cursor(self.tool)
+        if self._orbit_dirty:
+            self.changed_by_user.emit()   # one undoable step for the session
+        self._orbit_dirty = False
+        self.refresh_handles()
+
+    def _orbit_drag(self, scene_pos):
+        """Spin the orbit target by the drag delta (live, no per-move undo)."""
+        import math as _math
+        from . import molecules
+        item = self._orbit_item
+        delta = scene_pos - self._orbit_last
+        self._orbit_last = scene_pos
+        az = (getattr(item, "mol_az", None) or molecules.DEFAULT_AZ) \
+            + delta.x() * 0.012
+        el = (getattr(item, "mol_el", None) or molecules.DEFAULT_EL) \
+            - delta.y() * 0.012
+        el = max(-_math.pi / 2, min(_math.pi / 2, el))
+        new = self.reorient_model(item, az, el, commit=False)
+        if new is not None:
+            self._orbit_item = new
+            self._orbit_dirty = True
+
+    def _top_level_at(self, scene_pos):
+        from .handles import Handle
+        for it in self.items(scene_pos):
+            if isinstance(it, Handle):
+                continue
+            while it.parentItem() is not None:
+                it = it.parentItem()
+            return it
+        return None
+
     def mouseReleaseEvent(self, event):
+        if self._orbiting:                    # finished one spin drag
+            self._orbiting = False            # stay in orbit mode for more
+            for view in self.views():
+                view.viewport().setCursor(Qt.OpenHandCursor)
+            event.accept()
+            return
         if not self._drawing:
             super().mouseReleaseEvent(event)
             if self.tool == POINTER and event.button() == Qt.LeftButton:
@@ -1881,14 +1960,15 @@ class PaintView(QGraphicsView):
         if self.scene().tool == POINTER:
             item = self._pick_item(event.pos())
             if item is not None and getattr(item, "mol_name", None):
-                self._open_3d_viewer(item)
+                # Rotate the molecule in place on the canvas (no popup).
+                self.scene().enter_orbit_mode(item)
                 return
             if item is not None and not isinstance(item, TextItem):
                 self.scene().enter_rotate_mode(item)
                 return
         super().mouseDoubleClickEvent(event)
 
-    def _open_3d_viewer(self, item):
+    def open_molecule_builder(self, item):
         """Open the molecule builder for a placed molecule/crystal; on OK it
         rebuilds the model at the chosen orientation, bond length and (if
         edited) structure."""
@@ -2019,6 +2099,7 @@ class PaintView(QGraphicsView):
             if event.key() == Qt.Key_Escape:
                 self.scene().cancel_crop()
                 return
-        if event.key() == Qt.Key_Escape:        # finish a bond chain
+        if event.key() == Qt.Key_Escape:        # finish a bond chain / orbit
             self.scene().end_chain()
+            self.scene()._exit_orbit()
         super().keyPressEvent(event)

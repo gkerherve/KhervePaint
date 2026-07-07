@@ -402,6 +402,11 @@ def build_context_menu(window, item) -> QMenu:
     menu = QMenu(window)
     menu.addAction(icons.icon("mdi.pencil-box-outline"), "Edit properties…",
                    lambda: window.edit_item(item))
+    if getattr(item, "mol_name", None):        # 3D molecule / crystal model
+        menu.addAction(icons.icon("mdi.molecule"), "Molecule builder…",
+                       lambda: window.view.open_molecule_builder(item))
+        menu.addAction(icons.icon("mdi.rotate-3d-variant"), "Rotate in 3D",
+                       lambda: window.scene.enter_orbit_mode(item))
     if isinstance(item, ImageItem):
         menu.addAction(icons.icon("mdi.crop"), "Crop image",
                        lambda: window.crop_image(item))

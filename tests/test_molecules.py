@@ -188,6 +188,34 @@ def test_reorient_rebuilds_and_keeps_tag(scene):
     assert abs(after.y() - before.y()) < 30
 
 
+def test_on_canvas_orbit(scene):
+    scene.place_mol_element("methane", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    assert scene.enter_orbit_mode(top)                 # a 3D model
+    assert scene._orbit_item is top
+    az0 = top.mol_az
+    # simulate a horizontal drag (as the mouse handlers would)
+    scene._orbit_last = QPointF(300, 240)
+    scene._orbit_drag(QPointF(360, 240))
+    new = scene._orbit_item
+    assert new is not top                              # rebuilt live
+    assert new.mol_az != az0                           # azimuth changed
+    assert scene._orbit_dirty
+    fired = []
+    scene.changed_by_user.connect(lambda: fired.append(1))
+    scene._exit_orbit()                                # commits one step
+    assert fired == [1]
+    assert scene._orbit_item is None
+
+
+def test_orbit_ignores_plain_items(scene):
+    from khervepaint.canvas import RectItem
+    from PyQt5.QtCore import QRectF
+    r = RectItem(QRectF(0, 0, 40, 40))
+    scene.addItem(r)
+    assert not scene.enter_orbit_mode(r)               # not a 3D model
+
+
 def test_model_tag_round_trips_json_and_svg(scene, tmp_path):
     scene.place_mol_element("fcc", QPointF(300, 240))
     data = document.scene_to_dict(scene)
