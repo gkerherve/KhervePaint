@@ -212,6 +212,7 @@ def item_to_dict(item) -> dict:
             d["model_az"] = getattr(item, "mol_az", None)
             d["model_el"] = getattr(item, "mol_el", None)
             d["model_bond"] = getattr(item, "mol_bond", None)
+            d["model_box"] = getattr(item, "mol_box", None)
             if getattr(item, "mol_atoms", None):   # hand-built structure
                 d["model_atoms"] = item.mol_atoms
                 d["model_bonds"] = item.mol_bonds
@@ -281,6 +282,7 @@ def item_from_dict(d: dict):
             item.mol_az = d.get("model_az")
             item.mol_el = d.get("model_el")
             item.mol_bond = d.get("model_bond")
+            item.mol_box = d.get("model_box")
             item.mol_atoms = d.get("model_atoms")
             item.mol_bonds = d.get("model_bonds")
     else:

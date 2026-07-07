@@ -208,6 +208,26 @@ def test_on_canvas_orbit(scene):
     assert scene._orbit_item is None
 
 
+def test_orbit_keeps_size_stable(scene):
+    # A drag fires many move events; each rebuild must NOT shrink the model
+    # (regression: box was derived from the margin-shrunk bounding rect and
+    # compounded smaller every move).
+    scene.place_mol_element("ethanol", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    scene.enter_orbit_mode(top)
+    size0 = max(scene._orbit_item.sceneBoundingRect().width(),
+                scene._orbit_item.sceneBoundingRect().height())
+    scene._orbit_last = QPointF(300, 240)
+    azs = []
+    for i in range(30):                       # simulate a 30-step drag
+        scene._orbit_drag(QPointF(305 + i * 5, 240))
+        azs.append(scene._orbit_item.mol_az)
+    size1 = max(scene._orbit_item.sceneBoundingRect().width(),
+                scene._orbit_item.sceneBoundingRect().height())
+    assert 0.7 * size0 < size1 < 1.4 * size0     # stayed about the same size
+    assert azs[-1] != azs[0]                     # and it actually rotated
+
+
 def test_orbit_ignores_plain_items(scene):
     from khervepaint.canvas import RectItem
     from PyQt5.QtCore import QRectF

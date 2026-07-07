@@ -1512,19 +1512,26 @@ class PaintScene(QGraphicsScene):
         from . import molecules
         top = self._place_symbol(molecules, name, center)
         if top is not None:                      # tag for the 3D viewer
+            w_mm, h_mm = molecules.size_mm(name)
+            ref = getattr(molecules, "REFERENCE_MM", 4800.0)
+            scale = (self.sceneRect().width() or 1) / ref
+            box = max(w_mm * scale, h_mm * scale)
             self._tag_model(top, name, molecules.DEFAULT_AZ,
-                            molecules.DEFAULT_EL, molecules.default_bond(name))
+                            molecules.DEFAULT_EL, molecules.default_bond(name),
+                            box=box)
 
     @staticmethod
-    def _tag_model(item, name, az, el, bond, atoms=None, bonds=None):
+    def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None):
         """Stamp a group with its 3D model identity (name + view + bond
-        spread, and the raw atoms/bonds when the structure was hand-built)."""
+        spread + the stable build box, and the raw atoms/bonds when the
+        structure was hand-built)."""
         item.mol_name = name
         item.mol_az = az
         item.mol_el = el
         item.mol_bond = bond
         item.mol_atoms = atoms
         item.mol_bonds = bonds
+        item.mol_box = box
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1593,7 +1600,11 @@ class PaintScene(QGraphicsScene):
             bonds = getattr(item, "mol_bonds", None)
         rect = item.sceneBoundingRect()
         center = rect.center()
-        box = max(rect.width(), rect.height()) or 1.0
+        # Use the STABLE build box stamped at placement, not the current
+        # (margin-shrunk) bounding rect — deriving it from the drawn size
+        # would compound smaller on every rebuild during a drag.
+        box = getattr(item, "mol_box", None) or max(rect.width(),
+                                                    rect.height()) or 1.0
         if atoms:
             specs = molecules.specs_from_atoms(atoms, bonds or [], box, box,
                                                az, el, bond)
@@ -1606,7 +1617,7 @@ class PaintScene(QGraphicsScene):
         self.clear_handles()
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
-        self._tag_model(top, name, az, el, bond, atoms, bonds)
+        self._tag_model(top, name, az, el, bond, atoms, bonds, box=box)
         if commit:
             self.changed_by_user.emit()
         return top
