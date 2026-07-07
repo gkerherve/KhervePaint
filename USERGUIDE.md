@@ -323,6 +323,21 @@ Five further dropdowns cover general diagrams and more science:
   Eppendorf tube, syringe, lab mouse.
 - **Math** — 2D/3D axes, number line, grid graph, curve plot, vector,
   angle, right angle, and symbol glyphs (brace, Σ, ∫, π, ∞, Δ, θ).
+- **Molecules** — 3D **ball-and-stick** models: atoms are drawn as
+  lit spheres in the standard element colours (H white, C dark grey,
+  O red, N blue, S yellow, Cl green…) with single/double/triple bonds.
+  Ready-made models group by complexity — simple molecules (water,
+  ammonia, methane, CO₂, formaldehyde), alcohols & acids (methanol,
+  ethanol, acetic acid, glucose), hydrocarbons (ethane, propane, ethene,
+  ethyne, benzene, cyclohexane), **polymers** (polyethylene,
+  polypropylene, PVC, PTFE, polystyrene, **PET**) — and **crystal unit
+  cells**: simple cubic, BCC, FCC, HCP, diamond, NaCl (rock salt) and
+  CsCl, drawn with their cell edges. Each drops as an editable group; the
+  spheres are ordinary gradient-filled circles you can recolour or move.
+
+  The **AI Chat** can build these too — ask it for a molecule (from
+  methane up to a PET repeat unit) or a 3D structure (BCC/FCC), and it
+  places element spheres and bonds as real, editable items.
 
 ## 11. Drawing size & publication figures
 

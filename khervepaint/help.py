@@ -354,6 +354,14 @@ Eppendorf tube, syringe, lab mouse.</li>
 <li><b>Math</b> — 2D/3D axes, number line, grid graph, curve plot,
 vector, angle, right angle, and ready-to-place symbol glyphs
 (brace, Σ, ∫, π, ∞, Δ, θ).</li>
+<li><b>Molecules</b> — 3D <b>ball-and-stick</b> models: atoms as
+lit spheres in standard element colours (H white, C grey, O red, N
+blue, S yellow, Cl green…) with single/double/triple bonds. Simple
+molecules (water, methane, CO₂), alcohols &amp; acids (methanol,
+ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
+up to <b>PET</b>, and <b>crystal cells</b> (simple cubic, BCC, FCC, HCP,
+diamond, NaCl, CsCl). Each drops as an editable group; the AI Chat can
+build molecules and 3D structures on request too.</li>
 </ul>
 
 <h2>11 · Drawing size &amp; publication figures</h2>
