@@ -147,13 +147,19 @@ into a new module and import.
                        triple). The 3D look comes from an isometric `_proj`
                        + depth-sorted `_model(atoms, bonds, edges)`, so
                        structures read as 3D while staying ordinary editable
-                       gradient-filled items. Covers small molecules,
-                       alcohols/acids (→ glucose), hydrocarbons (aromatic
-                       benzene), polymer repeat units (→ PET) and crystal
-                       unit cells (simple cubic/BCC/FCC/HCP/diamond/NaCl/
-                       CsCl — drawn as open **wireframe unit cells**: small
-                       spheres + thick solid cube edges + dashed body/face
-                       diagonals through the centring atoms). Also exports
+                       gradient-filled items. Covers dozens of molecules
+                       (alcohols/ethers, acids/carbonyls, amines, alkanes/
+                       alkenes/alkynes, aromatics, halogenated), polymer
+                       repeat units (→ PET) and crystal unit cells (simple
+                       cubic/BCC/FCC/HCP/diamond/NaCl/CsCl/perovskite/
+                       zincblende/fluorite — open **wireframe unit cells**:
+                       small spheres + thick cube edges + dashed diagonals).
+                       Atom placement is **hybridisation-aware**
+                       (`_place_direction`: sp/sp2/sp3); `build_molecule(
+                       heavy, links)` + `add_hydrogens` build a molecule
+                       from a heavy-atom skeleton with correct angles (most
+                       acyclic models via `_SKELETONS`; rings via
+                       `_aromatic_ring`). Also exports
                        `atom_specs`/`bond_specs` and `expand_specs`, which
                        back the high-level `atom`/`bond` shape specs the AI
                        emits (expanded in `ai_assistant.apply_specs`);

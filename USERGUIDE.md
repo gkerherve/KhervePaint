@@ -323,19 +323,20 @@ Five further dropdowns cover general diagrams and more science:
   Eppendorf tube, syringe, lab mouse.
 - **Math** — 2D/3D axes, number line, grid graph, curve plot, vector,
   angle, right angle, and symbol glyphs (brace, Σ, ∫, π, ∞, Δ, θ).
-- **Molecules** — 3D **ball-and-stick** models: atoms are drawn as
-  lit spheres in the standard element colours (H white, C dark grey,
-  O red, N blue, S yellow, Cl green…) with single/double/triple bonds.
-  Ready-made models group by complexity — simple molecules (water,
-  ammonia, methane, CO₂, formaldehyde), alcohols & acids (methanol,
-  ethanol, acetic acid, glucose), hydrocarbons (ethane, propane, ethene,
-  ethyne, benzene, cyclohexane), **polymers** (polyethylene,
-  polypropylene, PVC, PTFE, polystyrene, **PET**) — and **crystal unit
-  cells**: simple cubic, BCC, FCC, HCP, diamond, NaCl (rock salt) and
-  CsCl — drawn as open **wireframe unit cells** (thick cube edges plus
-  dashed body/face diagonals through the centring atoms). Each drops as an
-  editable group; the spheres are ordinary gradient-filled circles you can
-  recolour or move.
+- **Molecules** — 3D **ball-and-stick** models (next to the Chemistry
+  dropdown): atoms are lit spheres in the standard element colours
+  (H white, C dark grey, O red, N blue, S yellow, Cl green…) with single/
+  double/triple bonds, laid out with correct linear / trigonal /
+  tetrahedral geometry. Dozens of ready-made molecules by category —
+  simple molecules, **alcohols & ethers**, **acids & carbonyls**,
+  **nitrogen compounds** (amines, urea, glycine…), **hydrocarbons**
+  (methane→hexane, alkenes, alkynes), **aromatics** (benzene, toluene,
+  phenol), **halogenated** (chloroform, CCl₄…), **polymers**
+  (polyethylene, PVC, PTFE, polystyrene, **PET**) — and **crystal unit
+  cells**: simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl,
+  **perovskite** (ABX₃ octahedron), **zinc blende** and **fluorite**,
+  drawn as open **wireframe unit cells** (thick cube edges plus dashed
+  diagonals through the centring atoms). Each drops as an editable group.
 
   **Double-click** a placed molecule or crystal to **rotate it in 3D right
   on the canvas** — grab and drag to spin it; press **Esc** (or click off
