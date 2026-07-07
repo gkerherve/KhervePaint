@@ -359,9 +359,11 @@ lit spheres in standard element colours (H white, C grey, O red, N
 blue, S yellow, Cl green…) with single/double/triple bonds. Simple
 molecules (water, methane, CO₂), alcohols &amp; acids (methanol,
 ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
-up to <b>PET</b>, and <b>crystal cells</b> (simple cubic, BCC, FCC, HCP,
-diamond, NaCl, CsCl). Each drops as an editable group; the AI Chat can
-build molecules and 3D structures on request too.</li>
+up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
+(simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl).
+<b>Double-click</b> a placed model to open the <b>3D viewer</b> — drag to
+rotate, or snap to Front/Back/Left/Right/Top/Bottom/Isometric views. The
+AI Chat can build molecules and 3D structures on request too.</li>
 </ul>
 
 <h2>11 · Drawing size &amp; publication figures</h2>

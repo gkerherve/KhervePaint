@@ -332,8 +332,17 @@ Five further dropdowns cover general diagrams and more science:
   ethyne, benzene, cyclohexane), **polymers** (polyethylene,
   polypropylene, PVC, PTFE, polystyrene, **PET**) — and **crystal unit
   cells**: simple cubic, BCC, FCC, HCP, diamond, NaCl (rock salt) and
-  CsCl, drawn with their cell edges. Each drops as an editable group; the
-  spheres are ordinary gradient-filled circles you can recolour or move.
+  CsCl — drawn as open **wireframe unit cells** (thick cube edges plus
+  dashed body/face diagonals through the centring atoms). Each drops as an
+  editable group; the spheres are ordinary gradient-filled circles you can
+  recolour or move.
+
+  **Double-click** a placed molecule or crystal to open the **3D viewer**:
+  drag to rotate it, or click **Front / Back / Left / Right / Top /
+  Bottom / Isometric** to snap to a standard view. Click OK and the model
+  is redrawn at that orientation (still a normal, editable group). The
+  chosen view is saved with the drawing, so double-click keeps working
+  after you reopen it.
 
   The **AI Chat** can build these too — ask it for a molecule (from
   methane up to a PET repeat unit) or a 3D structure (BCC/FCC), and it

@@ -151,14 +151,30 @@ into a new module and import.
                        alcohols/acids (→ glucose), hydrocarbons (aromatic
                        benzene), polymer repeat units (→ PET) and crystal
                        unit cells (simple cubic/BCC/FCC/HCP/diamond/NaCl/
-                       CsCl, with cell edges). Also exports `atom_specs`/
-                       `bond_specs` and `expand_specs`, which back the
-                       high-level `atom`/`bond` shape specs the AI emits
-                       (expanded in `ai_assistant.apply_specs`); `_brush`
-                       there accepts a gradient-dict `fill` so a spec circle
-                       can be a lit sphere. Gradients already round-trip
-                       through document.py/svgio.py, so nothing new to
-                       persist — the sphere is just a gradient brush.
+                       CsCl — drawn as open **wireframe unit cells**: small
+                       spheres + thick solid cube edges + dashed body/face
+                       diagonals through the centring atoms). Also exports
+                       `atom_specs`/`bond_specs` and `expand_specs`, which
+                       back the high-level `atom`/`bond` shape specs the AI
+                       emits (expanded in `ai_assistant.apply_specs`);
+                       `_brush` there accepts a gradient-dict `fill` so a
+                       spec circle can be a lit sphere. Gradients already
+                       round-trip through document.py/svgio.py, so nothing
+                       new to persist — the sphere is just a gradient brush.
+                       The isometric `_proj` is parameterised by view angle
+                       (az/el); `model_data`/`build_specs_oriented` expose
+                       the 3D data + a re-projection at any orientation.
+  - `molview.py`     — `MoleculeViewer` dialog: double-clicking a placed
+                       molecule/crystal (a `GroupItem` tagged `mol_name`/
+                       `mol_az`/`mol_el` by `place_mol_element`) opens it;
+                       drag rotates, standard-view buttons (front/side/top/
+                       …) snap the viewpoint, and OK calls
+                       `PaintScene.reorient_model`, which rebuilds the group
+                       at the chosen angle (preserving centre + footprint,
+                       undoable). The model tag round-trips through
+                       document.py (`"model"`/`model_az`/`model_el`) and
+                       svgio.py (`kp:model` on the `<g>`), so double-click
+                       survives save/reload and undo.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
