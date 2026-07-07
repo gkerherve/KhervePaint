@@ -224,14 +224,44 @@ def test_custom_structure_round_trips(scene, tmp_path):
     assert grp2.mol_atoms == atoms and grp2.mol_bonds == bonds
 
 
-def test_viewer_standard_views(app):
+def test_builder_add_and_delete_atoms():
+    atoms, bonds = molecules.single_atom("C")
+    for el in ("H", "H", "H", "H"):
+        molecules.add_bonded_atom(atoms, bonds, 0, el)
+    assert len(atoms) == 5 and len(bonds) == 4     # methane built by hand
+    # every H is bonded to the carbon and roughly one bond-length away
+    for i, j, _o in bonds:
+        assert 0 in (i, j)
+    molecules.delete_atom(atoms, bonds, 4)          # drop one H
+    assert len(atoms) == 4 and len(bonds) == 3
+    assert all(i < 4 and j < 4 for i, j, _o in bonds)   # re-indexed
+
+
+def test_builder_edits_and_returns_structure(app):
+    from khervepaint.molview import MoleculeViewer
+    dlg = MoleculeViewer("methane")
+    assert dlg.editable
+    n0 = len(dlg.atoms)
+    dlg.selected = 0
+    dlg._add_atom("O")
+    assert len(dlg.atoms) == n0 + 1 and dlg.dirty
+    atoms, bonds = dlg.result()
+    assert atoms is not None and len(atoms) == n0 + 1
+    # a crystal is not editable and returns no custom structure
+    xtal = MoleculeViewer("bcc")
+    assert not xtal.editable
+    assert xtal.result() == (None, None)
+    dlg.deleteLater(); xtal.deleteLater()
+
+
+def test_builder_standard_view_and_bond(app):
     from khervepaint.molview import MoleculeViewer, STANDARD_VIEWS
-    dlg = MoleculeViewer("bcc")
-    # picking the "Top" view sets the elevation to a quarter turn
+    dlg = MoleculeViewer("ethanol")
     top = next(v for v in STANDARD_VIEWS if v[0] == "Top")
-    dlg.preview.set_view(top[1], top[2])
-    assert abs(dlg.el - top[2]) < 1e-9
-    assert abs(dlg.az - top[1]) < 1e-9
+    dlg._set_view(top[2], top[3])
+    assert abs(dlg.el - top[3]) < 1e-9 and abs(dlg.az - top[2]) < 1e-9
+    dlg._on_bond(210)
+    assert abs(dlg.bond - 2.1) < 1e-9
     dlg.deleteLater()
 
 

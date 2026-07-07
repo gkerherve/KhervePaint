@@ -1889,13 +1889,19 @@ class PaintView(QGraphicsView):
         super().mouseDoubleClickEvent(event)
 
     def _open_3d_viewer(self, item):
-        """Double-clicking a molecule/crystal opens the 3D viewer; on OK it
-        rebuilds the model at the chosen orientation."""
+        """Open the molecule builder for a placed molecule/crystal; on OK it
+        rebuilds the model at the chosen orientation, bond length and (if
+        edited) structure."""
         from .molview import MoleculeViewer
         dlg = MoleculeViewer(item.mol_name, getattr(item, "mol_az", None),
-                             getattr(item, "mol_el", None), self)
+                             getattr(item, "mol_el", None),
+                             getattr(item, "mol_bond", None),
+                             getattr(item, "mol_atoms", None),
+                             getattr(item, "mol_bonds", None), self)
         if dlg.exec_():
-            self.scene().reorient_model(item, dlg.az, dlg.el)
+            atoms, bonds = dlg.result()
+            self.scene().reorient_model(item, dlg.az, dlg.el, bond=dlg.bond,
+                                        atoms=atoms, bonds=bonds)
 
     def set_tool_cursor(self, tool: str):
         if tool == POINTER:

@@ -174,7 +174,7 @@ def _spread(atoms, edges, factor):
 
 
 def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
-           margin=0.12, az=_AZ, el=_EL, bond_scale=1.0):
+           margin=0.12, az=_AZ, el=_EL, bond_scale=1.0, tag_atoms=False):
     """Lay out a 3D model into the (w, h) box and return its shape specs.
 
     *atoms* is a list of ``(element, x, y, z)``; *bonds* a list of
@@ -232,7 +232,10 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
                             T(proj[j][0], proj[j][1]), order, width=bw)
     for idx in sorted(range(len(atoms)), key=lambda k: proj[k][2]):
         cx, cy = T(proj[idx][0], proj[idx][1])
-        specs += atom_specs(cx, cy, rad[idx] * s, atoms[idx][0], label=labels)
+        a_specs = atom_specs(cx, cy, rad[idx] * s, atoms[idx][0], label=labels)
+        if tag_atoms and a_specs:
+            a_specs[0]["_atom"] = idx        # for builder hit-testing
+        specs += a_specs
     return specs
 
 
@@ -822,12 +825,88 @@ def build_specs(name, w, h):
 
 
 def specs_from_atoms(atoms, bonds, w, h, az=None, el=None, bond=1.0,
-                     rscale=0.92):
+                     rscale=0.92, tag_atoms=False):
     """Shape specs for a custom (atoms, bonds) model — used by the builder
-    when the user has edited the structure atom by atom."""
+    when the user has edited the structure atom by atom. With *tag_atoms*
+    each sphere spec carries an ``"_atom"`` index for hit-testing."""
     return _model(atoms, bonds, w, h, rscale=rscale,
                   az=DEFAULT_AZ if az is None else az,
-                  el=DEFAULT_EL if el is None else el, bond_scale=bond)
+                  el=DEFAULT_EL if el is None else el, bond_scale=bond,
+                  tag_atoms=tag_atoms)
+
+
+# ------------------------------------------------------- interactive builder
+#: Elements offered in the molecule builder's Add-atom palette.
+PALETTE = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br"]
+_S8 = math.sqrt(8.0) / 3.0          # tetrahedral off-axis component
+
+
+def _norm(v):
+    return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+
+
+def _unit(v):
+    n = _norm(v) or 1.0
+    return (v[0] / n, v[1] / n, v[2] / n)
+
+
+def _perp(v):
+    """A unit vector perpendicular to *v*."""
+    ref = (0.0, 0.0, 1.0) if abs(v[2]) < 0.9 else (0.0, 1.0, 0.0)
+    c = (v[1] * ref[2] - v[2] * ref[1], v[2] * ref[0] - v[0] * ref[2],
+         v[0] * ref[1] - v[1] * ref[0])
+    return _unit(c)
+
+
+def single_atom(element="C"):
+    """A fresh one-atom structure to start building from."""
+    return [[element, 0.0, 0.0, 0.0]], []
+
+
+def _bond_length(a, b):
+    return 1.0 if "H" in (a, b) else 1.5
+
+
+def add_bonded_atom(atoms, bonds, anchor, element, order=1):
+    """Add an *element* atom bonded to atom *anchor*, placed in a free
+    (roughly tetrahedral) direction pointing away from its existing bonds.
+    Mutates *atoms*/*bonds*; returns the new atom's index."""
+    ax, ay, az = atoms[anchor][1], atoms[anchor][2], atoms[anchor][3]
+    dirs = []
+    for i, j, _o in bonds:
+        k = j if i == anchor else (i if j == anchor else None)
+        if k is not None:
+            dirs.append(_unit((atoms[k][1] - ax, atoms[k][2] - ay,
+                               atoms[k][3] - az)))
+    if not dirs:
+        d = (1.0, 0.0, 0.0)
+    elif len(dirs) == 1:
+        n0, perp = dirs[0], _perp(dirs[0])
+        d = _unit((-n0[0] / 3 + perp[0] * _S8, -n0[1] / 3 + perp[1] * _S8,
+                   -n0[2] / 3 + perp[2] * _S8))
+    else:
+        sx = sum(v[0] for v in dirs)
+        sy = sum(v[1] for v in dirs)
+        sz = sum(v[2] for v in dirs)
+        d = (-sx, -sy, -sz)
+        d = _perp(dirs[0]) if _norm(d) < 1e-6 else _unit(d)
+    length = _bond_length(element, atoms[anchor][0])
+    atoms.append([element, ax + d[0] * length, ay + d[1] * length,
+                  az + d[2] * length])
+    idx = len(atoms) - 1
+    bonds.append([anchor, idx, order])
+    return idx
+
+
+def delete_atom(atoms, bonds, index):
+    """Remove atom *index* and any bonds to it, re-indexing the rest."""
+    atoms.pop(index)
+    kept = []
+    for i, j, o in bonds:
+        if i == index or j == index:
+            continue
+        kept.append([i - (i > index), j - (j > index), o])
+    bonds[:] = kept
 
 
 def size_mm(name):
