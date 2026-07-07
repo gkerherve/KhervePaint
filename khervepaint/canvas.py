@@ -1521,9 +1521,10 @@ class PaintScene(QGraphicsScene):
                             box=box)
 
     def place_built_molecule(self, atoms, bonds, center, az=None, el=None,
-                             bond=None, mode="3d"):
-        """Place a molecule hand-built in the builder (from scratch) as a new
-        tagged, editable group centred on *center*. Undoable."""
+                             bond=None, mode="3d", name="custom", commit=True):
+        """Place a molecule (hand-built in the builder, or emitted by the AI)
+        as a new tagged, 3D-rotatable, editable group centred on *center*.
+        Undoable when *commit* (pass False to batch several into one step)."""
         from . import molecules, molrepr
         from .ai_assistant import _spec_to_item
         if not atoms:
@@ -1543,9 +1544,10 @@ class PaintScene(QGraphicsScene):
         if not items:
             return None
         top = self._drop_items(items, center, box, box)
-        self._tag_model(top, "custom", az, el, bond, atoms, bonds, box=box,
+        self._tag_model(top, name, az, el, bond, atoms, bonds, box=box,
                         repr=mode)
-        self.changed_by_user.emit()
+        if commit:
+            self.changed_by_user.emit()
         return top
 
     @staticmethod

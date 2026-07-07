@@ -136,6 +136,43 @@ def test_system_prompt_builds_without_crashing():
         prompt.format(w=800, h=600, summary="x")   # .format would crash
 
 
+def test_ai_molecule_by_name_is_rotatable(scene):
+    created = ai_assistant.apply_specs(
+        scene, [{"shape": "molecule", "name": "ethanol", "x": 300, "y": 240}])
+    assert len(created) == 1
+    top = created[0]
+    assert top.mol_name == "ethanol" and top.mol_atoms
+    assert top.mol_repr == "3d"
+    assert scene.enter_orbit_mode(top)             # it can be spun in 3D
+    scene._exit_orbit()
+
+
+def test_ai_molecule_from_skeleton_adds_hydrogens(scene):
+    # propanoic acid heavy skeleton -> H's + 3D geometry filled in
+    created = ai_assistant.apply_specs(scene, [{
+        "shape": "molecule", "atoms": ["C", "C", "C", "O", "O"],
+        "bonds": [[0, 1, 1], [1, 2, 1], [2, 3, 2], [2, 4, 1]],
+        "x": 300, "y": 240}])
+    top = created[0]
+    assert top.mol_name == "custom"
+    assert len(top.mol_atoms) > 5                  # hydrogens were added
+    assert scene.enter_orbit_mode(top)
+
+
+def test_ai_molecule_2d_representation(scene):
+    created = ai_assistant.apply_specs(
+        scene, [{"shape": "molecule", "name": "water", "as": "lewis",
+                 "x": 300, "y": 240}])
+    assert created[0].mol_repr == "lewis"
+
+
+def test_ai_molecule_mixes_with_plain_shapes(scene):
+    created = ai_assistant.apply_specs(scene, [
+        {"shape": "molecule", "name": "methane", "x": 120, "y": 120},
+        {"shape": "rect", "x": 0, "y": 0, "w": 40, "h": 40}])
+    assert len(created) == 2                        # one group + one rect
+
+
 def test_ai_brush_accepts_gradient_dict():
     spec = {"shape": "circle", "x": 0, "y": 0, "w": 40, "h": 40,
             "fill": {"kind": "sun", "c1": "#123456", "c2": "#ffffff"}}

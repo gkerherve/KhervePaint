@@ -61,18 +61,24 @@ Each spec is an object:
   "c1":hex,"c2":hex,"angle":deg}. "sun" is a lit-sphere highlight (c2 =
   light colour) — use it to make a circle look like a 3D ball.
 
-For chemistry, two extra shapes build ball-and-stick models:
-- {"shape":"atom","element":"C","x":cx,"y":cy,"r":radius} draws a lit
-  sphere in the element's standard colour (H white, C dark grey, O red,
-  N blue, S yellow, Cl green, P orange…); x,y is the sphere CENTRE.
-  Use r ~ 20 for C/O/N and ~ 13 for H.
-- {"shape":"bond","x1","y1","x2","y2","order":1|2|3} draws a single,
-  double or triple stick between two atom centres.
-To draw a molecule (e.g. methane, ethanol, benzene, or a PET repeat
-unit), place the bonds first, then the atoms, positioning them like a
-2D structural formula. For a 3D LOOK (a crystal cell such as BCC/FCC, or
-a 3D molecule), give near atoms slightly larger r and list far atoms
-BEFORE near ones so nearer spheres overlap farther ones.
+For chemistry, prefer the high-level "molecule" shape — it makes a real
+3D ball-and-stick model the user can rotate (double-click) and edit:
+- {"shape":"molecule","name":"ethanol","x":cx,"y":cy} places a known
+  molecule/crystal from the library (water, methane, methanol, ethanol,
+  acetic_acid, benzene, toluene, phenol, glucose, pet, bcc, fcc,
+  perovskite…).
+- For anything else, give the HEAVY-atom skeleton and let hydrogens +
+  3D geometry be added automatically:
+  {"shape":"molecule","atoms":["C","C","O"],"bonds":[[0,1,1],[1,2,1]],
+   "x":cx,"y":cy}  (bonds are [atom_i, atom_j, order]; order 1/2/3; do
+  NOT list H's). Optional "as":"structural"|"lewis"|"condensed" draws the
+  2D formula instead of the 3D model.
+Use "molecule" whenever the user asks for a molecule or crystal.
+
+Two low-level shapes also exist for flat, non-rotatable sketches only:
+{"shape":"atom","element":"C","x":cx,"y":cy,"r":radius} (a lit sphere,
+x,y is the centre, r~20 for C/O/N, ~13 for H) and
+{"shape":"bond","x1","y1","x2","y2","order":1|2|3}.
 Keep coordinates within the canvas."""
 
 
@@ -229,18 +235,61 @@ def _spec_to_item(spec):
     return item
 
 
+def _place_ai_molecule(scene, spec):
+    """Place a high-level `molecule` spec as a tagged, 3D-rotatable group.
+
+    The model gives either a library ``name`` or a heavy-atom skeleton
+    (``atoms`` = element strings + ``bonds`` = [i, j, order]); hydrogens and
+    correct 3D geometry are filled in. Full 3D coordinates
+    (``atoms`` = [[el, x, y, z], …]) are also accepted."""
+    from . import molecules
+    from PyQt5.QtCore import QPointF
+    name = spec.get("name")
+    atoms = bonds = None
+    if name and (name in molecules._MODELS or name in molecules._POLYMERS):
+        atoms, bonds, _e, _r = molecules.model_data(name)
+    elif spec.get("atoms"):
+        raw = spec["atoms"]
+        links = [list(b) for b in spec.get("bonds", [])]
+        if raw and isinstance(raw[0], str):        # heavy-atom skeleton
+            atoms, bonds = molecules.build_molecule(list(raw), links)
+        else:                                      # explicit 3D atoms
+            atoms = [list(a) for a in raw]
+            bonds = links
+    if not atoms:
+        return None
+    cx = float(spec.get("x", spec.get("cx", scene.sceneRect().center().x())))
+    cy = float(spec.get("y", spec.get("cy", scene.sceneRect().center().y())))
+    mode = str(spec.get("as", spec.get("repr", "3d"))).lower()
+    return scene.place_built_molecule(atoms, bonds, QPointF(cx, cy), mode=mode,
+                                      name=name or "custom", commit=False)
+
+
 def apply_specs(scene, specs):
     """Create items from *specs* and add them (selected) to the scene.
 
     Items are stacked in spec order (first at the back, last in front) and
     placed above anything already on the canvas, so the layering the model
-    intends is preserved — and survives grouping."""
+    intends is preserved — and survives grouping. High-level ``molecule``
+    specs become tagged 3D-rotatable groups (see `_place_ai_molecule`)."""
     from . import molecules
-    specs = molecules.expand_specs(specs)     # atom/bond -> spheres + sticks
+    created = []
+    flat = []
+    for spec in specs:
+        if str(spec.get("shape", "")).lower() in ("molecule", "molecule3d"):
+            try:
+                mol = _place_ai_molecule(scene, spec)
+            except Exception:
+                mol = None
+            if mol is not None:
+                created.append(mol)
+        else:
+            flat.append(spec)
+    flat = molecules.expand_specs(flat)       # atom/bond -> spheres + sticks
     existing = [i.zValue() for i in scene.vector_items()]
     base = (max(existing) + 1) if existing else 0
     items = []
-    for spec in specs:
+    for spec in flat:
         try:
             item = _spec_to_item(spec)
         except Exception:
@@ -249,12 +298,13 @@ def apply_specs(scene, specs):
             scene.addItem(item)
             item.setZValue(base + len(items))
             items.append(item)
-    if items:
+    created += items
+    if created:
         scene.clearSelection()
-        for item in items:
+        for item in created:
             item.setSelected(True)
         scene.changed_by_user.emit()
-    return items
+    return created
 
 
 def _scene_summary(scene):
