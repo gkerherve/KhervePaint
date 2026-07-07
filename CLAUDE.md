@@ -280,9 +280,16 @@ into a new module and import.
                        Chat): chat panel with provider/model combos +
                        Refresh button. Parses the model's JSON shape specs
                        into real, undoable items (`apply_specs`); hides the
-                       code from the chat (`prose_only`). Paste a
+                       code from the chat (`prose_only`). A high-level
+                       `molecule` spec (library `name`, or a heavy-atom
+                       skeleton `atoms`/`bonds`) becomes a tagged,
+                       3D-rotatable model via `_place_ai_molecule` →
+                       `PaintScene.place_built_molecule`. Paste a
                        screenshot (Ctrl+V) to send it with the next
-                       message. Network runs on a `QThread`.
+                       message. Network runs on a `QThread`. **NB** the
+                       system prompt holds literal JSON braces, so the
+                       message is built with `str.replace`, never
+                       `str.format` (which would read them as fields).
   - `examples.py`    — built-in **Examples** menu assembly: imports the
                        `SKETCHES` registry and exposes `EXAMPLES` (sorted
                        by category order) + the `PAGE_*` constants. The
