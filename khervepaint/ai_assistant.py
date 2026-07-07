@@ -778,9 +778,13 @@ class AiDock(QDockWidget):
         self._save_history()
 
         rect = self.scene.sceneRect()
-        system = SYSTEM_PROMPT.format(
-            w=int(rect.width()), h=int(rect.height()),
-            summary=_scene_summary(self.scene))
+        # Substitute the placeholders with str.replace, NOT str.format — the
+        # prompt now contains literal JSON braces ({"shape":…}) as examples,
+        # which str.format would misread as fields and raise.
+        system = (SYSTEM_PROMPT
+                  .replace("{w}", str(int(rect.width())))
+                  .replace("{h}", str(int(rect.height())))
+                  .replace("{summary}", _scene_summary(self.scene)))
         messages = [{"role": "system", "content": system}] + self._history
         self._busy(True)
         self._run(lambda: providers.chat(provider, model, messages, key, base,

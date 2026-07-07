@@ -121,6 +121,21 @@ def test_expand_atom_and_bond():
     assert out[0]["x"] == 100 - 18 and out[0]["y"] == 100 - 18
 
 
+def test_system_prompt_builds_without_crashing():
+    # Regression: the prompt gained literal JSON braces ({"shape":…}) as
+    # examples; building the system message must NOT use str.format (which
+    # would read them as fields and raise), so asking the AI can't crash.
+    from khervepaint import ai_assistant
+    prompt = ai_assistant.SYSTEM_PROMPT
+    system = (prompt.replace("{w}", "800").replace("{h}", "600")
+              .replace("{summary}", "nothing yet"))
+    assert "800x600" in system
+    assert '"shape":"atom"' in system              # braces preserved intact
+    import pytest
+    with pytest.raises((KeyError, ValueError, IndexError)):
+        prompt.format(w=800, h=600, summary="x")   # .format would crash
+
+
 def test_ai_brush_accepts_gradient_dict():
     spec = {"shape": "circle", "x": 0, "y": 0, "w": 40, "h": 40,
             "fill": {"kind": "sun", "c1": "#123456", "c2": "#ffffff"}}
