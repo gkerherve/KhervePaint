@@ -57,6 +57,22 @@ Each spec is an object:
 - text uses "text","x","y" and optional "size"
 - optional: "stroke" (hex or "none"), "fill" (hex or "none"),
   "width" (stroke width), "label" (text centred inside the shape)
+- "fill" may instead be a gradient object {"kind":"linear"|"radial"|"sun",
+  "c1":hex,"c2":hex,"angle":deg}. "sun" is a lit-sphere highlight (c2 =
+  light colour) — use it to make a circle look like a 3D ball.
+
+For chemistry, two extra shapes build ball-and-stick models:
+- {"shape":"atom","element":"C","x":cx,"y":cy,"r":radius} draws a lit
+  sphere in the element's standard colour (H white, C dark grey, O red,
+  N blue, S yellow, Cl green, P orange…); x,y is the sphere CENTRE.
+  Use r ~ 20 for C/O/N and ~ 13 for H.
+- {"shape":"bond","x1","y1","x2","y2","order":1|2|3} draws a single,
+  double or triple stick between two atom centres.
+To draw a molecule (e.g. methane, ethanol, benzene, or a PET repeat
+unit), place the bonds first, then the atoms, positioning them like a
+2D structural formula. For a 3D LOOK (a crystal cell such as BCC/FCC, or
+a 3D molecule), give near atoms slightly larger r and list far atoms
+BEFORE near ones so nearer spheres overlap farther ones.
 Keep coordinates within the canvas."""
 
 
