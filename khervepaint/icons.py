@@ -169,6 +169,94 @@ def line_width_icon(width: float, color: str = None,
     return QIcon(pixmap)
 
 
+#: Cube corners and faces (outward normal + CCW vertex indices) for the
+#: view-cube icons in the molecule builder.
+_CUBE_V = [(-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
+           (-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1)]
+_CUBE_F = [((1, 0, 0), (1, 2, 6, 5)), ((-1, 0, 0), (0, 4, 7, 3)),
+           ((0, 1, 0), (2, 3, 7, 6)), ((0, -1, 0), (0, 1, 5, 4)),
+           ((0, 0, 1), (4, 5, 6, 7)), ((0, 0, -1), (0, 3, 2, 1))]
+#: view name -> the cube face normal it looks at (None = isometric).
+_VIEW_NORMAL = {"front": (0, -1, 0), "back": (0, 1, 0), "left": (-1, 0, 0),
+                "right": (1, 0, 0), "top": (0, 0, 1), "bottom": (0, 0, -1),
+                "isometric": None}
+
+
+def _v3(a):
+    return a
+
+
+def _dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def _cross3(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0])
+
+
+def _unit3(a):
+    import math
+    n = math.sqrt(_dot(a, a)) or 1.0
+    return (a[0] / n, a[1] / n, a[2] / n)
+
+
+def view_cube_icon(view: str, size: int = 26, accent: str = "#3b82d6") -> QIcon:
+    """A small 3D cube with the face for *view* shaded — Front/Back/Left/
+    Right/Top/Bottom highlight that face; Isometric shows a plain cube."""
+    from PyQt5.QtCore import QPointF
+    from PyQt5.QtGui import QPolygonF
+
+    target = _VIEW_NORMAL.get(view, None)
+    # Camera direction: look along the target face's normal, tilted toward a
+    # corner so three faces show; isometric uses the standard corner.
+    if target is None:
+        cam = _unit3((1.0, -1.0, 0.8))
+    else:
+        cam = _unit3(tuple(n * 1.3 if n else 0.5 for n in target))
+    world_up = (0.0, 1.0, 0.0) if abs(cam[2]) > 0.94 else (0.0, 0.0, 1.0)
+    right = _unit3(_cross3(world_up, cam))
+    up = _unit3(_cross3(cam, right))
+
+    def project(p):
+        return (_dot(p, right), -_dot(p, up), _dot(p, cam))
+
+    pv = [project(v) for v in _CUBE_V]
+    xs = [p[0] for p in pv]; ys = [p[1] for p in pv]
+    lo, hi = min(xs + ys), max(xs + ys)
+    span = (hi - lo) or 1.0
+    margin = size * 0.16
+    scale = (size - 2 * margin) / span
+
+    def to_px(p):
+        return QPointF(margin + (p[0] - lo) * scale,
+                       margin + (p[1] - lo) * scale)
+
+    faces = []
+    for normal, idx in _CUBE_F:
+        if _dot(normal, cam) <= 0.01:
+            continue                        # back-facing, hidden
+        depth = sum(pv[i][2] for i in idx) / 4.0
+        is_target = target is not None and normal == tuple(target)
+        faces.append((depth, idx, is_target))
+    faces.sort(key=lambda f: f[0])          # far first
+
+    pm = QPixmap(size, size)
+    pm.fill(Qt.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.Antialiasing)
+    edge = QPen(QColor("#33373d"))
+    edge.setWidthF(max(1.0, size * 0.05))
+    edge.setJoinStyle(Qt.RoundJoin)
+    for _depth, idx, is_target in faces:
+        poly = QPolygonF([to_px(pv[i]) for i in idx])
+        p.setPen(edge)
+        p.setBrush(QColor(accent) if is_target else QColor("#e6e8ec"))
+        p.drawPolygon(poly)
+    p.end()
+    return QIcon(pm)
+
+
 def shape_icon(kind: str, color: str = None, size: int = 24) -> QIcon:
     """Draw a shape's own outline into an icon — used for shapes that
     have no Material Design glyph (e.g. parallelogram, heptagon)."""
