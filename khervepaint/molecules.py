@@ -152,15 +152,21 @@ def _dashed_line(p1, p2, color, width, dash=6.0, gap=4.0):
     return out
 
 
-def _spread(atoms, edges, factor):
+def _centroid(atoms):
+    n = len(atoms) or 1
+    return (sum(a[1] for a in atoms) / n, sum(a[2] for a in atoms) / n,
+            sum(a[3] for a in atoms) / n)
+
+
+def _spread(atoms, edges, factor, centroid=None):
     """Move atoms (and cell edges) apart from their centroid by *factor*,
     lengthening the bonds relative to the spheres. rscale is unchanged, so
-    only the ball-to-stick ratio moves — bigger factor = longer bonds."""
+    only the ball-to-stick ratio moves — bigger factor = longer bonds. A
+    fixed *centroid* keeps the rest of the model still while one atom is
+    dragged in the builder."""
     if factor == 1.0 or not atoms:
         return atoms, edges
-    cx = sum(a[1] for a in atoms) / len(atoms)
-    cy = sum(a[2] for a in atoms) / len(atoms)
-    cz = sum(a[3] for a in atoms) / len(atoms)
+    cx, cy, cz = centroid if centroid is not None else _centroid(atoms)
 
     def sc(p):
         return (cx + (p[0] - cx) * factor, cy + (p[1] - cy) * factor,
@@ -174,7 +180,8 @@ def _spread(atoms, edges, factor):
 
 
 def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
-           margin=0.12, az=_AZ, el=_EL, bond_scale=1.0, tag_atoms=False):
+           margin=0.12, az=_AZ, el=_EL, bond_scale=1.0, tag_atoms=False,
+           frozen=None):
     """Lay out a 3D model into the (w, h) box and return its shape specs.
 
     *atoms* is a list of ``(element, x, y, z)``; *bonds* a list of
@@ -183,8 +190,11 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
     is ``"solid"`` (a thick dark cube edge) or ``"dash"`` (a dashed body
     diagonal). *bond_scale* spreads the atoms apart to lengthen the bonds.
     The projected model is scaled uniformly (spheres stay round) to fit the
-    box, then drawn back-to-front: edges, bonds, spheres."""
-    atoms, edges = _spread(atoms, edges, bond_scale)
+    box, then drawn back-to-front: edges, bonds, spheres. Passing *frozen*
+    (from `fit_params`) reuses a captured scale/origin/centroid so dragging
+    one atom in the builder doesn't rescale or recentre the rest."""
+    fc = frozen.get("centroid") if frozen else None
+    atoms, edges = _spread(atoms, edges, bond_scale, fc)
     proj = [_proj(a[1], a[2], a[3], az, el) for a in atoms]
     rad = [ATOM_RADII.get(a[0], 0.55) * rscale for a in atoms]
 
@@ -207,10 +217,14 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
     miny, maxy = min(ys_lo), max(ys_hi)
     spanx = (maxx - minx) or 1.0
     spany = (maxy - miny) or 1.0
-    m = margin * min(w, h)
-    s = min((w - 2 * m) / spanx, (h - 2 * m) / spany)
-    ox = (w - s * spanx) / 2.0 - s * minx
-    oy = (h - s * spany) / 2.0 - s * miny
+    if frozen and frozen.get("scale"):
+        s = frozen["scale"]
+        ox, oy = frozen["origin"]
+    else:
+        m = margin * min(w, h)
+        s = min((w - 2 * m) / spanx, (h - 2 * m) / spany)
+        ox = (w - s * spanx) / 2.0 - s * minx
+        oy = (h - s * spany) / 2.0 - s * miny
 
     def T(px, py):
         return ox + s * px, oy + s * py
@@ -825,20 +839,63 @@ def build_specs(name, w, h):
 
 
 def specs_from_atoms(atoms, bonds, w, h, az=None, el=None, bond=1.0,
-                     rscale=0.92, tag_atoms=False):
+                     rscale=0.92, tag_atoms=False, frozen=None):
     """Shape specs for a custom (atoms, bonds) model — used by the builder
     when the user has edited the structure atom by atom. With *tag_atoms*
-    each sphere spec carries an ``"_atom"`` index for hit-testing."""
+    each sphere spec carries an ``"_atom"`` index for hit-testing; *frozen*
+    (from `fit_params`) locks the layout so one atom can be dragged."""
     return _model(atoms, bonds, w, h, rscale=rscale,
                   az=DEFAULT_AZ if az is None else az,
                   el=DEFAULT_EL if el is None else el, bond_scale=bond,
-                  tag_atoms=tag_atoms)
+                  tag_atoms=tag_atoms, frozen=frozen)
+
+
+def fit_params(atoms, bonds, w, h, az, el, bond, rscale=0.92):
+    """Capture the current layout's scale / origin / centroid, so the
+    builder can drag one atom without the rest rescaling or recentring."""
+    centroid = _centroid(atoms)
+    at, _ = _spread(atoms, None, bond, centroid)
+    proj = [_proj(a[1], a[2], a[3], az, el) for a in at]
+    rad = [ATOM_RADII.get(a[0], 0.55) * rscale for a in at]
+    xs_lo = [proj[i][0] - rad[i] for i in range(len(at))]
+    xs_hi = [proj[i][0] + rad[i] for i in range(len(at))]
+    ys_lo = [proj[i][1] - rad[i] for i in range(len(at))]
+    ys_hi = [proj[i][1] + rad[i] for i in range(len(at))]
+    minx, maxx = min(xs_lo), max(xs_hi)
+    miny, maxy = min(ys_lo), max(ys_hi)
+    spanx = (maxx - minx) or 1.0
+    spany = (maxy - miny) or 1.0
+    m = 0.12 * min(w, h)
+    s = min((w - 2 * m) / spanx, (h - 2 * m) / spany)
+    ox = (w - s * spanx) / 2.0 - s * minx
+    oy = (h - s * spany) / 2.0 - s * miny
+    return {"scale": s, "origin": (ox, oy), "centroid": centroid}
+
+
+def drag_atom(atoms, index, dsx, dsy, az, el, bond, scale):
+    """Move atom *index* by a screen delta (dsx, dsy) in the current view.
+
+    The screen plane maps back to two world axes (r, g) of the projection,
+    so dragging shifts the atom in the plane facing the viewer — enough to
+    open up bond angles by hand. *scale* is the frozen layout scale."""
+    ca, sa = math.cos(az), math.sin(az)
+    ce, se = math.cos(el), math.sin(el)
+    r = (ca, -sa, 0.0)                     # world axis that moves screen-x
+    g = (sa * se, ca * se, -ce)            # world axis that moves screen-y
+    k = 1.0 / (scale * (bond or 1.0))
+    atoms[index][1] += (dsx * r[0] + dsy * g[0]) * k
+    atoms[index][2] += (dsx * r[1] + dsy * g[1]) * k
+    atoms[index][3] += (dsx * r[2] + dsy * g[2]) * k
 
 
 # ------------------------------------------------------- interactive builder
 #: Elements offered in the molecule builder's Add-atom palette.
 PALETTE = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br"]
-_S8 = math.sqrt(8.0) / 3.0          # tetrahedral off-axis component
+#: Typical valence (max bonds) per element — the builder tracks free bonds.
+VALENCE = {"H": 1, "C": 4, "N": 3, "O": 2, "F": 1, "Cl": 1, "Br": 1, "I": 1,
+           "S": 2, "P": 3, "B": 3, "Si": 4}
+_COS_TET = 1.0 / 3.0                # |cos(109.47°)|
+_SIN_TET = math.sqrt(8.0) / 3.0    # sin(109.47°)
 
 
 def _norm(v):
@@ -850,12 +907,15 @@ def _unit(v):
     return (v[0] / n, v[1] / n, v[2] / n)
 
 
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0])
+
+
 def _perp(v):
     """A unit vector perpendicular to *v*."""
     ref = (0.0, 0.0, 1.0) if abs(v[2]) < 0.9 else (0.0, 1.0, 0.0)
-    c = (v[1] * ref[2] - v[2] * ref[1], v[2] * ref[0] - v[0] * ref[2],
-         v[0] * ref[1] - v[1] * ref[0])
-    return _unit(c)
+    return _unit(_cross(v, ref))
 
 
 def single_atom(element="C"):
@@ -867,29 +927,95 @@ def _bond_length(a, b):
     return 1.0 if "H" in (a, b) else 1.5
 
 
-def add_bonded_atom(atoms, bonds, anchor, element, order=1):
-    """Add an *element* atom bonded to atom *anchor*, placed in a free
-    (roughly tetrahedral) direction pointing away from its existing bonds.
-    Mutates *atoms*/*bonds*; returns the new atom's index."""
+def valence(element):
+    return VALENCE.get(element, 4)
+
+
+def used_valence(bonds, index):
+    """Bonds already on atom *index* (summing bond orders)."""
+    return sum(o for i, j, o in bonds if index in (i, j))
+
+
+def free_valence(atoms, bonds, index):
+    """How many more bonds atom *index* can take."""
+    return valence(atoms[index][0]) - used_valence(bonds, index)
+
+
+def _neighbor_dirs(atoms, bonds, anchor):
     ax, ay, az = atoms[anchor][1], atoms[anchor][2], atoms[anchor][3]
-    dirs = []
+    out = []
     for i, j, _o in bonds:
         k = j if i == anchor else (i if j == anchor else None)
         if k is not None:
-            dirs.append(_unit((atoms[k][1] - ax, atoms[k][2] - ay,
-                               atoms[k][3] - az)))
+            out.append((k, _unit((atoms[k][1] - ax, atoms[k][2] - ay,
+                                  atoms[k][3] - az))))
+    return out
+
+
+def _chain_direction(atoms, bonds, anchor, neigh_k, neigh_dir):
+    """Direction to extend a chain at *anchor* (one heavy neighbour), as a
+    trans (anti-periplanar) zig-zag in a stable plane, so a chain stays
+    straight instead of curling into a ring."""
+    forward = (-neigh_dir[0], -neigh_dir[1], -neigh_dir[2])   # anchor <- away
+    # bend plane: from the previous two atoms if available, else the xy-plane
+    prev = [d for k, d in _neighbor_dirs(atoms, bonds, neigh_k) if k != anchor]
+    normal = _cross(prev[0], neigh_dir) if prev else (0.0, 0.0, 1.0)
+    if _norm(normal) < 1e-6:
+        normal = (0.0, 0.0, 1.0)
+    normal = _unit(normal)
+    side = _unit(_cross(normal, forward))
+    # put the new bond trans to the previous atom (opposite side of forward)
+    sign = 1.0
+    if prev:
+        s_prev = prev[0][0] * side[0] + prev[0][1] * side[1] + prev[0][2] * side[2]
+        sign = -1.0 if s_prev > 0 else 1.0
+    return _unit((forward[0] * _COS_TET + side[0] * _SIN_TET * sign,
+                  forward[1] * _COS_TET + side[1] * _SIN_TET * sign,
+                  forward[2] * _COS_TET + side[2] * _SIN_TET * sign))
+
+
+def _free_direction(atoms, bonds, anchor):
+    """A tetrahedral direction at *anchor* not already occupied by a bond."""
+    dirs = [d for _k, d in _neighbor_dirs(atoms, bonds, anchor)]
     if not dirs:
-        d = (1.0, 0.0, 0.0)
-    elif len(dirs) == 1:
-        n0, perp = dirs[0], _perp(dirs[0])
-        d = _unit((-n0[0] / 3 + perp[0] * _S8, -n0[1] / 3 + perp[1] * _S8,
-                   -n0[2] / 3 + perp[2] * _S8))
+        return (1.0, 0.0, 0.0)
+    if len(dirs) == 1:
+        # handled by the chain builder; fall back to a bent direction here
+        n0 = dirs[0]
+        p = _perp(n0)
+        return _unit((-n0[0] * _COS_TET + p[0] * _SIN_TET,
+                      -n0[1] * _COS_TET + p[1] * _SIN_TET,
+                      -n0[2] * _COS_TET + p[2] * _SIN_TET))
+    if len(dirs) == 2:
+        bis = _unit((-(dirs[0][0] + dirs[1][0]), -(dirs[0][1] + dirs[1][1]),
+                     -(dirs[0][2] + dirs[1][2])))
+        normal = _cross(dirs[0], dirs[1])
+        normal = _perp(dirs[0]) if _norm(normal) < 1e-6 else _unit(normal)
+        for sign in (1.0, -1.0):             # the two out-of-plane positions
+            cand = _unit((bis[0] * 0.577 + normal[0] * 0.816 * sign,
+                          bis[1] * 0.577 + normal[1] * 0.816 * sign,
+                          bis[2] * 0.577 + normal[2] * 0.816 * sign))
+            if all(cand[0] * d[0] + cand[1] * d[1] + cand[2] * d[2] < 0.6
+                   for d in dirs):
+                return cand
+        return bis
+    # 3 or more: the remaining tetrahedral vertex (opposite their sum)
+    s = (sum(d[0] for d in dirs), sum(d[1] for d in dirs),
+         sum(d[2] for d in dirs))
+    return _perp(dirs[0]) if _norm(s) < 1e-6 else _unit((-s[0], -s[1], -s[2]))
+
+
+def add_bonded_atom(atoms, bonds, anchor, element, order=1):
+    """Add an *element* atom bonded to atom *anchor*. A single-neighbour
+    anchor extends as a trans zig-zag (so chains stay straight); otherwise
+    the atom fills a free tetrahedral direction. Mutates *atoms*/*bonds*;
+    returns the new atom's index."""
+    ax, ay, az = atoms[anchor][1], atoms[anchor][2], atoms[anchor][3]
+    neigh = _neighbor_dirs(atoms, bonds, anchor)
+    if len(neigh) == 1:
+        d = _chain_direction(atoms, bonds, anchor, neigh[0][0], neigh[0][1])
     else:
-        sx = sum(v[0] for v in dirs)
-        sy = sum(v[1] for v in dirs)
-        sz = sum(v[2] for v in dirs)
-        d = (-sx, -sy, -sz)
-        d = _perp(dirs[0]) if _norm(d) < 1e-6 else _unit(d)
+        d = _free_direction(atoms, bonds, anchor)
     length = _bond_length(element, atoms[anchor][0])
     atoms.append([element, ax + d[0] * length, ay + d[1] * length,
                   az + d[2] * length])

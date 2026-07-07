@@ -22,7 +22,7 @@ import pytest
 from PyQt5.QtCore import QPointF
 from PyQt5.QtWidgets import QApplication
 
-from khervepaint import ai_assistant, document, gradient, molecules, svgio
+from khervepaint import ai_assistant, document, gradient, icons, molecules, svgio
 from khervepaint.canvas import PaintScene
 
 
@@ -289,8 +289,10 @@ def test_builder_edits_and_returns_structure(app):
     from khervepaint.molview import MoleculeViewer
     dlg = MoleculeViewer("methane")
     assert dlg.editable
+    dlg.selected = 1                             # remove an H to free a bond
+    dlg._delete_atom()
     n0 = len(dlg.atoms)
-    dlg.selected = 0
+    dlg.selected = 0                             # now the carbon has a slot
     dlg._add_atom("O")
     assert len(dlg.atoms) == n0 + 1 and dlg.dirty
     atoms, bonds = dlg.result()
@@ -305,12 +307,59 @@ def test_builder_edits_and_returns_structure(app):
 def test_builder_standard_view_and_bond(app):
     from khervepaint.molview import MoleculeViewer, STANDARD_VIEWS
     dlg = MoleculeViewer("ethanol")
-    top = next(v for v in STANDARD_VIEWS if v[0] == "Top")
-    dlg._set_view(top[2], top[3])
-    assert abs(dlg.el - top[3]) < 1e-9 and abs(dlg.az - top[2]) < 1e-9
+    top = next(v for v in STANDARD_VIEWS if v[0] == "Top")   # (label, az, el)
+    dlg._set_view(top[1], top[2])
+    assert abs(dlg.az - top[1]) < 1e-9 and abs(dlg.el - top[2]) < 1e-9
     dlg._on_bond(210)
     assert abs(dlg.bond - 2.1) < 1e-9
     dlg.deleteLater()
+
+
+def test_builds_a_straight_chain_not_a_ring():
+    # regression: extending a chain used to curl round into a benzene-like
+    # ring; five carbons should now stretch out.
+    atoms, bonds = molecules.single_atom("C")
+    prev = 0
+    for _ in range(4):
+        prev = molecules.add_bonded_atom(atoms, bonds, prev, "C")
+    import math
+    end = math.dist(atoms[0][1:4], atoms[4][1:4])
+    assert end > 3.5                              # extended, not ~1.5 (ring)
+
+
+def test_valence_tracking():
+    atoms, bonds = molecules.single_atom("C")
+    assert molecules.free_valence(atoms, bonds, 0) == 4      # bare carbon
+    molecules.add_bonded_atom(atoms, bonds, 0, "O", order=2)  # C=O
+    assert molecules.free_valence(atoms, bonds, 0) == 2
+    assert molecules.free_valence(atoms, bonds, 1) == 0       # O full
+
+
+def test_builder_blocks_overbonding(app):
+    from khervepaint.molview import MoleculeViewer
+    dlg = MoleculeViewer("methane")              # C already has 4 H
+    dlg.selected = 0                             # the carbon, valence full
+    before = len(dlg.atoms)
+    dlg._add_atom("H")
+    assert len(dlg.atoms) == before             # refused — no free valence
+    dlg.deleteLater()
+
+
+def test_drag_atom_moves_only_that_atom():
+    atoms = [["C", 0.0, 0.0, 0.0], ["H", 1.0, 0.0, 0.0]]
+    p0 = list(atoms[0])
+    molecules.drag_atom(atoms, 1, 20.0, 10.0, molecules.DEFAULT_AZ,
+                        molecules.DEFAULT_EL, 1.5, scale=40.0)
+    assert atoms[0] == p0                        # the other atom is untouched
+    assert atoms[1][1:4] != [1.0, 0.0, 0.0]      # dragged atom moved
+
+
+def test_cube_icons_render(app):
+    for v in ("front", "back", "left", "right", "top", "bottom",
+              "isometric"):
+        ic = icons.view_cube_icon(v)
+        assert not ic.isNull()
+        assert not ic.pixmap(26, 26).isNull()
 
 
 def _find_model(scene):

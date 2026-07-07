@@ -34,24 +34,23 @@ from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
 from . import icons, molecules
 
 _HALF = math.pi / 2.0
-#: (label, mdi glyph, azimuth, elevation) for the view toolbar.
+#: (label, azimuth, elevation) for the view toolbar (icons are 3D cubes).
+W = 400.0                               # preview model-box size (scene units)
 STANDARD_VIEWS = [
-    ("Front", "mdi.arrow-up-bold", 0.0, 0.0),
-    ("Back", "mdi.arrow-down-bold", math.pi, 0.0),
-    ("Left", "mdi.arrow-left-bold", -_HALF, 0.0),
-    ("Right", "mdi.arrow-right-bold", _HALF, 0.0),
-    ("Top", "mdi.arrow-up-bold-box-outline", 0.0, _HALF),
-    ("Bottom", "mdi.arrow-down-bold-box-outline", 0.0, -_HALF),
-    ("Isometric", "mdi.cube-outline", molecules.DEFAULT_AZ,
-     molecules.DEFAULT_EL),
+    ("Front", 0.0, 0.0), ("Back", math.pi, 0.0),
+    ("Left", -_HALF, 0.0), ("Right", _HALF, 0.0),
+    ("Top", 0.0, _HALF), ("Bottom", 0.0, -_HALF),
+    ("Isometric", molecules.DEFAULT_AZ, molecules.DEFAULT_EL),
 ]
 
 
 class _Preview(QGraphicsView):
-    """Renders the model; drag to orbit, click a sphere to select an atom."""
+    """Renders the model. Drag empty space to orbit; drag a sphere to move
+    that atom (adjust bond angles); click a sphere to select it."""
 
     atom_clicked = pyqtSignal(int)          # atom index, or -1 for empty
     rotated = pyqtSignal()
+    atom_moved = pyqtSignal()
 
     def __init__(self, builder, parent=None):
         super().__init__(parent)
@@ -65,14 +64,14 @@ class _Preview(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._press = None
         self._press_atom = None
-        self._rotating = False
+        self._mode = None               # None | "orbit" | "drag"
+        self._frozen = None             # captured layout while dragging
 
     def rebuild(self):
         b = self._b
         scene = self.scene()
         scene.clear()
-        w = h = 400.0
-        specs = b.render_specs(w, h)
+        specs = b.render_specs(W, W, frozen=self._frozen)
         from .ai_assistant import _spec_to_item
         sel_item = None
         for spec in specs:
@@ -89,9 +88,11 @@ class _Preview(QGraphicsView):
             ring = QGraphicsEllipseItem(r)
             ring.setPen(QPen(QColor("#2176c7"), 3))
             scene.addItem(ring)
-        src = scene.itemsBoundingRect().adjusted(-10, -10, 10, 10)
-        scene.setSceneRect(src)
-        self.fitInView(src, Qt.KeepAspectRatio)
+        # Keep a fixed scene rect while dragging so the view doesn't jump.
+        if self._frozen is None:
+            src = scene.itemsBoundingRect().adjusted(-10, -10, 10, 10)
+            scene.setSceneRect(src)
+            self.fitInView(src, Qt.KeepAspectRatio)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -109,26 +110,48 @@ class _Preview(QGraphicsView):
     def mousePressEvent(self, event):
         self._press = event.pos()
         self._press_atom = self._atom_at(event.pos())
-        self._rotating = False
+        self._mode = None
 
     def mouseMoveEvent(self, event):
         if self._press is None:
             return
         delta = event.pos() - self._press
-        if not self._rotating and abs(delta.x()) + abs(delta.y()) < 4:
-            return
-        self._rotating = True
+        if self._mode is None:
+            if abs(delta.x()) + abs(delta.y()) < 4:
+                return
+            # start dragging the pressed atom, else orbit the whole model
+            b = self._b
+            if self._press_atom is not None and b.editable:
+                self._mode = "drag"
+                self._frozen = molecules.fit_params(
+                    b.atoms, b.bonds, W, W, b.az, b.el, b.bond, b.rscale)
+            else:
+                self._mode = "orbit"
         self._press = event.pos()
-        self._b.az = (self._b.az + delta.x() * 0.012) % (2 * math.pi)
-        self._b.el = max(-_HALF, min(_HALF, self._b.el - delta.y() * 0.012))
-        self.rebuild()
-        self.rotated.emit()
+        b = self._b
+        if self._mode == "orbit":
+            b.az = (b.az + delta.x() * 0.012) % (2 * math.pi)
+            b.el = max(-_HALF, min(_HALF, b.el - delta.y() * 0.012))
+            self.rebuild()
+            self.rotated.emit()
+        else:                                  # drag the atom in the view plane
+            d = self.mapToScene(event.pos()) - self.mapToScene(
+                event.pos() - delta)
+            molecules.drag_atom(b.atoms, self._press_atom, d.x(), d.y(),
+                                b.az, b.el, b.bond, self._frozen["scale"])
+            self.rebuild()
 
     def mouseReleaseEvent(self, event):
-        if self._press is not None and not self._rotating:
+        if self._mode == "drag":
+            self._b.dirty = True
+            self._frozen = None
+            self.rebuild()                     # re-fit to the new geometry
+            self.atom_moved.emit()
+        elif self._mode is None and self._press is not None:
             self.atom_clicked.emit(self._press_atom if self._press_atom
                                    is not None else -1)
         self._press = None
+        self._mode = None
 
 
 class MoleculeViewer(QDialog):
@@ -166,6 +189,7 @@ class MoleculeViewer(QDialog):
         layout.addLayout(self._view_toolbar())
         self.preview = _Preview(self)
         self.preview.atom_clicked.connect(self._on_atom_clicked)
+        self.preview.atom_moved.connect(self._update_status)
         layout.addWidget(self.preview, 1)
 
         self.status = QLabel()
@@ -187,13 +211,15 @@ class MoleculeViewer(QDialog):
 
     # ---------------------------------------------------------------- UI
     def _view_toolbar(self):
+        from PyQt5.QtCore import QSize
         row = QHBoxLayout()
         row.addWidget(QLabel("View:"))
-        for title, glyph, vaz, vel in STANDARD_VIEWS:
+        for title, vaz, vel in STANDARD_VIEWS:
             btn = QToolButton()
-            btn.setIcon(icons.icon(glyph))
+            btn.setIcon(icons.view_cube_icon(title.lower()))
+            btn.setIconSize(QSize(26, 26))
             btn.setText(title)
-            btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             btn.setAutoRaise(True)
             btn.setToolTip(f"View from {title.lower()}")
             btn.clicked.connect(lambda _=False, a=vaz, e=vel: self._set_view(a, e))
@@ -242,11 +268,11 @@ class MoleculeViewer(QDialog):
         return row
 
     # ---------------------------------------------------------- rendering
-    def render_specs(self, w, h):
+    def render_specs(self, w, h, frozen=None):
         if self.editable:
             return molecules.specs_from_atoms(
                 self.atoms, self.bonds, w, h, self.az, self.el, self.bond,
-                self.rscale, tag_atoms=True)
+                self.rscale, tag_atoms=True, frozen=frozen)
         return molecules.build_specs_oriented(self.name, w, h, self.az,
                                               self.el, self.bond)
 
@@ -271,6 +297,18 @@ class MoleculeViewer(QDialog):
             self.atoms.append([element, 0.0, 0.0, 0.0])
             self.selected = 0
         else:
+            # Respect valence: don't over-bond an atom that is already full.
+            free = molecules.free_valence(self.atoms, self.bonds, anchor)
+            if free < self.order:
+                el = self.atoms[anchor][0]
+                self.status.setText(
+                    f"{el} (atom {anchor}) has no room for that bond — "
+                    f"{molecules.valence(el)} bonds max, {free} free.")
+                return
+            if molecules.valence(element) < self.order:
+                self.status.setText(f"{element} can't take a "
+                                    f"{['', 'single', 'double', 'triple'][self.order]} bond.")
+                return
             self.selected = molecules.add_bonded_atom(
                 self.atoms, self.bonds, anchor, element, self.order)
         self.dirty = True
@@ -292,11 +330,17 @@ class MoleculeViewer(QDialog):
             return
         if self.selected is not None and self.selected < len(self.atoms):
             el = self.atoms[self.selected][0]
-            self.status.setText(f"Selected {el} (atom {self.selected}) — "
-                                "click an element to bond it on.")
+            free = molecules.free_valence(self.atoms, self.bonds,
+                                          self.selected)
+            total = molecules.valence(el)
+            avail = (f"{free} of {total} bonds free — click an element to "
+                     "add one" if free > 0 else f"full ({total} bonds)")
+            self.status.setText(f"Selected {el} (atom {self.selected}): "
+                                f"{avail}. Drag it to adjust the angle.")
         else:
-            self.status.setText("Click an atom to select it, then add an "
-                                "element — or drag to rotate.")
+            self.status.setText("Click an atom to select it (then add an "
+                                "element), drag an atom to bend it, or drag "
+                                "the background to rotate.")
 
     # ------------------------------------------------------------- result
     def result(self):
