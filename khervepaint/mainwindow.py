@@ -116,6 +116,9 @@ SHAPE_GROUPS = [
 #: element name, placement tool). Drives both the left-toolbar dropdowns
 #: and the Library menu, so the two never drift apart.
 SYMBOL_LIBRARIES = [
+    ("Molecules", "mdi.molecule",
+     "Molecules — 3D ball-and-stick models & crystal cells",
+     molecules, "mol_element", MOL_PLACE),
     ("Room layout", "mdi.floor-plan",
      "Room layout — walls, doors, furniture (top view)",
      floorplan, "plan_element", PLAN_PLACE),
@@ -149,9 +152,6 @@ SYMBOL_LIBRARIES = [
     ("Math", "mdi.function-variant",
      "Math — axes, vectors, graphs & symbols",
      maths, "math_element", MATH_PLACE),
-    ("Molecules", "mdi.molecule",
-     "Molecules — 3D ball-and-stick models & crystal cells",
-     molecules, "mol_element", MOL_PLACE),
 ]
 
 

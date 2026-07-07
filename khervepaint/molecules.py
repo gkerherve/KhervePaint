@@ -554,45 +554,81 @@ def _mol_ethyne():
     return atoms, bonds, None
 
 
-# --- PET repeat unit --------------------------------------------------------
-def _mol_pet():
-    """Poly(ethylene terephthalate) repeat unit: a benzene ring with two
-    ester groups (para), then the -O-CH2-CH2-O- glycol link."""
-    atoms, bonds = [], []
-    ring = _ring_carbons(6, 1.39)
-    ridx = [_add(atoms, "C", p) for p in ring]
+# --- constructed molecules (correct sp/sp2/sp3 geometry) -------------------
+# These use build_molecule (see below): give the heavy-atom skeleton and the
+# H's + geometry are filled in. Defined here but they call helpers further
+# down; Python resolves the names at call time, so ordering is fine.
+def _cm(heavy, links):
+    """A molecule builder from a heavy-atom skeleton (returns the 3-tuple)."""
+    atoms, bonds = build_molecule(heavy, links)
+    return atoms, bonds, None
+
+
+def _aromatic_ring(atoms, bonds, radius=1.39):
+    """A planar benzene ring (6 sp2 C, alternating double bonds); returns the
+    ring atom indices. H's / substituents fill outward via add_bonded_atom."""
+    ring = _ring_carbons(6, radius)
+    idx = [_add(atoms, "C", p) for p in ring]
     for k in range(6):
-        bonds.append((ridx[k], ridx[(k + 1) % 6], 2 if k % 2 == 0 else 1))
-    # H on the 4 unsubstituted ring carbons (positions 1,2,4,5)
-    for k in (1, 2, 4, 5):
-        p = ring[k]
-        d = math.hypot(p[0], p[1]) or 1.0
-        bonds.append((ridx[k], _add(atoms, "H",
-                     (p[0] * (d + 1.0) / d, p[1] * (d + 1.0) / d, 0.0)), 1))
+        bonds.append([idx[k], idx[(k + 1) % 6], 2 if k % 2 == 0 else 1])
+    return idx
 
-    def _ester(anchor_i, base, direction):
-        bx, by = base
-        c = (bx + direction * 1.3, by, 0.0)
-        i_c = _add(atoms, "C", c)
-        bonds.append((anchor_i, i_c, 1))
-        bonds.append((i_c, _add(atoms, "O", (c[0], c[1] + 1.15, 0.5)), 2))
-        o1 = (c[0] + direction * 1.2, c[1] - 0.4, 0.0)
-        i_o1 = _add(atoms, "O", o1)
-        bonds.append((i_c, i_o1, 1))
-        ch = (o1[0] + direction * 1.2, o1[1] - 0.6, 0.4)
-        i_ch = _add(atoms, "C", ch)
-        bonds.append((i_o1, i_ch, 1))
-        for hy in (0.7, -0.7):
-            bonds.append((i_ch, _add(atoms, "H",
-                                     (ch[0], ch[1] + 0.4, hy + 0.4)), 1))
-        return i_ch
 
-    top = ridx[0]        # top ring carbon
-    bot = ridx[3]        # bottom ring carbon (para)
-    ch_a = _ester(top, (ring[0][0], ring[0][1]), 1)
-    ch_b = _ester(bot, (ring[3][0], ring[3][1]), -1)
-    # glycol CH2-CH2 link between the two ester oxygens' carbons
-    bonds.append((ch_a, ch_b, 1))
+def _substituted_benzene(subs):
+    """A benzene ring with *subs* = {position: build_fn(atoms,bonds,ring_i)};
+    unsubstituted ring carbons get an H automatically."""
+    atoms, bonds = [], []
+    idx = _aromatic_ring(atoms, bonds)
+    for pos, fn in subs.items():
+        fn(atoms, bonds, idx[pos])
+    add_hydrogens(atoms, bonds)
+    return atoms, bonds, None
+
+
+def _mol_benzene2():
+    return _substituted_benzene({})
+
+
+def _mol_toluene():
+    return _substituted_benzene(
+        {0: lambda a, b, i: add_bonded_atom(a, b, i, "C", 1)})
+
+
+def _mol_phenol():
+    return _substituted_benzene(
+        {0: lambda a, b, i: add_bonded_atom(a, b, i, "O", 1)})
+
+
+def _mol_aniline():
+    return _substituted_benzene(
+        {0: lambda a, b, i: add_bonded_atom(a, b, i, "N", 1)})
+
+
+def _mol_benzoic_acid():
+    def cooh(a, b, i):
+        c = add_bonded_atom(a, b, i, "C", 1)
+        add_bonded_atom(a, b, c, "O", 2)
+        add_bonded_atom(a, b, c, "O", 1)
+    return _substituted_benzene({0: cooh})
+
+
+def _mol_pet():
+    """Poly(ethylene terephthalate) repeat unit: a benzene ring with a
+    carboxylate ester at each para position, joined by the -O-CH2-CH2-O-
+    glycol link. Built with correct sp2/sp3 geometry."""
+    atoms, bonds = [], []
+    ring = _aromatic_ring(atoms, bonds)
+
+    def ester(ring_i):
+        c = add_bonded_atom(atoms, bonds, ring_i, "C", 1)   # carbonyl C (sp2)
+        add_bonded_atom(atoms, bonds, c, "O", 2)            # =O
+        o = add_bonded_atom(atoms, bonds, c, "O", 1)        # -O-
+        return add_bonded_atom(atoms, bonds, o, "C", 1)     # -CH2-
+
+    ch_a = ester(ring[0])
+    ch_b = ester(ring[3])                                   # para
+    bonds.append([ch_a, ch_b, 1])                           # -CH2-CH2- glycol
+    add_hydrogens(atoms, bonds)
     return atoms, bonds, None
 
 
@@ -725,23 +761,124 @@ def _xtal_cscl():
     return _crystal(pts, a, extra_edges=_body_diagonals(a))
 
 
+def _face_centers(a):
+    return [(a / 2, a / 2, 0), (a / 2, a / 2, a), (a / 2, 0, a / 2),
+            (a / 2, a, a / 2), (0, a / 2, a / 2), (a, a / 2, a / 2)]
+
+
+def _xtal_perovskite():
+    """ABX3 perovskite: A cations at the cube corners, the B cation at the
+    body centre, X anions at the face centres — the B-X bonds form the
+    central octahedron (e.g. CaTiO3: Ca green, Ti grey, O red)."""
+    a = 3.0
+    atoms, bonds = [], []
+    for p in _cube_corners(a):
+        _add(atoms, "Ca", p)                       # A site (corners)
+    ib = _add(atoms, "Ti", (a / 2, a / 2, a / 2))  # B site (centre)
+    for p in _face_centers(a):
+        ix = _add(atoms, "O", p)                   # X (face centres)
+        bonds.append([ib, ix, 1])                  # BX6 octahedron
+    return atoms, bonds, _cube_edges(a)
+
+
+def _diamond_like(el_lattice, el_inner, a=4.0):
+    atoms = []
+    for p in _cube_corners(a):
+        _add(atoms, el_lattice, p)
+    for p in _face_centers(a):
+        _add(atoms, el_lattice, p)
+    inner = [(a / 4, a / 4, a / 4), (3 * a / 4, 3 * a / 4, a / 4),
+             (3 * a / 4, a / 4, 3 * a / 4), (a / 4, 3 * a / 4, 3 * a / 4)]
+    inner_idx = [_add(atoms, el_inner, p) for p in inner]
+    bonds = []
+    for ii in inner_idx:
+        ip = atoms[ii][1:4]
+        near = sorted(range(len(atoms)),
+                      key=lambda k: sum((atoms[k][1 + a2] - ip[a2]) ** 2
+                                        for a2 in range(3)))
+        for k in near[1:5]:
+            bonds.append([ii, k, 1])
+    return atoms, bonds, _cube_edges(a)
+
+
+def _xtal_zincblende():
+    """Zinc blende (ZnS): an FCC sulfur lattice with zinc in four of the
+    tetrahedral holes — the binary analogue of diamond."""
+    return _diamond_like("S", "Zn")
+
+
+def _xtal_fluorite():
+    """Fluorite (CaF2): FCC calcium with fluorine filling all eight
+    tetrahedral holes."""
+    a = 4.0
+    atoms = []
+    for p in _cube_corners(a) + _face_centers(a):
+        _add(atoms, "Ca", p)
+    for x in (a / 4, 3 * a / 4):
+        for y in (a / 4, 3 * a / 4):
+            for z in (a / 4, 3 * a / 4):
+                _add(atoms, "F", (x, y, z))
+    return atoms, [], _cube_edges(a)
+
+
 # ------------------------------------------------------------------- registry
+#: Constructed acyclic molecules — (heavy-atom elements, links) skeletons;
+#: build_molecule places them with correct sp/sp2/sp3 geometry + H's.
+_SKELETONS = {
+    "butane": (["C", "C", "C", "C"], [(0, 1, 1), (1, 2, 1), (2, 3, 1)]),
+    "pentane": (["C"] * 5, [(0, 1, 1), (1, 2, 1), (2, 3, 1), (3, 4, 1)]),
+    "hexane": (["C"] * 6, [(i, i + 1, 1) for i in range(5)]),
+    "propene": (["C", "C", "C"], [(0, 1, 2), (1, 2, 1)]),
+    "propanol": (["C", "C", "C", "O"], [(0, 1, 1), (1, 2, 1), (2, 3, 1)]),
+    "isopropanol": (["C", "C", "C", "O"], [(0, 1, 1), (1, 2, 1), (1, 3, 1)]),
+    "ethylene_glycol": (["O", "C", "C", "O"],
+                        [(0, 1, 1), (1, 2, 1), (2, 3, 1)]),
+    "dimethyl_ether": (["C", "O", "C"], [(0, 1, 1), (1, 2, 1)]),
+    "formic_acid": (["C", "O", "O"], [(0, 1, 2), (0, 2, 1)]),
+    "acetaldehyde": (["C", "C", "O"], [(0, 1, 1), (1, 2, 2)]),
+    "acetone": (["C", "C", "O", "C"], [(0, 1, 1), (1, 2, 2), (1, 3, 1)]),
+    "acetonitrile": (["C", "C", "N"], [(0, 1, 1), (1, 2, 3)]),
+    "urea": (["C", "O", "N", "N"], [(0, 1, 2), (0, 2, 1), (0, 3, 1)]),
+    "glycine": (["N", "C", "C", "O", "O"],
+                [(0, 1, 1), (1, 2, 1), (2, 3, 2), (2, 4, 1)]),
+    "methylamine": (["C", "N"], [(0, 1, 1)]),
+    "ethylamine": (["C", "C", "N"], [(0, 1, 1), (1, 2, 1)]),
+    "hydrogen_peroxide": (["O", "O"], [(0, 1, 1)]),
+    "chloroform": (["C", "Cl", "Cl", "Cl"],
+                   [(0, 1, 1), (0, 2, 1), (0, 3, 1)]),
+    "dichloromethane": (["C", "Cl", "Cl"], [(0, 1, 1), (0, 2, 1)]),
+    "tetrachloromethane": (["C", "Cl", "Cl", "Cl", "Cl"],
+                           [(0, i, 1) for i in range(1, 5)]),
+}
+
+
+def _skeleton_builder(name):
+    heavy, links = _SKELETONS[name]
+    return lambda: _cm(heavy, links)
+
+
 #: name -> (builder returning (atoms, bonds, edges), radius scale)
 _MODELS = {
     "water": (_mol_water, 0.9), "ammonia": (_mol_ammonia, 0.9),
     "methane": (_mol_methane, 0.9), "carbon_dioxide": (_mol_carbon_dioxide, 0.9),
     "methanol": (_mol_methanol, 0.9), "ethanol": (_mol_ethanol, 0.9),
     "formaldehyde": (_mol_formaldehyde, 0.9),
-    "acetic_acid": (_mol_acetic_acid, 0.88),
+    "acetic_acid": (lambda: _cm(["C", "C", "O", "O"],
+                                [(0, 1, 1), (1, 2, 2), (1, 3, 1)]), 0.88),
     "ethane": (_mol_ethane, 0.9), "propane": (_mol_propane, 0.9),
     "ethene": (_mol_ethene, 0.9), "ethyne": (_mol_ethyne, 0.9),
     "benzene": (_mol_benzene, 0.9), "cyclohexane": (_mol_cyclohexane, 0.88),
     "glucose": (_mol_glucose, 0.82), "pet": (_mol_pet, 0.72),
+    "toluene": (_mol_toluene, 0.82), "phenol": (_mol_phenol, 0.82),
+    "aniline": (_mol_aniline, 0.82), "benzoic_acid": (_mol_benzoic_acid, 0.78),
     "simple_cubic": (_xtal_simple_cubic, 0.62), "bcc": (_xtal_bcc, 0.58),
     "fcc": (_xtal_fcc, 0.52), "hcp": (_xtal_hcp, 0.5),
     "diamond": (_xtal_diamond, 0.42), "nacl": (_xtal_nacl, 0.5),
-    "cscl": (_xtal_cscl, 0.6),
+    "cscl": (_xtal_cscl, 0.6), "perovskite": (_xtal_perovskite, 0.5),
+    "zincblende": (_xtal_zincblende, 0.42), "fluorite": (_xtal_fluorite, 0.42),
 }
+for _name in _SKELETONS:                       # add the constructed molecules
+    _MODELS[_name] = (_skeleton_builder(_name), 0.9)
 
 #: Polymer repeat units share the zig-zag backbone builder.
 _POLYMERS = {
@@ -773,26 +910,53 @@ LABELS = {
     "methane": "Methane (CH₄)", "carbon_dioxide": "Carbon dioxide (CO₂)",
     "methanol": "Methanol", "ethanol": "Ethanol",
     "formaldehyde": "Formaldehyde", "acetic_acid": "Acetic acid",
-    "ethane": "Ethane", "propane": "Propane", "ethene": "Ethene",
-    "ethyne": "Ethyne", "benzene": "Benzene", "cyclohexane": "Cyclohexane",
+    "hydrogen_peroxide": "Hydrogen peroxide", "urea": "Urea",
+    "glycine": "Glycine", "methylamine": "Methylamine",
+    "ethylamine": "Ethylamine", "acetonitrile": "Acetonitrile",
+    "formic_acid": "Formic acid", "acetaldehyde": "Acetaldehyde",
+    "acetone": "Acetone", "propanol": "Propan-1-ol",
+    "isopropanol": "Isopropanol", "ethylene_glycol": "Ethylene glycol",
+    "dimethyl_ether": "Dimethyl ether",
+    "ethane": "Ethane", "propane": "Propane", "butane": "Butane",
+    "pentane": "Pentane", "hexane": "Hexane",
+    "ethene": "Ethene", "propene": "Propene", "ethyne": "Ethyne",
+    "benzene": "Benzene", "cyclohexane": "Cyclohexane", "toluene": "Toluene",
+    "phenol": "Phenol", "aniline": "Aniline", "benzoic_acid": "Benzoic acid",
+    "chloroform": "Chloroform", "dichloromethane": "Dichloromethane",
+    "tetrachloromethane": "Carbon tetrachloride",
     "glucose": "Glucose", "pet": "PET repeat unit",
     "polyethylene": "Polyethylene", "polypropylene": "Polypropylene",
     "pvc": "PVC", "ptfe": "PTFE", "polystyrene": "Polystyrene",
     "simple_cubic": "Simple cubic", "bcc": "BCC", "fcc": "FCC",
     "hcp": "HCP", "diamond": "Diamond", "nacl": "NaCl (rock salt)",
-    "cscl": "CsCl",
+    "cscl": "CsCl", "perovskite": "Perovskite (ABX₃)",
+    "zincblende": "Zinc blende (ZnS)", "fluorite": "Fluorite (CaF₂)",
 }
 CATEGORIES = [
     ("Simple molecules",
-     ["water", "ammonia", "methane", "carbon_dioxide", "formaldehyde"]),
-    ("Alcohols & acids",
-     ["methanol", "ethanol", "acetic_acid", "glucose"]),
+     ["water", "ammonia", "methane", "carbon_dioxide", "formaldehyde",
+      "hydrogen_peroxide"]),
+    ("Alcohols & ethers",
+     ["methanol", "ethanol", "propanol", "isopropanol", "ethylene_glycol",
+      "dimethyl_ether"]),
+    ("Acids & carbonyls",
+     ["formic_acid", "acetic_acid", "benzoic_acid", "acetaldehyde",
+      "acetone", "glucose"]),
+    ("Nitrogen compounds",
+     ["methylamine", "ethylamine", "aniline", "acetonitrile", "urea",
+      "glycine"]),
     ("Hydrocarbons",
-     ["ethane", "propane", "ethene", "ethyne", "benzene", "cyclohexane"]),
+     ["ethane", "propane", "butane", "pentane", "hexane", "ethene",
+      "propene", "ethyne", "cyclohexane"]),
+    ("Aromatics",
+     ["benzene", "toluene", "phenol"]),
+    ("Halogenated",
+     ["chloroform", "dichloromethane", "tetrachloromethane"]),
     ("Polymers",
      ["polyethylene", "polypropylene", "pvc", "ptfe", "polystyrene", "pet"]),
     ("Crystal structures",
-     ["simple_cubic", "bcc", "fcc", "hcp", "diamond", "nacl", "cscl"]),
+     ["simple_cubic", "bcc", "fcc", "hcp", "diamond", "nacl", "cscl",
+      "perovskite", "zincblende", "fluorite"]),
 ]
 
 
@@ -952,51 +1116,58 @@ def _neighbor_dirs(atoms, bonds, anchor):
     return out
 
 
-def _chain_direction(atoms, bonds, anchor, neigh_k, neigh_dir):
-    """Direction to extend a chain at *anchor* (one heavy neighbour), as a
-    trans (anti-periplanar) zig-zag in a stable plane, so a chain stays
-    straight instead of curling into a ring."""
-    forward = (-neigh_dir[0], -neigh_dir[1], -neigh_dir[2])   # anchor <- away
-    # bend plane: from the previous two atoms if available, else the xy-plane
-    prev = [d for k, d in _neighbor_dirs(atoms, bonds, neigh_k) if k != anchor]
-    normal = _cross(prev[0], neigh_dir) if prev else (0.0, 0.0, 1.0)
-    if _norm(normal) < 1e-6:
-        normal = (0.0, 0.0, 1.0)
-    normal = _unit(normal)
-    side = _unit(_cross(normal, forward))
-    # put the new bond trans to the previous atom (opposite side of forward)
-    sign = 1.0
-    if prev:
-        s_prev = prev[0][0] * side[0] + prev[0][1] * side[1] + prev[0][2] * side[2]
-        sign = -1.0 if s_prev > 0 else 1.0
-    return _unit((forward[0] * _COS_TET + side[0] * _SIN_TET * sign,
-                  forward[1] * _COS_TET + side[1] * _SIN_TET * sign,
-                  forward[2] * _COS_TET + side[2] * _SIN_TET * sign))
+def _hybrid(bonds, anchor, extra_order=1):
+    """Geometry at *anchor* from its bonds (plus a bond of *extra_order*
+    about to be added): ``sp`` (linear), ``sp2`` (trigonal) or ``sp3``."""
+    orders = [o for i, j, o in bonds if anchor in (i, j)] + [extra_order]
+    if any(o >= 3 for o in orders) or orders.count(2) >= 2:
+        return "sp"
+    if any(o == 2 for o in orders):
+        return "sp2"
+    return "sp3"
 
 
-def _free_direction(atoms, bonds, anchor):
-    """A tetrahedral direction at *anchor* not already occupied by a bond."""
-    dirs = [d for _k, d in _neighbor_dirs(atoms, bonds, anchor)]
-    if not dirs:
+def _place_direction(atoms, bonds, anchor, order=1):
+    """Direction for a new bond at *anchor*, respecting its hybridisation:
+    linear (180°), trigonal (120°, in-plane) or tetrahedral (109.5°). A
+    single-neighbour sp3/sp2 atom extends as a straight trans zig-zag."""
+    neigh = _neighbor_dirs(atoms, bonds, anchor)
+    dirs = [d for _k, d in neigh]
+    hyb = _hybrid(bonds, anchor, order)
+    n = len(dirs)
+    if n == 0:
         return (1.0, 0.0, 0.0)
-    if len(dirs) == 1:
-        # handled by the chain builder; fall back to a bent direction here
-        n0 = dirs[0]
-        p = _perp(n0)
-        return _unit((-n0[0] * _COS_TET + p[0] * _SIN_TET,
-                      -n0[1] * _COS_TET + p[1] * _SIN_TET,
-                      -n0[2] * _COS_TET + p[2] * _SIN_TET))
-    if len(dirs) == 2:
-        bis = _unit((-(dirs[0][0] + dirs[1][0]), -(dirs[0][1] + dirs[1][1]),
-                     -(dirs[0][2] + dirs[1][2])))
-        normal = _cross(dirs[0], dirs[1])
-        normal = _perp(dirs[0]) if _norm(normal) < 1e-6 else _unit(normal)
-        for sign in (1.0, -1.0):             # the two out-of-plane positions
+    if n == 1:
+        k0, n0 = neigh[0]
+        if hyb == "sp":
+            return (-n0[0], -n0[1], -n0[2])          # linear, opposite
+        forward = (-n0[0], -n0[1], -n0[2])
+        prev = [d for k, d in _neighbor_dirs(atoms, bonds, k0) if k != anchor]
+        normal = _cross(prev[0], n0) if prev else (0.0, 0.0, 1.0)
+        normal = (0.0, 0.0, 1.0) if _norm(normal) < 1e-6 else _unit(normal)
+        side = _unit(_cross(normal, forward))
+        sign = 1.0
+        if prev:                                     # trans to the prior atom
+            s_prev = sum(prev[0][a] * side[a] for a in range(3))
+            sign = -1.0 if s_prev > 0 else 1.0
+        ang = math.radians(60.0 if hyb == "sp2" else 70.5288)
+        c, s = math.cos(ang), math.sin(ang) * sign
+        return _unit((forward[0] * c + side[0] * s, forward[1] * c + side[1] * s,
+                      forward[2] * c + side[2] * s))
+    if n == 2:
+        d1, d2 = dirs[0], dirs[1]
+        summ = (-(d1[0] + d2[0]), -(d1[1] + d2[1]), -(d1[2] + d2[2]))
+        if hyb in ("sp", "sp2"):                     # third trigonal, in-plane
+            return _perp(d1) if _norm(summ) < 1e-6 else _unit(summ)
+        # sp3: one of the two out-of-plane positions
+        bis = _perp(d1) if _norm(summ) < 1e-6 else _unit(summ)
+        normal = _cross(d1, d2)
+        normal = _perp(d1) if _norm(normal) < 1e-6 else _unit(normal)
+        for sign in (1.0, -1.0):
             cand = _unit((bis[0] * 0.577 + normal[0] * 0.816 * sign,
                           bis[1] * 0.577 + normal[1] * 0.816 * sign,
                           bis[2] * 0.577 + normal[2] * 0.816 * sign))
-            if all(cand[0] * d[0] + cand[1] * d[1] + cand[2] * d[2] < 0.6
-                   for d in dirs):
+            if all(sum(cand[a] * d[a] for a in range(3)) < 0.6 for d in dirs):
                 return cand
         return bis
     # 3 or more: the remaining tetrahedral vertex (opposite their sum)
@@ -1006,22 +1177,66 @@ def _free_direction(atoms, bonds, anchor):
 
 
 def add_bonded_atom(atoms, bonds, anchor, element, order=1):
-    """Add an *element* atom bonded to atom *anchor*. A single-neighbour
-    anchor extends as a trans zig-zag (so chains stay straight); otherwise
-    the atom fills a free tetrahedral direction. Mutates *atoms*/*bonds*;
+    """Add an *element* atom bonded to atom *anchor*, placed by the anchor's
+    hybridisation (linear / trigonal / tetrahedral). Mutates *atoms*/*bonds*;
     returns the new atom's index."""
     ax, ay, az = atoms[anchor][1], atoms[anchor][2], atoms[anchor][3]
-    neigh = _neighbor_dirs(atoms, bonds, anchor)
-    if len(neigh) == 1:
-        d = _chain_direction(atoms, bonds, anchor, neigh[0][0], neigh[0][1])
-    else:
-        d = _free_direction(atoms, bonds, anchor)
+    d = _place_direction(atoms, bonds, anchor, order)
     length = _bond_length(element, atoms[anchor][0])
     atoms.append([element, ax + d[0] * length, ay + d[1] * length,
                   az + d[2] * length])
     idx = len(atoms) - 1
     bonds.append([anchor, idx, order])
     return idx
+
+
+def add_hydrogens(atoms, bonds):
+    """Fill every atom's remaining valence with H — so a heavy-atom skeleton
+    becomes a full molecule with correct geometry."""
+    for i in range(len(atoms)):
+        while free_valence(atoms, bonds, i) > 0:
+            add_bonded_atom(atoms, bonds, i, "H", 1)
+
+
+def build_molecule(heavy, links, hydrogens=True):
+    """Construct a molecule from a *heavy*-atom element list and *links*
+    ``(i, j, order)`` (indices into *heavy*): places heavy atoms by
+    hybridisation, then fills H's. Returns (atoms, bonds)."""
+    atoms = [[heavy[0], 0.0, 0.0, 0.0]]
+    bonds = []
+    idxmap = {0: 0}                         # heavy index -> atom index
+    remaining = list(links)
+    changed = True
+    while remaining and changed:
+        changed = False
+        for link in list(remaining):
+            i, j, order = link
+            if i in idxmap and j in idxmap:          # ring closure
+                bonds.append([idxmap[i], idxmap[j], order])
+            elif i in idxmap:
+                idxmap[j] = add_bonded_atom(atoms, bonds, idxmap[i],
+                                            heavy[j], order)
+            elif j in idxmap:
+                idxmap[i] = add_bonded_atom(atoms, bonds, idxmap[j],
+                                            heavy[i], order)
+            else:
+                continue
+            remaining.remove(link)
+            changed = True
+    if hydrogens:
+        add_hydrogens(atoms, bonds)
+    return atoms, bonds
+
+
+def delete_atom(atoms, bonds, index):
+    """Remove atom *index* and any bonds to it, re-indexing the rest."""
+    atoms.pop(index)
+    kept = []
+    for i, j, o in bonds:
+        if i == index or j == index:
+            continue
+        kept.append([i - (i > index), j - (j > index), o])
+    bonds[:] = kept
 
 
 def delete_atom(atoms, bonds, index):
@@ -1036,7 +1251,13 @@ def delete_atom(atoms, bonds, index):
 
 
 def size_mm(name):
-    return SIZES[name]
+    # A sensible default footprint for models without an explicit size;
+    # crystals a touch larger, chains wider (build_molecule keeps aspect).
+    if name in SIZES:
+        return SIZES[name]
+    if is_crystal(name):
+        return (72, 76)
+    return (72, 56)
 
 
 # --------------------------------------------------- high-level AI vocabulary

@@ -37,20 +37,46 @@ def scene(app):
 
 
 def test_registry_is_consistent():
-    names = set(molecules.SIZES)
+    names = set(molecules._MODELS) | set(molecules._POLYMERS)
     assert names == set(molecules.LABELS)
     cat_names = [n for _title, ns in molecules.CATEGORIES for n in ns]
     assert set(cat_names) == names
     assert len(cat_names) == len(names)          # no duplicates
 
 
+def _all_models():
+    return sorted(set(molecules._MODELS) | set(molecules._POLYMERS))
+
+
 def test_every_model_builds_to_items(app):
-    for name in molecules.SIZES:
+    for name in _all_models():
         w, h = molecules.size_mm(name)
         specs = molecules.build_specs(name, w * 3, h * 3)
         assert specs, name
         items = [ai_assistant._spec_to_item(s) for s in specs]
         assert all(it is not None for it in items), name
+
+
+def test_new_geometry_is_correct():
+    import math
+
+    def angle(atoms, c, a, b):
+        va = [atoms[a][1 + k] - atoms[c][1 + k] for k in range(3)]
+        vb = [atoms[b][1 + k] - atoms[c][1 + k] for k in range(3)]
+        na = math.sqrt(sum(x * x for x in va))
+        nb = math.sqrt(sum(x * x for x in vb))
+        d = sum(va[k] * vb[k] for k in range(3)) / (na * nb)
+        return math.degrees(math.acos(max(-1, min(1, d))))
+    # CO2 is linear, formaldehyde trigonal
+    a, b = molecules.build_molecule(["C", "O", "O"], [(0, 1, 2), (0, 2, 2)])
+    assert abs(angle(a, 0, 1, 2) - 180) < 2
+    a, b = molecules.build_molecule(["C", "O"], [(0, 1, 2)])
+    hs = [i for i, at in enumerate(a) if at[0] == "H"]
+    assert abs(angle(a, 0, hs[0], hs[1]) - 120) < 3
+    # perovskite octahedron: the B cation bonds 6 X anions
+    at, bo, ed = molecules._xtal_perovskite()
+    ti = next(i for i, x in enumerate(at) if x[0] == "Ti")
+    assert sum(1 for i, j, _o in bo if ti in (i, j)) == 6
 
 
 def test_known_atom_counts():
