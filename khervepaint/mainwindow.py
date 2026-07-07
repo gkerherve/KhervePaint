@@ -34,12 +34,12 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
                      ELEC_PLACE, PLAN_PLACE, OPTICS_PLACE, VACUUM_PLACE,
                      LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
-                     ARROW_PLACE, BIO_PLACE, MATH_PLACE,
+                     ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE,
                      RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      PaintScene, PaintView)
 from . import (chemistry, electrical, floorplan, flowchart, labware, optics,
-               vacuum, network, pid, arrows, biology, maths)
+               vacuum, network, pid, arrows, biology, maths, molecules)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -149,6 +149,9 @@ SYMBOL_LIBRARIES = [
     ("Math", "mdi.function-variant",
      "Math — axes, vectors, graphs & symbols",
      maths, "math_element", MATH_PLACE),
+    ("Molecules", "mdi.molecule",
+     "Molecules — 3D ball-and-stick models & crystal cells",
+     molecules, "mol_element", MOL_PLACE),
 ]
 
 

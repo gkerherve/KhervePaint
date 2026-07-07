@@ -71,10 +71,11 @@ PID_PLACE = "pid_place"
 ARROW_PLACE = "arrow_place"
 BIO_PLACE = "bio_place"
 MATH_PLACE = "math_place"
+MOL_PLACE = "mol_place"
 #: All spec-library placement tools (drop a symbol on click).
 _PLACE_TOOLS = (PLAN_PLACE, ELEC_PLACE, OPTICS_PLACE, VACUUM_PLACE,
                 LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
-                ARROW_PLACE, BIO_PLACE, MATH_PLACE)
+                ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE)
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -722,6 +723,7 @@ class PaintScene(QGraphicsScene):
         self.arrow_element = "arrow_right"  # annotation arrow to place
         self.bio_element = "cell"         # biology symbol to place
         self.math_element = "axes_2d"     # math/graph symbol to place
+        self.mol_element = "methane"      # molecule/crystal model to place
         self.chem_fixed = True            # ChemDraw-style fixed length + angle
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
@@ -1246,6 +1248,9 @@ class PaintScene(QGraphicsScene):
         elif self.tool == MATH_PLACE:               # math / graph symbol
             self._drawing = False
             self.place_math_element(self.math_element, pos)
+        elif self.tool == MOL_PLACE:                # molecule / crystal model
+            self._drawing = False
+            self.place_mol_element(self.mol_element, pos)
 
     def mouseMoveEvent(self, event):
         if self.tool == CHEM_CHAIN and self._chain_pts is not None:
@@ -1484,6 +1489,11 @@ class PaintScene(QGraphicsScene):
         """Drop a math / graph / vector symbol."""
         from . import maths
         self._place_symbol(maths, name, center)
+
+    def place_mol_element(self, name: str, center: QPointF):
+        """Drop a molecule / crystal ball-and-stick model."""
+        from . import molecules
+        self._place_symbol(molecules, name, center)
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`

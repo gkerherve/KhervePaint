@@ -141,6 +141,14 @@ def _pen(spec):
 
 def _brush(spec):
     fill = spec.get("fill")
+    # A gradient fill (lit sphere, linear/radial) may be given as a spec dict
+    # under "fill" or "gradient" — {"kind","c1","c2","angle"}.
+    grad = spec.get("gradient")
+    if grad is None and isinstance(fill, dict):
+        grad = fill
+    if isinstance(grad, dict):
+        from . import gradient
+        return gradient.brush_from_spec(grad)
     if not fill or str(fill).lower() == "none":
         return QBrush(Qt.NoBrush)
     return QBrush(QColor(fill))
@@ -211,6 +219,8 @@ def apply_specs(scene, specs):
     Items are stacked in spec order (first at the back, last in front) and
     placed above anything already on the canvas, so the layering the model
     intends is preserved — and survives grouping."""
+    from . import molecules
+    specs = molecules.expand_specs(specs)     # atom/bond -> spheres + sticks
     existing = [i.zValue() for i in scene.vector_items()]
     base = (max(existing) + 1) if existing else 0
     items = []
