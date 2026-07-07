@@ -140,6 +140,25 @@ into a new module and import.
                        To add another such palette: write the module, then
                        add the tool const + scene element attr + `place_*`
                        + dropdown wiring (search `FLOW_PLACE` for the seam).
+  - `molecules.py`   — same palette shape, but 3D **ball-and-stick** models.
+                       Atoms are **lit spheres** (a circle with a `sun`
+                       gradient in the element's CPK colour, `ATOM_COLORS`/
+                       `ATOM_RADII`); bonds are grey sticks (single/double/
+                       triple). The 3D look comes from an isometric `_proj`
+                       + depth-sorted `_model(atoms, bonds, edges)`, so
+                       structures read as 3D while staying ordinary editable
+                       gradient-filled items. Covers small molecules,
+                       alcohols/acids (→ glucose), hydrocarbons (aromatic
+                       benzene), polymer repeat units (→ PET) and crystal
+                       unit cells (simple cubic/BCC/FCC/HCP/diamond/NaCl/
+                       CsCl, with cell edges). Also exports `atom_specs`/
+                       `bond_specs` and `expand_specs`, which back the
+                       high-level `atom`/`bond` shape specs the AI emits
+                       (expanded in `ai_assistant.apply_specs`); `_brush`
+                       there accepts a gradient-dict `fill` so a spec circle
+                       can be a lit sphere. Gradients already round-trip
+                       through document.py/svgio.py, so nothing new to
+                       persist — the sphere is just a gradient brush.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
