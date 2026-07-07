@@ -361,9 +361,12 @@ molecules (water, methane, CO₂), alcohols &amp; acids (methanol,
 ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
 up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
 (simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl).
-<b>Double-click</b> a placed model to open the <b>3D viewer</b> — drag to
-rotate, or snap to Front/Back/Left/Right/Top/Bottom/Isometric views. The
-AI Chat can build molecules and 3D structures on request too.</li>
+<b>Double-click</b> a placed model to <b>rotate it in 3D on the canvas</b>
+(drag to spin, Esc to finish). Right-click ▸ <b>Molecule builder…</b> opens
+a window with a view toolbar (Front/Back/Left/Right/Top/Bottom/Isometric),
+a bond-length slider and an atom palette — click a sphere then an element
+to bond atoms on and build your own molecule. The AI Chat can build
+molecules and 3D structures on request too.</li>
 </ul>
 
 <h2>11 · Drawing size &amp; publication figures</h2>

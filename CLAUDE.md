@@ -164,17 +164,32 @@ into a new module and import.
                        The isometric `_proj` is parameterised by view angle
                        (az/el); `model_data`/`build_specs_oriented` expose
                        the 3D data + a re-projection at any orientation.
-  - `molview.py`     — `MoleculeViewer` dialog: double-clicking a placed
-                       molecule/crystal (a `GroupItem` tagged `mol_name`/
-                       `mol_az`/`mol_el` by `place_mol_element`) opens it;
-                       drag rotates, standard-view buttons (front/side/top/
-                       …) snap the viewpoint, and OK calls
-                       `PaintScene.reorient_model`, which rebuilds the group
-                       at the chosen angle (preserving centre + footprint,
-                       undoable). The model tag round-trips through
-                       document.py (`"model"`/`model_az`/`model_el`) and
-                       svgio.py (`kp:model` on the `<g>`), so double-click
-                       survives save/reload and undo.
+  - `molview.py`     — `MoleculeViewer` = the **Molecule builder** dialog
+                       (right-click a placed model ▸ Molecule builder…).
+                       Horizontal **view toolbar** of icon buttons
+                       (front/back/left/right/top/bottom/iso), a
+                       **bond-length** slider (spreads atoms via
+                       `_model`'s `bond_scale`), and an **atom palette** —
+                       the `_Preview` is a `QGraphicsView` so spheres
+                       hit-test (`tag_atoms` puts an `_atom` index on each
+                       sphere spec); click a sphere to select it, click an
+                       element to `add_bonded_atom`, or delete. Crystals are
+                       not editable (fixed lattice), just rotatable. OK
+                       hands `(az, el, bond, atoms, bonds)` back to
+                       `PaintScene.reorient_model`.
+                       **On-canvas 3D rotation**: double-clicking a placed
+                       model (a `GroupItem` tagged `mol_name`/`mol_az`/
+                       `mol_el`/`mol_bond`, plus `mol_atoms`/`mol_bonds` when
+                       hand-built) enters `PaintScene.enter_orbit_mode` —
+                       drag on the canvas spins it live (`_orbit_drag` →
+                       `reorient_model(commit=False)`), Esc/click-off exits
+                       and emits one `changed_by_user`. `reorient_model`
+                       rebuilds the group at the chosen angle/bond
+                       (preserving centre + footprint). The model tag
+                       round-trips through document.py (`"model"`/
+                       `model_az`/`model_el`/`model_bond`/`model_atoms`/
+                       `model_bonds`) and svgio.py (`kp:model*` on the
+                       `<g>`), so it survives save/reload and undo.
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,

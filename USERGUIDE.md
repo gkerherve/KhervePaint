@@ -337,12 +337,18 @@ Five further dropdowns cover general diagrams and more science:
   editable group; the spheres are ordinary gradient-filled circles you can
   recolour or move.
 
-  **Double-click** a placed molecule or crystal to open the **3D viewer**:
-  drag to rotate it, or click **Front / Back / Left / Right / Top /
-  Bottom / Isometric** to snap to a standard view. Click OK and the model
-  is redrawn at that orientation (still a normal, editable group). The
-  chosen view is saved with the drawing, so double-click keeps working
-  after you reopen it.
+  **Double-click** a placed molecule or crystal to **rotate it in 3D right
+  on the canvas** — grab and drag to spin it; press **Esc** (or click off
+  it) to finish. The whole spin is a single undo step, and the orientation
+  is saved with the drawing.
+
+  For more control, right-click ▸ **Molecule builder…** opens a window
+  with a **view toolbar** (Front / Back / Left / Right / Top / Bottom /
+  Isometric icons), a **bond-length** slider, and an **atom palette**:
+  click a sphere to select it, then click an element (H, C, N, O, F, P, S,
+  Cl, Br) to bond a new atom on — choose the bond order, or delete the
+  selected atom — to build your own molecule. Bonds are drawn longer by
+  default so the sticks are clear; the slider spreads the atoms further.
 
   The **AI Chat** can build these too — ask it for a molecule (from
   methane up to a PET repeat unit) or a 3D structure (BCC/FCC), and it
