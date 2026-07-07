@@ -482,11 +482,29 @@ class MainWindow(QMainWindow):
         return on_pick
 
     def _library_extra(self, module):
-        """Palette-specific extra menu entries (the drag-to-size Room)."""
+        """Palette-specific extra menu entries (the drag-to-size Room, the
+        from-scratch molecule builder)."""
         if module is floorplan:
             return ("Room", [("Room",
                               lambda: self._activate_placement_tool(ROOM))])
+        if module is molecules:
+            return ("Build", [("Molecule builder…",
+                               self.open_new_molecule_builder)])
         return None
+
+    def open_new_molecule_builder(self):
+        """Open the 3D molecule builder on a fresh atom, then place whatever
+        the user builds on the canvas."""
+        from .molview import MoleculeViewer
+        atoms, bonds = molecules.single_atom("C")
+        dlg = MoleculeViewer("custom", atoms=atoms, bonds=bonds, parent=self)
+        if dlg.exec_():
+            a, b = dlg.result()
+            centre = self.view.mapToScene(
+                self.view.viewport().rect().center())
+            self.scene.place_built_molecule(a or atoms, b or bonds, centre,
+                                            dlg.az, dlg.el, dlg.bond,
+                                            dlg.representation())
 
     def _build_objects_button(self, bar):
         """Dropdown for the reusable-object library: save the current

@@ -613,21 +613,24 @@ def _mol_benzoic_acid():
 
 
 def _mol_pet():
-    """Poly(ethylene terephthalate) repeat unit: a benzene ring with a
-    carboxylate ester at each para position, joined by the -O-CH2-CH2-O-
-    glycol link. Built with correct sp2/sp3 geometry."""
+    """Poly(ethylene terephthalate) repeat unit
+    —[O-CH2-CH2-O-CO-C6H4-CO]—: a benzene ring with a carboxylate ester at
+    each para position; the ethylene-glycol -CH2-CH2- extends from one
+    ester (the other O is the link to the next unit). No bond bridges the
+    ring, so there is no long spurious line. Correct sp2/sp3 geometry."""
     atoms, bonds = [], []
     ring = _aromatic_ring(atoms, bonds)
 
-    def ester(ring_i):
+    def carbonyl(ring_i):
         c = add_bonded_atom(atoms, bonds, ring_i, "C", 1)   # carbonyl C (sp2)
         add_bonded_atom(atoms, bonds, c, "O", 2)            # =O
-        o = add_bonded_atom(atoms, bonds, c, "O", 1)        # -O-
-        return add_bonded_atom(atoms, bonds, o, "C", 1)     # -CH2-
+        return add_bonded_atom(atoms, bonds, c, "O", 1)     # ester -O-
 
-    ch_a = ester(ring[0])
-    ch_b = ester(ring[3])                                   # para
-    bonds.append([ch_a, ch_b, 1])                           # -CH2-CH2- glycol
+    o1 = carbonyl(ring[0])                                  # glycol end
+    ch = add_bonded_atom(atoms, bonds, o1, "C", 1)          # -CH2-
+    ch = add_bonded_atom(atoms, bonds, ch, "C", 1)          # -CH2-
+    add_bonded_atom(atoms, bonds, ch, "O", 1)              # -O- to next unit
+    carbonyl(ring[3])                                       # para ester (link)
     add_hydrogens(atoms, bonds)
     return atoms, bonds, None
 

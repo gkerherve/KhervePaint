@@ -182,7 +182,8 @@ class MoleculeViewer(QDialog):
         else:
             self.atoms, self.bonds, self.rscale = [], [], 0.92
 
-        label = molecules.LABELS.get(name, name)
+        label = "new molecule" if name == "custom" \
+            else molecules.LABELS.get(name, name)
         self.setWindowTitle(f"Molecule builder — {label}")
         self.setMinimumSize(600, 540)
         layout = QVBoxLayout(self)

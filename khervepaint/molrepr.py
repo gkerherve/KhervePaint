@@ -23,6 +23,8 @@ the Free Software Foundation, either version 3 of the License, or
 
 import math
 
+from PyQt5.QtGui import QColor
+
 from . import molecules
 
 #: The representation modes, in menu order.
@@ -69,6 +71,17 @@ def _layout(atoms, w, h, margin=0.14):
     return [(ox + s * x, oy + s * y) for x, y in pts], s
 
 
+def _label_color(element):
+    """A readable letter colour on a white page: C and H are black (the
+    usual convention), heteroatoms keep their CPK colour but pale ones
+    (H's white, F's light green…) are darkened so they don't vanish."""
+    if element in ("C", "H"):
+        return _INK
+    cpk = molecules.ATOM_COLORS.get(element, _INK)
+    return molecules._mix(cpk, "#000000", 0.45) \
+        if QColor(cpk).lightnessF() > 0.5 else cpk
+
+
 def _lone_pairs(element, order_sum):
     ve = _VALENCE_E.get(element)
     if ve is None:
@@ -112,8 +125,7 @@ def structural_specs(atoms, bonds, w, h, lewis=False):
                       "fill": "#ffffff"})
         specs.append({"shape": "text", "text": element, "x": cx, "y": cy,
                       "anchor": "center", "size": int(fs),
-                      "color": molecules.ATOM_COLORS.get(element, _INK)
-                      if element != "C" else _INK})
+                      "color": _label_color(element)})
         if lewis:
             specs += _lewis_dots(idx, pts, bonds, element, order_sum[idx],
                                  r, fs)

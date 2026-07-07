@@ -253,6 +253,37 @@ def test_representations_build_and_persist(scene, tmp_path):
     assert g2.mol_repr == "structural"
 
 
+def test_label_colors_are_readable():
+    from khervepaint import molrepr
+    from PyQt5.QtGui import QColor
+    # H and C use black (their CPK colours are too pale to read on white)
+    assert molrepr._label_color("H") == "#1a1a1a"
+    assert molrepr._label_color("C") == "#1a1a1a"
+    # heteroatoms stay dark enough to read
+    assert QColor(molrepr._label_color("O")).lightnessF() < 0.5
+    assert QColor(molrepr._label_color("N")).lightnessF() < 0.6
+
+
+def test_pet_has_no_spurious_long_bond():
+    import math
+    atoms, bonds, _e, _r = molecules.model_data("pet")
+    # the longest bond should be a normal bond length, not a line spanning
+    # the whole molecule (the old glycol-bridged-the-ring bug)
+    longest = max(math.dist(atoms[i][1:4], atoms[j][1:4]) for i, j, _o in bonds)
+    assert longest < 2.0
+
+
+def test_place_built_molecule(scene):
+    atoms, bonds = molecules.single_atom("C")
+    molecules.add_bonded_atom(atoms, bonds, 0, "O", 2)      # formaldehyde-ish
+    fired = []
+    scene.changed_by_user.connect(lambda: fired.append(1))
+    top = scene.place_built_molecule(atoms, bonds, QPointF(300, 240))
+    assert top is not None
+    assert top.mol_name == "custom" and top.mol_atoms
+    assert fired == [1]                                     # one undoable step
+
+
 def test_2d_representation_does_not_orbit(scene):
     scene.place_mol_element("benzene", QPointF(300, 240))
     (top,) = scene.selectedItems()

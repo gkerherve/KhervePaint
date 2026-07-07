@@ -1520,6 +1520,34 @@ class PaintScene(QGraphicsScene):
                             molecules.DEFAULT_EL, molecules.default_bond(name),
                             box=box)
 
+    def place_built_molecule(self, atoms, bonds, center, az=None, el=None,
+                             bond=None, mode="3d"):
+        """Place a molecule hand-built in the builder (from scratch) as a new
+        tagged, editable group centred on *center*. Undoable."""
+        from . import molecules, molrepr
+        from .ai_assistant import _spec_to_item
+        if not atoms:
+            return None
+        az = molecules.DEFAULT_AZ if az is None else az
+        el = molecules.DEFAULT_EL if el is None else el
+        bond = molecules.DEFAULT_BOND if bond is None else bond
+        ref = getattr(molecules, "REFERENCE_MM", 130.0)
+        box = (self.sceneRect().width() or 1) / ref * 72.0
+        if mode == "3d":
+            specs = molecules.specs_from_atoms(atoms, bonds, box, box, az, el,
+                                               bond)
+        else:
+            specs = molrepr.representation_specs(mode, atoms, bonds, box, box)
+        items = [it for it in (_spec_to_item(s) for s in specs)
+                 if it is not None]
+        if not items:
+            return None
+        top = self._drop_items(items, center, box, box)
+        self._tag_model(top, "custom", az, el, bond, atoms, bonds, box=box,
+                        repr=mode)
+        self.changed_by_user.emit()
+        return top
+
     @staticmethod
     def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None,
                    repr="3d"):
