@@ -136,6 +136,28 @@ def test_oriented_projection_changes_with_view():
     assert fc != tc
 
 
+def test_default_bond_lengthens_molecules_only():
+    assert molecules.default_bond("methane") == molecules.DEFAULT_BOND
+    assert molecules.DEFAULT_BOND > 1.0            # longer than raw geometry
+    assert molecules.default_bond("bcc") == 1.0    # crystals keep spacing
+
+
+def test_bond_scale_spreads_atoms():
+    tight = molecules.build_specs_oriented("methane", 300, 300, bond=1.0)
+    loose = molecules.build_specs_oriented("methane", 300, 300, bond=2.0)
+
+    def spread(specs):
+        pts = [(s["x"], s["y"]) for s in specs if s.get("shape") == "circle"]
+        xs = [x for x, _ in pts]
+        ys = [y for _, y in pts]
+        return (max(xs) - min(xs)) + (max(ys) - min(ys))
+    # both are fit to the same box, but looser bonds push the H's out so the
+    # spheres shrink relative to the frame — the drawn spheres get smaller
+    r_tight = next(s["w"] for s in tight if s.get("shape") == "circle")
+    r_loose = next(s["w"] for s in loose if s.get("shape") == "circle")
+    assert r_loose < r_tight
+
+
 def test_model_data_covers_every_model():
     for name in molecules.SIZES:
         atoms, bonds, edges, rscale = molecules.model_data(name)
@@ -177,6 +199,29 @@ def test_model_tag_round_trips_json_and_svg(scene, tmp_path):
     restored2 = PaintScene(600, 480)
     svgio.load_svg(restored2, path)
     assert _find_model(restored2) == "fcc"
+
+
+def test_custom_structure_round_trips(scene, tmp_path):
+    scene.place_mol_element("methane", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    atoms = [["C", 0, 0, 0], ["O", 1.4, 0, 0], ["H", 1.9, 0.7, 0]]
+    bonds = [[0, 1, 1], [1, 2, 1]]
+    scene._tag_model(top, "custom", 0.4, 0.3, 1.6, atoms, bonds)
+    data = document.scene_to_dict(scene)
+    restored = PaintScene(600, 480)
+    document.dict_to_scene(data, restored)
+    grp = next(it for it in restored.items()
+               if getattr(it, "mol_name", None) == "custom")
+    assert grp.mol_atoms == atoms and grp.mol_bonds == bonds
+    assert grp.mol_bond == 1.6
+    # SVG too
+    path = str(tmp_path / "custom.svg")
+    svgio.save_svg(scene, path)
+    r2 = PaintScene(600, 480)
+    svgio.load_svg(r2, path)
+    grp2 = next(it for it in r2.items()
+                if getattr(it, "mol_name", None) == "custom")
+    assert grp2.mol_atoms == atoms and grp2.mol_bonds == bonds
 
 
 def test_viewer_standard_views(app):

@@ -1495,9 +1495,19 @@ class PaintScene(QGraphicsScene):
         from . import molecules
         top = self._place_symbol(molecules, name, center)
         if top is not None:                      # tag for the 3D viewer
-            top.mol_name = name
-            top.mol_az = molecules.DEFAULT_AZ
-            top.mol_el = molecules.DEFAULT_EL
+            self._tag_model(top, name, molecules.DEFAULT_AZ,
+                            molecules.DEFAULT_EL, molecules.default_bond(name))
+
+    @staticmethod
+    def _tag_model(item, name, az, el, bond, atoms=None, bonds=None):
+        """Stamp a group with its 3D model identity (name + view + bond
+        spread, and the raw atoms/bonds when the structure was hand-built)."""
+        item.mol_name = name
+        item.mol_az = az
+        item.mol_el = el
+        item.mol_bond = bond
+        item.mol_atoms = atoms
+        item.mol_bonds = bonds
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1547,29 +1557,42 @@ class PaintScene(QGraphicsScene):
         self.snap_enabled = was_snap
         return top
 
-    def reorient_model(self, item, az, el):
-        """Rebuild a placed molecule/crystal *item* at view angles (az, el),
-        preserving its centre and footprint. Undoable."""
+    def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
+                       commit=True):
+        """Rebuild a placed molecule/crystal *item* at view angles (az, el)
+        and bond spread *bond*, preserving its centre and footprint. When
+        *atoms*/*bonds* are given the structure is replaced (hand-built in
+        the molecule builder). Returns the new top-level item. Undoable when
+        *commit* is True (a single gesture)."""
         name = getattr(item, "mol_name", None)
         if name is None:
-            return
+            return None
         from . import molecules
         from .ai_assistant import _spec_to_item
+        if bond is None:
+            bond = getattr(item, "mol_bond", None) or molecules.default_bond(name)
+        if atoms is None:
+            atoms = getattr(item, "mol_atoms", None)
+            bonds = getattr(item, "mol_bonds", None)
         rect = item.sceneBoundingRect()
         center = rect.center()
         box = max(rect.width(), rect.height()) or 1.0
-        specs = molecules.build_specs_oriented(name, box, box, az, el)
+        if atoms:
+            specs = molecules.specs_from_atoms(atoms, bonds or [], box, box,
+                                               az, el, bond)
+        else:
+            specs = molecules.build_specs_oriented(name, box, box, az, el, bond)
         new_items = [it for it in (_spec_to_item(s) for s in specs)
                      if it is not None]
         if not new_items:
-            return
+            return None
         self.clear_handles()
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
-        top.mol_name = name
-        top.mol_az = az
-        top.mol_el = el
-        self.changed_by_user.emit()
+        self._tag_model(top, name, az, el, bond, atoms, bonds)
+        if commit:
+            self.changed_by_user.emit()
+        return top
 
     def mouseReleaseEvent(self, event):
         if not self._drawing:

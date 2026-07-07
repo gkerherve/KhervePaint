@@ -74,6 +74,16 @@ def _float_or_none(text):
         return None
 
 
+def _json_or_none(text):
+    if not text:
+        return None
+    try:
+        import json
+        return json.loads(text)
+    except (TypeError, ValueError):
+        return None
+
+
 # ================================================================ writing
 def _pixmap_data_uri(pixmap: QPixmap) -> str:
     data = QByteArray()
@@ -223,6 +233,12 @@ def _item_to_element(parent, item, ctx=None):
                 g.set(_kp("model-az"), f"{item.mol_az:g}")
             if getattr(item, "mol_el", None) is not None:
                 g.set(_kp("model-el"), f"{item.mol_el:g}")
+            if getattr(item, "mol_bond", None) is not None:
+                g.set(_kp("model-bond"), f"{item.mol_bond:g}")
+            if getattr(item, "mol_atoms", None):   # hand-built structure
+                import json as _json
+                g.set(_kp("model-atoms"), _json.dumps(item.mol_atoms))
+                g.set(_kp("model-bonds"), _json.dumps(item.mol_bonds or []))
         for child in item.childItems():
             if not isinstance(child, Handle):
                 _item_to_element(g, child, ctx)
@@ -786,6 +802,9 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
             group.mol_name = model
             group.mol_az = _float_or_none(el.get(_kp("model-az")))
             group.mol_el = _float_or_none(el.get(_kp("model-el")))
+            group.mol_bond = _float_or_none(el.get(_kp("model-bond")))
+            group.mol_atoms = _json_or_none(el.get(_kp("model-atoms")))
+            group.mol_bonds = _json_or_none(el.get(_kp("model-bonds")))
         return group if group.childItems() else None
 
     if tag == "image" and el.get(_kp("role")) == "raster":

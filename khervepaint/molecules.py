@@ -152,16 +152,39 @@ def _dashed_line(p1, p2, color, width, dash=6.0, gap=4.0):
     return out
 
 
+def _spread(atoms, edges, factor):
+    """Move atoms (and cell edges) apart from their centroid by *factor*,
+    lengthening the bonds relative to the spheres. rscale is unchanged, so
+    only the ball-to-stick ratio moves — bigger factor = longer bonds."""
+    if factor == 1.0 or not atoms:
+        return atoms, edges
+    cx = sum(a[1] for a in atoms) / len(atoms)
+    cy = sum(a[2] for a in atoms) / len(atoms)
+    cz = sum(a[3] for a in atoms) / len(atoms)
+
+    def sc(p):
+        return (cx + (p[0] - cx) * factor, cy + (p[1] - cy) * factor,
+                cz + (p[2] - cz) * factor)
+    at = [(a[0], *sc((a[1], a[2], a[3]))) for a in atoms]
+    ed = None
+    if edges:
+        ed = [(sc(e[0]), sc(e[1]), e[2] if len(e) > 2 else "solid")
+              for e in edges]
+    return at, ed
+
+
 def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
-           margin=0.12, az=_AZ, el=_EL):
+           margin=0.12, az=_AZ, el=_EL, bond_scale=1.0):
     """Lay out a 3D model into the (w, h) box and return its shape specs.
 
     *atoms* is a list of ``(element, x, y, z)``; *bonds* a list of
     ``(i, j, order)`` index pairs; *edges* an optional list of
     ``(p1, p2)`` or ``(p1, p2, style)`` unit-cell segments where *style*
     is ``"solid"`` (a thick dark cube edge) or ``"dash"`` (a dashed body
-    diagonal). The projected model is scaled uniformly (spheres stay round)
-    to fit the box, then drawn back-to-front: edges, bonds, spheres."""
+    diagonal). *bond_scale* spreads the atoms apart to lengthen the bonds.
+    The projected model is scaled uniformly (spheres stay round) to fit the
+    box, then drawn back-to-front: edges, bonds, spheres."""
+    atoms, edges = _spread(atoms, edges, bond_scale)
     proj = [_proj(a[1], a[2], a[3], az, el) for a in atoms]
     rad = [ATOM_RADII.get(a[0], 0.55) * rscale for a in atoms]
 
@@ -756,6 +779,20 @@ CATEGORIES = [
 ]
 
 
+#: Default bond spread for molecules — >1 so the sticks read clearly
+#: between the spheres (crystals keep their true lattice spacing, 1.0).
+DEFAULT_BOND = 1.6
+
+
+def is_crystal(name):
+    return name in _MODELS and _MODELS[name][0].__name__.startswith("_xtal")
+
+
+def default_bond(name):
+    """The default bond spread for *name* (crystals stay at true spacing)."""
+    return 1.0 if is_crystal(name) else DEFAULT_BOND
+
+
 def model_data(name):
     """Return ``(atoms, bonds, edges, rscale)`` for a named model.
 
@@ -769,18 +806,28 @@ def model_data(name):
     return atoms, bonds, edges, rscale
 
 
-def build_specs_oriented(name, w, h, az=None, el=None):
+def build_specs_oriented(name, w, h, az=None, el=None, bond=None):
     """Shape specs for model *name* in a (w, h) box, viewed at (az, el)
-    radians (defaults to the standard three-quarter view)."""
+    radians, with bond spread *bond* (defaults per model)."""
     atoms, bonds, edges, rscale = model_data(name)
     return _model(atoms, bonds, w, h, edges=edges, rscale=rscale,
                   az=DEFAULT_AZ if az is None else az,
-                  el=DEFAULT_EL if el is None else el)
+                  el=DEFAULT_EL if el is None else el,
+                  bond_scale=default_bond(name) if bond is None else bond)
 
 
 def build_specs(name, w, h):
     """Shape specs for model *name* drawn into a (w, h) px box."""
     return build_specs_oriented(name, w, h)
+
+
+def specs_from_atoms(atoms, bonds, w, h, az=None, el=None, bond=1.0,
+                     rscale=0.92):
+    """Shape specs for a custom (atoms, bonds) model — used by the builder
+    when the user has edited the structure atom by atom."""
+    return _model(atoms, bonds, w, h, rscale=rscale,
+                  az=DEFAULT_AZ if az is None else az,
+                  el=DEFAULT_EL if el is None else el, bond_scale=bond)
 
 
 def size_mm(name):
