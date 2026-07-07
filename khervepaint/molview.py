@@ -158,13 +158,14 @@ class MoleculeViewer(QDialog):
     """Rotate and build a molecule / crystal in 3D."""
 
     def __init__(self, name, az=None, el=None, bond=None,
-                 atoms=None, bonds=None, parent=None):
+                 atoms=None, bonds=None, repr=None, parent=None):
         super().__init__(parent)
         self.name = name
         self.editable = not molecules.is_crystal(name)
         self.az = molecules.DEFAULT_AZ if az is None else az
         self.el = molecules.DEFAULT_EL if el is None else el
         self.bond = (bond if bond is not None else molecules.default_bond(name))
+        self._repr = repr or "3d"
         self.selected = None
         self.order = 1
         self.dirty = atoms is not None
@@ -199,6 +200,7 @@ class MoleculeViewer(QDialog):
         layout.addLayout(self._bond_row())
         if self.editable:
             layout.addLayout(self._palette_row())
+            layout.addLayout(self._repr_row())
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok
                                    | QDialogButtonBox.Cancel)
@@ -266,6 +268,28 @@ class MoleculeViewer(QDialog):
         row.addWidget(self.del_btn)
         row.addStretch(1)
         return row
+
+    def _repr_row(self):
+        from . import molrepr
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Insert as:"))
+        self.repr_combo = QComboBox()
+        for mode in molrepr.MODES:
+            self.repr_combo.addItem(molrepr.MODE_LABELS[mode], mode)
+        i = self.repr_combo.findData(self._repr)
+        if i >= 0:
+            self.repr_combo.setCurrentIndex(i)
+        self.repr_combo.setToolTip("How to draw the molecule on the canvas — "
+                                   "3D model or a 2D structural / Lewis / "
+                                   "condensed formula")
+        row.addWidget(self.repr_combo)
+        row.addStretch(1)
+        return row
+
+    def representation(self):
+        if self.editable and hasattr(self, "repr_combo"):
+            return self.repr_combo.currentData()
+        return "3d"
 
     # ---------------------------------------------------------- rendering
     def render_specs(self, w, h, frozen=None):

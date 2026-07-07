@@ -214,6 +214,53 @@ def test_reorient_rebuilds_and_keeps_tag(scene):
     assert abs(after.y() - before.y()) < 30
 
 
+def test_representations_build_and_persist(scene, tmp_path):
+    from khervepaint import molrepr
+    atoms, bonds, _e, _r = molecules.model_data("ethanol")
+    # every 2D mode yields buildable specs
+    for mode in ("structural", "lewis", "condensed"):
+        specs = molrepr.representation_specs(mode, atoms, bonds, 200, 200)
+        assert specs
+        assert all(ai_assistant._spec_to_item(s) is not None for s in specs)
+    # structural draws every atom as a text label
+    labels = [s["text"] for s in molrepr.structural_specs(atoms, bonds, 200, 200)
+              if s.get("shape") == "text"]
+    assert labels.count("C") == 2 and labels.count("O") == 1
+    assert labels.count("H") == 6
+    # lewis adds lone-pair dots (ethanol O -> 2 pairs -> 4 dots)
+    dots = sum(1 for s in molrepr.structural_specs(atoms, bonds, 200, 200,
+                                                   lewis=True)
+               if s.get("shape") == "circle" and s.get("fill") == "#1a1a1a")
+    assert dots == 4
+    assert molrepr.molecular_formula(atoms) == "C₂H₆O"
+
+    # set_representation on the canvas rebuilds and the mode round-trips
+    scene.place_mol_element("ethanol", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    scene.set_representation(top, "structural")
+    (top,) = scene.selectedItems()
+    assert top.mol_repr == "structural"
+    data = document.scene_to_dict(scene)
+    restored = PaintScene(600, 480)
+    document.dict_to_scene(data, restored)
+    g = next(i for i in restored.items() if getattr(i, "mol_name", None))
+    assert g.mol_repr == "structural"
+    path = str(tmp_path / "repr.svg")
+    svgio.save_svg(scene, path)
+    r2 = PaintScene(600, 480)
+    svgio.load_svg(r2, path)
+    g2 = next(i for i in r2.items() if getattr(i, "mol_name", None))
+    assert g2.mol_repr == "structural"
+
+
+def test_2d_representation_does_not_orbit(scene):
+    scene.place_mol_element("benzene", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    scene.set_representation(top, "lewis")
+    (top,) = scene.selectedItems()
+    assert not scene.enter_orbit_mode(top)      # 2D formulas don't spin
+
+
 def test_on_canvas_orbit(scene):
     scene.place_mol_element("methane", QPointF(300, 240))
     (top,) = scene.selectedItems()

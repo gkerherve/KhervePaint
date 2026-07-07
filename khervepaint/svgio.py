@@ -237,6 +237,8 @@ def _item_to_element(parent, item, ctx=None):
                 g.set(_kp("model-bond"), f"{item.mol_bond:g}")
             if getattr(item, "mol_box", None) is not None:
                 g.set(_kp("model-box"), f"{item.mol_box:g}")
+            if getattr(item, "mol_repr", None):
+                g.set(_kp("model-repr"), item.mol_repr)
             if getattr(item, "mol_atoms", None):   # hand-built structure
                 import json as _json
                 g.set(_kp("model-atoms"), _json.dumps(item.mol_atoms))
@@ -806,6 +808,7 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
             group.mol_el = _float_or_none(el.get(_kp("model-el")))
             group.mol_bond = _float_or_none(el.get(_kp("model-bond")))
             group.mol_box = _float_or_none(el.get(_kp("model-box")))
+            group.mol_repr = el.get(_kp("model-repr")) or "3d"
             group.mol_atoms = _json_or_none(el.get(_kp("model-atoms")))
             group.mol_bonds = _json_or_none(el.get(_kp("model-bonds")))
         return group if group.childItems() else None

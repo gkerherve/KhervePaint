@@ -1521,9 +1521,10 @@ class PaintScene(QGraphicsScene):
                             box=box)
 
     @staticmethod
-    def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None):
-        """Stamp a group with its 3D model identity (name + view + bond
-        spread + the stable build box, and the raw atoms/bonds when the
+    def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None,
+                   repr="3d"):
+        """Stamp a group with its model identity (name + view + bond spread +
+        stable build box + representation, and the raw atoms/bonds when the
         structure was hand-built)."""
         item.mol_name = name
         item.mol_az = az
@@ -1532,6 +1533,7 @@ class PaintScene(QGraphicsScene):
         item.mol_atoms = atoms
         item.mol_bonds = bonds
         item.mol_box = box
+        item.mol_repr = repr
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1582,19 +1584,21 @@ class PaintScene(QGraphicsScene):
         return top
 
     def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
-                       commit=True):
-        """Rebuild a placed molecule/crystal *item* at view angles (az, el)
-        and bond spread *bond*, preserving its centre and footprint. When
-        *atoms*/*bonds* are given the structure is replaced (hand-built in
-        the molecule builder). Returns the new top-level item. Undoable when
-        *commit* is True (a single gesture)."""
+                       mode=None, commit=True):
+        """Rebuild a placed molecule/crystal *item* at view angles (az, el),
+        bond spread *bond* and representation *mode* (3d / structural / lewis
+        / condensed), preserving its centre and footprint. When *atoms*/
+        *bonds* are given the structure is replaced (hand-built in the
+        builder). Returns the new top-level item. Undoable when *commit*."""
         name = getattr(item, "mol_name", None)
         if name is None:
             return None
-        from . import molecules
+        from . import molecules, molrepr
         from .ai_assistant import _spec_to_item
         if bond is None:
             bond = getattr(item, "mol_bond", None) or molecules.default_bond(name)
+        if mode is None:
+            mode = getattr(item, "mol_repr", None) or "3d"
         if atoms is None:
             atoms = getattr(item, "mol_atoms", None)
             bonds = getattr(item, "mol_bonds", None)
@@ -1605,11 +1609,16 @@ class PaintScene(QGraphicsScene):
         # would compound smaller on every rebuild during a drag.
         box = getattr(item, "mol_box", None) or max(rect.width(),
                                                     rect.height()) or 1.0
-        if atoms:
-            specs = molecules.specs_from_atoms(atoms, bonds or [], box, box,
-                                               az, el, bond)
-        else:
-            specs = molecules.build_specs_oriented(name, box, box, az, el, bond)
+        if mode == "3d":
+            if atoms:
+                specs = molecules.specs_from_atoms(atoms, bonds or [], box,
+                                                   box, az, el, bond)
+            else:
+                specs = molecules.build_specs_oriented(name, box, box, az, el,
+                                                       bond)
+        else:                                     # 2D chemistry diagram
+            a2, b2 = (atoms, bonds) if atoms else molecules.model_data(name)[:2]
+            specs = molrepr.representation_specs(mode, a2, b2, box, box)
         new_items = [it for it in (_spec_to_item(s) for s in specs)
                      if it is not None]
         if not new_items:
@@ -1617,10 +1626,17 @@ class PaintScene(QGraphicsScene):
         self.clear_handles()
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
-        self._tag_model(top, name, az, el, bond, atoms, bonds, box=box)
+        self._tag_model(top, name, az, el, bond, atoms, bonds, box=box,
+                        repr=mode)
         if commit:
             self.changed_by_user.emit()
         return top
+
+    def set_representation(self, item, mode):
+        """Redraw a placed molecule in a different representation (3D ball-
+        and-stick, structural / Lewis formula, or condensed formula)."""
+        self.reorient_model(item, getattr(item, "mol_az", None),
+                            getattr(item, "mol_el", None), mode=mode)
 
     # ---------------------------------------------- on-canvas 3D rotation
     def enter_orbit_mode(self, item):
@@ -1629,6 +1645,8 @@ class PaintScene(QGraphicsScene):
         or switch tool) to finish. Returns True if *item* is a 3D model."""
         if not getattr(item, "mol_name", None):
             return False
+        if (getattr(item, "mol_repr", None) or "3d") != "3d":
+            return False                          # 2D formulas don't rotate
         self.clear_handles()
         self.clearSelection()
         item.setSelected(True)
@@ -1971,8 +1989,10 @@ class PaintView(QGraphicsView):
         if self.scene().tool == POINTER:
             item = self._pick_item(event.pos())
             if item is not None and getattr(item, "mol_name", None):
-                # Rotate the molecule in place on the canvas (no popup).
-                self.scene().enter_orbit_mode(item)
+                # 3D model: rotate in place on the canvas (no popup).
+                # 2D formula: open the builder (where you can switch back).
+                if not self.scene().enter_orbit_mode(item):
+                    self.open_molecule_builder(item)
                 return
             if item is not None and not isinstance(item, TextItem):
                 self.scene().enter_rotate_mode(item)
@@ -1988,11 +2008,13 @@ class PaintView(QGraphicsView):
                              getattr(item, "mol_el", None),
                              getattr(item, "mol_bond", None),
                              getattr(item, "mol_atoms", None),
-                             getattr(item, "mol_bonds", None), self)
+                             getattr(item, "mol_bonds", None),
+                             getattr(item, "mol_repr", None), self)
         if dlg.exec_():
             atoms, bonds = dlg.result()
             self.scene().reorient_model(item, dlg.az, dlg.el, bond=dlg.bond,
-                                        atoms=atoms, bonds=bonds)
+                                        atoms=atoms, bonds=bonds,
+                                        mode=dlg.representation())
 
     def set_tool_cursor(self, tool: str):
         if tool == POINTER:
