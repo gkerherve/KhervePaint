@@ -207,6 +207,10 @@ def item_to_dict(item) -> dict:
         if not tf.isIdentity():       # non-uniform (X/Y-only) group resize
             d["matrix"] = [tf.m11(), tf.m12(), tf.m21(), tf.m22(),
                            tf.dx(), tf.dy()]
+        if getattr(item, "mol_name", None):   # 3D molecule/crystal model
+            d["model"] = item.mol_name
+            d["model_az"] = getattr(item, "mol_az", None)
+            d["model_el"] = getattr(item, "mol_el", None)
         return d
     raise ValueError(f"unserialisable item: {type(item).__name__}")
 
@@ -268,6 +272,10 @@ def item_from_dict(d: dict):
             # after a load or undo. Safe to snap-free here: the group is
             # still detached from any scene.
             item.addToGroup(child)
+        if d.get("model"):                    # 3D molecule/crystal model tag
+            item.mol_name = d["model"]
+            item.mol_az = d.get("model_az")
+            item.mol_el = d.get("model_el")
     else:
         raise ValueError(f"unknown item type: {kind!r}")
     _apply_label(item, d)

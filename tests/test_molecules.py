@@ -126,6 +126,77 @@ def test_lit_sphere_round_trips_json_and_svg(scene, tmp_path):
     assert _has_sun_sphere(restored2)
 
 
+def test_oriented_projection_changes_with_view():
+    front = molecules.build_specs_oriented("methane", 200, 200, az=0.0, el=0.0)
+    top = molecules.build_specs_oriented("methane", 200, 200, az=0.0,
+                                         el=1.5708)
+    # a different viewpoint moves the atoms to different screen positions
+    fc = [(s.get("x"), s.get("y")) for s in front if s.get("shape") == "circle"]
+    tc = [(s.get("x"), s.get("y")) for s in top if s.get("shape") == "circle"]
+    assert fc != tc
+
+
+def test_model_data_covers_every_model():
+    for name in molecules.SIZES:
+        atoms, bonds, edges, rscale = molecules.model_data(name)
+        assert atoms and rscale > 0
+
+
+def test_placed_model_is_tagged(scene):
+    scene.place_mol_element("bcc", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    assert top.mol_name == "bcc"
+    assert top.mol_az is not None and top.mol_el is not None
+
+
+def test_reorient_rebuilds_and_keeps_tag(scene):
+    scene.place_mol_element("methane", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    before = top.sceneBoundingRect().center()
+    fired = []
+    scene.changed_by_user.connect(lambda: fired.append(1))
+    scene.reorient_model(top, az=0.0, el=1.5708)     # top view
+    (new,) = scene.selectedItems()
+    assert new is not top                             # rebuilt
+    assert new.mol_name == "methane"
+    assert new.mol_az == 0.0
+    assert fired == [1]                               # one undoable gesture
+    after = new.sceneBoundingRect().center()
+    assert abs(after.x() - before.x()) < 30           # centre preserved
+    assert abs(after.y() - before.y()) < 30
+
+
+def test_model_tag_round_trips_json_and_svg(scene, tmp_path):
+    scene.place_mol_element("fcc", QPointF(300, 240))
+    data = document.scene_to_dict(scene)
+    restored = PaintScene(600, 480)
+    document.dict_to_scene(data, restored)
+    assert _find_model(restored) == "fcc"
+    path = str(tmp_path / "xtal.svg")
+    svgio.save_svg(scene, path)
+    restored2 = PaintScene(600, 480)
+    svgio.load_svg(restored2, path)
+    assert _find_model(restored2) == "fcc"
+
+
+def test_viewer_standard_views(app):
+    from khervepaint.molview import MoleculeViewer, STANDARD_VIEWS
+    dlg = MoleculeViewer("bcc")
+    # picking the "Top" view sets the elevation to a quarter turn
+    top = next(v for v in STANDARD_VIEWS if v[0] == "Top")
+    dlg.preview.set_view(top[1], top[2])
+    assert abs(dlg.el - top[2]) < 1e-9
+    assert abs(dlg.az - top[1]) < 1e-9
+    dlg.deleteLater()
+
+
+def _find_model(scene):
+    for it in scene.items():
+        if getattr(it, "mol_name", None):
+            return it.mol_name
+    return None
+
+
 def _has_sun_sphere(scene):
     """True if some item (recursing into groups) carries a `sun` gradient."""
     def walk(items):

@@ -67,6 +67,13 @@ def _localname(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
+def _float_or_none(text):
+    try:
+        return float(text)
+    except (TypeError, ValueError):
+        return None
+
+
 # ================================================================ writing
 def _pixmap_data_uri(pixmap: QPixmap) -> str:
     data = QByteArray()
@@ -210,6 +217,12 @@ def _item_to_element(parent, item, ctx=None):
         from .handles import Handle
         g = ET.SubElement(parent, _svg("g"))
         _set_common(g, item)
+        if getattr(item, "mol_name", None):      # 3D molecule/crystal model
+            g.set(_kp("model"), item.mol_name)
+            if getattr(item, "mol_az", None) is not None:
+                g.set(_kp("model-az"), f"{item.mol_az:g}")
+            if getattr(item, "mol_el", None) is not None:
+                g.set(_kp("model-el"), f"{item.mol_el:g}")
         for child in item.childItems():
             if not isinstance(child, Handle):
                 _item_to_element(g, child, ctx)
@@ -768,6 +781,11 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
                 # bounding rect is correct — otherwise its scale/rotate
                 # origin and sceneBoundingRect are empty after load.
                 group.addToGroup(sub)
+        model = el.get(_kp("model"))
+        if model:                            # 3D molecule/crystal model tag
+            group.mol_name = model
+            group.mol_az = _float_or_none(el.get(_kp("model-az")))
+            group.mol_el = _float_or_none(el.get(_kp("model-el")))
         return group if group.childItems() else None
 
     if tag == "image" and el.get(_kp("role")) == "raster":

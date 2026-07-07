@@ -1493,11 +1493,16 @@ class PaintScene(QGraphicsScene):
     def place_mol_element(self, name: str, center: QPointF):
         """Drop a molecule / crystal ball-and-stick model."""
         from . import molecules
-        self._place_symbol(molecules, name, center)
+        top = self._place_symbol(molecules, name, center)
+        if top is not None:                      # tag for the 3D viewer
+            top.mol_name = name
+            top.mol_az = molecules.DEFAULT_AZ
+            top.mol_el = molecules.DEFAULT_EL
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
-        and place them centred on *center* (grouped if multi-part).
+        and place them centred on *center* (grouped if multi-part). Returns
+        the created top-level item (group or single), or None.
 
         Symbols are sized as a fraction of the PAGE, not in absolute mm —
         the page width represents `module.REFERENCE_MM` of real space, so a
@@ -1513,27 +1518,57 @@ class PaintScene(QGraphicsScene):
                                for s in module.build_specs(name, w, h))
                  if it is not None]
         if not items:
-            return
+            return None
+        top = self._drop_items(items, center, w, h)
+        self.changed_by_user.emit()
+        return top
+
+    def _drop_items(self, items, center, w, h):
+        """Place *items* (positioned within a (w, h) box) centred on *center*,
+        grouping them if there is more than one; return the top-level item."""
         dx, dy = center.x() - w / 2, center.y() - h / 2
         was_snap = self.snap_enabled
         self.snap_enabled = False                # already grid-snapped centre
         self.clearSelection()
         if len(items) == 1:
-            item = items[0]
-            item.moveBy(dx, dy)
-            self.addItem(item)
-            center_origin(item)
-            item.setSelected(True)
+            top = items[0]
+            top.moveBy(dx, dy)
+            self.addItem(top)
+            center_origin(top)
         else:
-            group = GroupItem()
-            self.addItem(group)
+            top = GroupItem()
+            self.addItem(top)
             for z, item in enumerate(items):
                 item.moveBy(dx, dy)
                 item.setZValue(z)
-                group.addToGroup(item)
-            center_origin(group)
-            group.setSelected(True)
+                top.addToGroup(item)
+            center_origin(top)
+        top.setSelected(True)
         self.snap_enabled = was_snap
+        return top
+
+    def reorient_model(self, item, az, el):
+        """Rebuild a placed molecule/crystal *item* at view angles (az, el),
+        preserving its centre and footprint. Undoable."""
+        name = getattr(item, "mol_name", None)
+        if name is None:
+            return
+        from . import molecules
+        from .ai_assistant import _spec_to_item
+        rect = item.sceneBoundingRect()
+        center = rect.center()
+        box = max(rect.width(), rect.height()) or 1.0
+        specs = molecules.build_specs_oriented(name, box, box, az, el)
+        new_items = [it for it in (_spec_to_item(s) for s in specs)
+                     if it is not None]
+        if not new_items:
+            return
+        self.clear_handles()
+        self.removeItem(item)
+        top = self._drop_items(new_items, center, box, box)
+        top.mol_name = name
+        top.mol_az = az
+        top.mol_el = el
         self.changed_by_user.emit()
 
     def mouseReleaseEvent(self, event):
@@ -1822,10 +1857,22 @@ class PaintView(QGraphicsView):
             return
         if self.scene().tool == POINTER:
             item = self._pick_item(event.pos())
+            if item is not None and getattr(item, "mol_name", None):
+                self._open_3d_viewer(item)
+                return
             if item is not None and not isinstance(item, TextItem):
                 self.scene().enter_rotate_mode(item)
                 return
         super().mouseDoubleClickEvent(event)
+
+    def _open_3d_viewer(self, item):
+        """Double-clicking a molecule/crystal opens the 3D viewer; on OK it
+        rebuilds the model at the chosen orientation."""
+        from .molview import MoleculeViewer
+        dlg = MoleculeViewer(item.mol_name, getattr(item, "mol_az", None),
+                             getattr(item, "mol_el", None), self)
+        if dlg.exec_():
+            self.scene().reorient_model(item, dlg.az, dlg.el)
 
     def set_tool_cursor(self, tool: str):
         if tool == POINTER:

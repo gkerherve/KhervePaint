@@ -473,21 +473,6 @@ def _add_substituent(atoms, bonds, c_i, at, sub):
         bonds.append((c_i, idx[0], 1))
 
 
-def _polymer(n_carbons, subs_pattern, w, h):
-    atoms, bonds = [], []
-    pts = _backbone(n_carbons)
-    idx = [_add(atoms, "C", p) for p in pts]
-    for k in range(n_carbons - 1):
-        bonds.append((idx[k], idx[k + 1], 1))
-    subs = {}
-    for k in range(n_carbons):
-        s = subs_pattern(k)
-        if s is not None:
-            subs[k] = s
-    _backbone_hydrogens(atoms, bonds, idx, pts, subs)
-    return _model(atoms, bonds, w, h, rscale=0.92)
-
-
 def _mol_ethane():
     return _polymer_atoms(2, lambda k: None)
 
@@ -771,13 +756,31 @@ CATEGORIES = [
 ]
 
 
-def build_specs(name, w, h):
-    """Shape specs for model *name* drawn into a (w, h) px box."""
+def model_data(name):
+    """Return ``(atoms, bonds, edges, rscale)`` for a named model.
+
+    The 3D data behind a model, so the viewer can re-project it at any
+    orientation. Polymers share the zig-zag backbone builder."""
     if name in _POLYMERS:
-        return _polymer(_POLYMER_LEN, _POLYMERS[name], w, h)
+        atoms, bonds, edges = _polymer_atoms(_POLYMER_LEN, _POLYMERS[name])
+        return atoms, bonds, edges, 0.92
     builder, rscale = _MODELS[name]
     atoms, bonds, edges = builder()
-    return _model(atoms, bonds, w, h, edges=edges, rscale=rscale)
+    return atoms, bonds, edges, rscale
+
+
+def build_specs_oriented(name, w, h, az=None, el=None):
+    """Shape specs for model *name* in a (w, h) box, viewed at (az, el)
+    radians (defaults to the standard three-quarter view)."""
+    atoms, bonds, edges, rscale = model_data(name)
+    return _model(atoms, bonds, w, h, edges=edges, rscale=rscale,
+                  az=DEFAULT_AZ if az is None else az,
+                  el=DEFAULT_EL if el is None else el)
+
+
+def build_specs(name, w, h):
+    """Shape specs for model *name* drawn into a (w, h) px box."""
+    return build_specs_oriented(name, w, h)
 
 
 def size_mm(name):
