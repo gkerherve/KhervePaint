@@ -51,7 +51,8 @@ ATOM_RADII = {
 }
 
 _BOND_COLOR = "#6b6f76"
-_EDGE_COLOR = "#9aa0a6"          # faint unit-cell edges
+_FRAME_COLOR = "#202020"         # solid unit-cell cube edges (thick, dark)
+_EDGE_COLOR = "#555555"          # dashed body/face diagonals
 
 # ------------------------------------------------------------ colour helpers
 def _mix(a, b, t):
@@ -112,48 +113,72 @@ def bond_specs(p1, p2, order=1, width=6.0, color=_BOND_COLOR):
 #: Viewing angles (azimuth about the vertical axis, then elevation tilt).
 _AZ = math.radians(28.0)
 _EL = math.radians(20.0)
-_CA, _SA = math.cos(_AZ), math.sin(_AZ)
-_CE, _SE = math.cos(_EL), math.sin(_EL)
+#: Default viewing angles (azimuth about the vertical axis, elevation tilt).
+DEFAULT_AZ = _AZ
+DEFAULT_EL = _EL
 
 
-def _proj(x, y, z):
-    """Project a 3D point to (screen_x, screen_y, depth).
+def _proj(x, y, z, az=_AZ, el=_EL):
+    """Project a 3D point to (screen_x, screen_y, depth) at view (az, el).
 
-    Rotate about the vertical axis by the azimuth, tilt by the elevation,
-    then project orthographically. *depth* grows toward the viewer, so
-    sorting atoms by it draws far spheres before near ones."""
-    xr = x * _CA - y * _SA
-    yr = x * _SA + y * _CA
+    Rotate about the vertical axis by *az*, tilt by *el*, then project
+    orthographically. *depth* grows toward the viewer, so sorting atoms by
+    it draws far spheres before near ones."""
+    ca, sa = math.cos(az), math.sin(az)
+    ce, se = math.cos(el), math.sin(el)
+    xr = x * ca - y * sa
+    yr = x * sa + y * ca
     sx = xr
-    sy = yr * _SE - z * _CE          # screen y (grows downward)
-    depth = yr * _CE + z * _SE       # toward the viewer
+    sy = yr * se - z * ce            # screen y (grows downward)
+    depth = yr * ce + z * se         # toward the viewer
     return sx, sy, depth
 
 
+def _dashed_line(p1, p2, color, width, dash=6.0, gap=4.0):
+    """A dashed segment as a run of short solid line specs (so the dashes
+    are geometry that survives SVG, like the chemistry H-bond)."""
+    (x1, y1), (x2, y2) = p1, p2
+    dx, dy = x2 - x1, y2 - y1
+    length = math.hypot(dx, dy) or 1.0
+    ux, uy = dx / length, dy / length
+    out = []
+    pos = 0.0
+    while pos < length:
+        end = min(pos + dash, length)
+        out.append({"shape": "line", "x1": x1 + ux * pos, "y1": y1 + uy * pos,
+                    "x2": x1 + ux * end, "y2": y1 + uy * end,
+                    "stroke": color, "width": width})
+        pos = end + gap
+    return out
+
+
 def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
-           margin=0.12):
+           margin=0.12, az=_AZ, el=_EL):
     """Lay out a 3D model into the (w, h) box and return its shape specs.
 
     *atoms* is a list of ``(element, x, y, z)``; *bonds* a list of
     ``(i, j, order)`` index pairs; *edges* an optional list of
-    ``((x,y,z),(x,y,z))`` unit-cell segments drawn faintly behind.
-    The projected model is scaled uniformly (spheres stay round) to fit
-    the box, then drawn: cell edges, then bonds, then spheres far→near."""
-    proj = [_proj(a[1], a[2], a[3]) for a in atoms]
+    ``(p1, p2)`` or ``(p1, p2, style)`` unit-cell segments where *style*
+    is ``"solid"`` (a thick dark cube edge) or ``"dash"`` (a dashed body
+    diagonal). The projected model is scaled uniformly (spheres stay round)
+    to fit the box, then drawn back-to-front: edges, bonds, spheres."""
+    proj = [_proj(a[1], a[2], a[3], az, el) for a in atoms]
     rad = [ATOM_RADII.get(a[0], 0.55) * rscale for a in atoms]
 
     xs_lo = [proj[i][0] - rad[i] for i in range(len(atoms))]
     xs_hi = [proj[i][0] + rad[i] for i in range(len(atoms))]
     ys_lo = [proj[i][1] - rad[i] for i in range(len(atoms))]
     ys_hi = [proj[i][1] + rad[i] for i in range(len(atoms))]
-    edge_pts = []
+    pedges = []
     if edges:
-        for a3, b3 in edges:
-            edge_pts.append(_proj(*a3))
-            edge_pts.append(_proj(*b3))
-    for ex, ey, _ in edge_pts:
-        xs_lo.append(ex); xs_hi.append(ex)
-        ys_lo.append(ey); ys_hi.append(ey)
+        for e in edges:
+            style = e[2] if len(e) > 2 else "solid"
+            pa = _proj(*e[0], az, el)
+            pb = _proj(*e[1], az, el)
+            pedges.append((pa, pb, style))
+            for px, py, _ in (pa, pb):
+                xs_lo.append(px); xs_hi.append(px)
+                ys_lo.append(py); ys_hi.append(py)
 
     minx, maxx = min(xs_lo), max(xs_hi)
     miny, maxy = min(ys_lo), max(ys_hi)
@@ -168,16 +193,17 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
         return ox + s * px, oy + s * py
 
     specs = []
-    if edges:
-        ew = max(1.0, s * 0.035)
-        for a3, b3 in edges:
-            ax, ay, _ = _proj(*a3)
-            bx, by, _ = _proj(*b3)
-            (tax, tay), (tbx, tby) = T(ax, ay), T(bx, by)
-            specs.append({"shape": "line", "x1": tax, "y1": tay,
-                          "x2": tbx, "y2": tby, "stroke": _EDGE_COLOR,
+    ew = max(2.2, s * 0.062)
+    for pa, pb, style in pedges:
+        p1, p2 = T(pa[0], pa[1]), T(pb[0], pb[1])
+        if style == "dash":
+            specs += _dashed_line(p1, p2, _EDGE_COLOR, max(1.0, s * 0.028),
+                                  dash=s * 0.10, gap=s * 0.07)
+        else:
+            specs.append({"shape": "line", "x1": p1[0], "y1": p1[1],
+                          "x2": p2[0], "y2": p2[1], "stroke": _FRAME_COLOR,
                           "width": ew})
-    bw = max(2.0, s * 0.13)
+    bw = max(2.0, s * 0.11)
     for i, j, order in bonds:
         specs += bond_specs(T(proj[i][0], proj[i][1]),
                             T(proj[j][0], proj[j][1]), order, width=bw)
@@ -546,44 +572,62 @@ def _mol_pet():
 
 
 # ------------------------------------------------------------ crystal cells
+# Unit cells are drawn as open wireframe boxes (thick solid cube edges +
+# dashed body/face diagonals to the centring atoms) with small spheres, so
+# the cell geometry stays visible — the classic textbook unit-cell look.
+_CORNERS = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0),
+            (0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
+_CUBE_PAIRS = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4),
+               (0, 4), (1, 5), (2, 6), (3, 7)]
+
+
 def _cube_edges(a):
-    c = [(0, 0, 0), (a, 0, 0), (a, a, 0), (0, a, 0),
-         (0, 0, a), (a, 0, a), (a, a, a), (0, a, a)]
-    pairs = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4),
-             (0, 4), (1, 5), (2, 6), (3, 7)]
-    return [(c[i], c[j]) for i, j in pairs]
+    c = [(x * a, y * a, z * a) for x, y, z in _CORNERS]
+    return [(c[i], c[j], "solid") for i, j in _CUBE_PAIRS]
 
 
 def _cube_corners(a):
-    return [(0, 0, 0), (a, 0, 0), (a, a, 0), (0, a, 0),
-            (0, 0, a), (a, 0, a), (a, a, a), (0, a, a)]
+    return [(x * a, y * a, z * a) for x, y, z in _CORNERS]
 
 
-def _crystal(el_at, a=2.0, edges=True, bonds=None, rscale=1.6):
+def _body_diagonals(a):
+    """The four dashed cube body-diagonals (each passes through the centre)."""
+    c = _cube_corners(a)
+    return [(c[0], c[6], "dash"), (c[1], c[7], "dash"),
+            (c[2], c[4], "dash"), (c[3], c[5], "dash")]
+
+
+def _crystal(el_at, a=2.0, extra_edges=None, bonds=None):
     """Build a crystal model from ``el_at`` = list of (element, (x,y,z))."""
     atoms = [(e, p[0], p[1], p[2]) for e, p in el_at]
-    return atoms, (bonds or []), (_cube_edges(a) if edges else None)
+    edges = _cube_edges(a) + (extra_edges or [])
+    return atoms, (bonds or []), edges
 
 
 def _xtal_simple_cubic():
-    a = 2.0
+    a = 3.0
     return _crystal([("Cu", p) for p in _cube_corners(a)], a)
 
 
 def _xtal_bcc():
-    a = 2.0
+    a = 3.0
     pts = [("Fe", p) for p in _cube_corners(a)]
     pts.append(("Fe", (a / 2, a / 2, a / 2)))
-    return _crystal(pts, a)
+    return _crystal(pts, a, extra_edges=_body_diagonals(a))
 
 
 def _xtal_fcc():
-    a = 2.0
+    a = 3.0
     pts = [("Al", p) for p in _cube_corners(a)]
     faces = [(a / 2, a / 2, 0), (a / 2, a / 2, a), (a / 2, 0, a / 2),
              (a / 2, a, a / 2), (0, a / 2, a / 2), (a, a / 2, a / 2)]
     pts += [("Al", p) for p in faces]
-    return _crystal(pts, a)
+    # dashed face diagonals (each passes through a face-centre atom)
+    c = _cube_corners(a)
+    fdiag = [(c[0], c[2], "dash"), (c[4], c[6], "dash"),
+             (c[0], c[5], "dash"), (c[3], c[6], "dash"),
+             (c[0], c[7], "dash"), (c[1], c[6], "dash")]
+    return _crystal(pts, a, extra_edges=fdiag)
 
 
 def _xtal_hcp():
@@ -650,10 +694,10 @@ def _xtal_nacl():
 
 
 def _xtal_cscl():
-    a = 2.0
+    a = 3.0
     pts = [("Cl", p) for p in _cube_corners(a)]
     pts.append(("Cs", (a / 2, a / 2, a / 2)))
-    return _crystal(pts, a)
+    return _crystal(pts, a, extra_edges=_body_diagonals(a))
 
 
 # ------------------------------------------------------------------- registry
@@ -668,10 +712,10 @@ _MODELS = {
     "ethene": (_mol_ethene, 0.9), "ethyne": (_mol_ethyne, 0.9),
     "benzene": (_mol_benzene, 0.9), "cyclohexane": (_mol_cyclohexane, 0.88),
     "glucose": (_mol_glucose, 0.82), "pet": (_mol_pet, 0.72),
-    "simple_cubic": (_xtal_simple_cubic, 1.5), "bcc": (_xtal_bcc, 1.5),
-    "fcc": (_xtal_fcc, 1.4), "hcp": (_xtal_hcp, 1.3),
-    "diamond": (_xtal_diamond, 1.0), "nacl": (_xtal_nacl, 1.05),
-    "cscl": (_xtal_cscl, 1.5),
+    "simple_cubic": (_xtal_simple_cubic, 0.62), "bcc": (_xtal_bcc, 0.58),
+    "fcc": (_xtal_fcc, 0.52), "hcp": (_xtal_hcp, 0.5),
+    "diamond": (_xtal_diamond, 0.42), "nacl": (_xtal_nacl, 0.5),
+    "cscl": (_xtal_cscl, 0.6),
 }
 
 #: Polymer repeat units share the zig-zag backbone builder.
