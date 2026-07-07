@@ -367,8 +367,11 @@ a window with a cube-face view toolbar, a bond-length slider and an atom
 palette: click a sphere to select it (the status shows its free bonds —
 the builder tracks each element's valence), click an element to bond a new
 atom on at the chosen order, drag a sphere to bend a bond angle, or drag
-the background to rotate. Chains build straight, not into rings. The AI
-Chat can build molecules and 3D structures on request too.</li>
+the background to rotate. Chains build straight, not into rings.
+Right-click ▸ <b>Show as</b> redraws a molecule as a 3D model, a 2D
+<b>structural</b> or <b>Lewis</b> formula, or the <b>condensed</b>
+molecular formula. The AI Chat can build molecules and 3D structures on
+request too.</li>
 </ul>
 
 <h2>11 · Drawing size &amp; publication figures</h2>

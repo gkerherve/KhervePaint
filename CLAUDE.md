@@ -200,9 +200,23 @@ into a new module and import.
                        rebuilds the group at the chosen angle/bond
                        (preserving centre + footprint). The model tag
                        round-trips through document.py (`"model"`/
-                       `model_az`/`model_el`/`model_bond`/`model_atoms`/
-                       `model_bonds`) and svgio.py (`kp:model*` on the
-                       `<g>`), so it survives save/reload and undo.
+                       `model_az`/`model_el`/`model_bond`/`model_box`/
+                       `model_repr`/`model_atoms`/`model_bonds`) and svgio.py
+                       (`kp:model*` on the `<g>`), so it survives save/reload
+                       and undo. `mol_box` is the stable build box (rebuilds
+                       use it, not the margin-shrunk bounding rect, so orbit
+                       keeps a constant size). `PaintScene.set_representation`
+                       / `reorient_model(mode=…)` switch the drawing between
+                       3D and the 2D formulas.
+  - `molrepr.py`     — 2D chemical **representations** of a molecule graph:
+                       `structural_specs` (element letters + bond lines),
+                       `structural_specs(lewis=True)` (adds lone-pair dots
+                       from `_VALENCE_E`), `condensed_specs`/
+                       `molecular_formula` (Hill notation). `MODES`/
+                       `MODE_LABELS` drive the right-click **Show as** menu
+                       and the builder's **Insert as** combo. 2D coords come
+                       from the orthographic view that spreads the atoms most
+                       (`_best_view`).
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,

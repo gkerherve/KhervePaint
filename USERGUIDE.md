@@ -362,6 +362,13 @@ Five further dropdowns cover general diagrams and more science:
   Bonds are drawn longer by default so the sticks are clear; the slider
   spreads the atoms further.
 
+  **Representations.** A molecule can be drawn four ways (as in a textbook
+  figure): pick from right-click ▸ **Show as**, or the **Insert as** combo
+  in the builder — **3D ball-and-stick**, **Structural formula** (element
+  letters joined by bond lines), **Lewis structure** (adds lone-pair
+  dots), or the **Condensed formula** (e.g. C₂H₆O). Each is a normal
+  editable drawing; the choice is saved with the file.
+
   The **AI Chat** can build these too — ask it for a molecule (from
   methane up to a PET repeat unit) or a 3D structure (BCC/FCC), and it
   places element spheres and bonds as real, editable items.
