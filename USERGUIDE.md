@@ -343,6 +343,13 @@ Five further dropdowns cover general diagrams and more science:
   it) to finish. The whole spin is a single undo step, and the orientation
   is saved with the drawing.
 
+  **Stack unit cells** — right-click a crystal ▸ **Stack unit cells…** to
+  tile the unit cell into an **_a_×_b_×_c_ supercell**. Pick how many times
+  to repeat it along each axis (1–6); shared corner and face atoms are
+  merged so the lattice stays clean, and **1×1×1** restores the single
+  cell. The stacked model is still one rotatable, editable group, and the
+  cell counts are saved with the drawing.
+
   For more control, right-click ▸ **Molecule builder…** opens a window
   with a **view toolbar** (Front / Back / Left / Right / Top / Bottom /
   Isometric — each a little cube with the viewed face shaded), a

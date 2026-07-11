@@ -170,6 +170,19 @@ into a new module and import.
                        The isometric `_proj` is parameterised by view angle
                        (az/el); `model_data`/`build_specs_oriented` expose
                        the 3D data + a re-projection at any orientation.
+                       Cubic crystals **stack into supercells**: `can_stack`
+                       (all crystals but HCP) + `_supercell(atoms,bonds,edges,
+                       nx,ny,nz)` tiles a cell face-to-face by its cube-edge
+                       extent, de-duplicating shared corner/face atoms &
+                       edges; `model_data(name, cells)` / `build_specs_oriented
+                       (…, cells=)` return the tiled cell. Driven by
+                       `PaintScene.set_cells` (right-click a crystal ▸ Stack
+                       unit cells…, `properties.stack_cells_dialog`), which
+                       grows `mol_box` by `stack_factor` (max count) so drawn
+                       spheres stay a constant size. The `(nx,ny,nz)` counts
+                       ride on the model tag as `mol_cells` and round-trip
+                       through document.py (`model_cells`) / svgio.py
+                       (`kp:model-cells`); `reorient_model(cells=…)` re-tiles.
   - `molview.py`     — `MoleculeViewer` = the **Molecule builder** dialog
                        (right-click a placed model ▸ Molecule builder…).
                        Horizontal **view toolbar** of 3D cube-face icons

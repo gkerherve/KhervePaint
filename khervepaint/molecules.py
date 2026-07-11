@@ -972,28 +972,98 @@ def is_crystal(name):
     return name in _MODELS and _MODELS[name][0].__name__.startswith("_xtal")
 
 
+def can_stack(name):
+    """Whether *name* is a crystal that tiles into a supercell by stacking
+    unit cells face-to-face. All the cubic-family cells qualify; the
+    hexagonal HCP prism doesn't stack on an orthogonal grid, so it's out."""
+    return is_crystal(name) and name != "hcp"
+
+
+def stack_factor(cells):
+    """How much to magnify the drawing box for a stacked supercell, so the
+    drawn spheres keep a constant size as the cell count grows."""
+    return max(cells) if cells else 1
+
+
+def _supercell(atoms, bonds, edges, nx, ny, nz):
+    """Tile a crystal unit cell into an ``nx×ny×nz`` supercell.
+
+    The cell translation vectors are the wireframe's extent along x/y/z (the
+    cube edge length), so cells stack face-to-face. Atoms, bonds and cell
+    edges shared between neighbouring cells are de-duplicated by rounded
+    coordinate, so corners/faces aren't drawn on top of each other."""
+    edges = edges or []
+    bonds = bonds or []
+    pts = [p for e in edges for p in (e[0], e[1])]
+    if pts:
+        ax = (max(p[0] for p in pts) - min(p[0] for p in pts)) or 1.0
+        ay = (max(p[1] for p in pts) - min(p[1] for p in pts)) or 1.0
+        az = (max(p[2] for p in pts) - min(p[2] for p in pts)) or 1.0
+    else:                                        # no wireframe: use atom span
+        ax = (max(a[1] for a in atoms) - min(a[1] for a in atoms)) or 1.0
+        ay = (max(a[2] for a in atoms) - min(a[2] for a in atoms)) or 1.0
+        az = (max(a[3] for a in atoms) - min(a[3] for a in atoms)) or 1.0
+
+    def key(x, y, z):
+        return (round(x, 3), round(y, 3), round(z, 3))
+
+    new_atoms, new_bonds, new_edges = [], [], []
+    seen_atom, seen_bond, seen_edge = {}, set(), set()
+    for i in range(nx):
+        for j in range(ny):
+            for k in range(nz):
+                ox, oy, oz = i * ax, j * ay, k * az
+                remap = {}
+                for oi, (el, x, y, z) in enumerate(atoms):
+                    ak = key(x + ox, y + oy, z + oz)
+                    if ak not in seen_atom:
+                        seen_atom[ak] = len(new_atoms)
+                        new_atoms.append((el, x + ox, y + oy, z + oz))
+                    remap[oi] = seen_atom[ak]
+                for bi, bj, bo in bonds:
+                    a, b = remap[bi], remap[bj]
+                    bk = (min(a, b), max(a, b), bo)
+                    if bk not in seen_bond:
+                        seen_bond.add(bk)
+                        new_bonds.append((a, b, bo))
+                for e in edges:
+                    style = e[2] if len(e) > 2 else "solid"
+                    p1 = (e[0][0] + ox, e[0][1] + oy, e[0][2] + oz)
+                    p2 = (e[1][0] + ox, e[1][1] + oy, e[1][2] + oz)
+                    ek = (frozenset((key(*p1), key(*p2))), style)
+                    if ek not in seen_edge:
+                        seen_edge.add(ek)
+                        new_edges.append((p1, p2, style))
+    return new_atoms, new_bonds, new_edges
+
+
 def default_bond(name):
     """The default bond spread for *name* (crystals stay at true spacing)."""
     return 1.0 if is_crystal(name) else DEFAULT_BOND
 
 
-def model_data(name):
+def model_data(name, cells=None):
     """Return ``(atoms, bonds, edges, rscale)`` for a named model.
 
     The 3D data behind a model, so the viewer can re-project it at any
-    orientation. Polymers share the zig-zag backbone builder."""
+    orientation. Polymers share the zig-zag backbone builder. A crystal can
+    be tiled into an ``nx×ny×nz`` supercell by passing *cells* (stacked unit
+    cells)."""
     if name in _POLYMERS:
         atoms, bonds, edges = _polymer_atoms(_POLYMER_LEN, _POLYMERS[name])
         return atoms, bonds, edges, 0.92
     builder, rscale = _MODELS[name]
     atoms, bonds, edges = builder()
+    if cells and can_stack(name) and tuple(cells) != (1, 1, 1):
+        atoms, bonds, edges = _supercell(atoms, bonds, edges, *cells)
     return atoms, bonds, edges, rscale
 
 
-def build_specs_oriented(name, w, h, az=None, el=None, bond=None):
+def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None):
     """Shape specs for model *name* in a (w, h) box, viewed at (az, el)
-    radians, with bond spread *bond* (defaults per model)."""
-    atoms, bonds, edges, rscale = model_data(name)
+    radians, with bond spread *bond* (defaults per model). *cells* tiles a
+    crystal into a stacked supercell."""
+    atoms, bonds, edges, rscale = model_data(name, cells)
     return _model(atoms, bonds, w, h, edges=edges, rscale=rscale,
                   az=DEFAULT_AZ if az is None else az,
                   el=DEFAULT_EL if el is None else el,

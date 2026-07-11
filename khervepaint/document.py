@@ -214,6 +214,8 @@ def item_to_dict(item) -> dict:
             d["model_bond"] = getattr(item, "mol_bond", None)
             d["model_box"] = getattr(item, "mol_box", None)
             d["model_repr"] = getattr(item, "mol_repr", None)
+            if getattr(item, "mol_cells", None):   # stacked supercell counts
+                d["model_cells"] = list(item.mol_cells)
             if getattr(item, "mol_atoms", None):   # hand-built structure
                 d["model_atoms"] = item.mol_atoms
                 d["model_bonds"] = item.mol_bonds
@@ -285,6 +287,8 @@ def item_from_dict(d: dict):
             item.mol_bond = d.get("model_bond")
             item.mol_box = d.get("model_box")
             item.mol_repr = d.get("model_repr", "3d")
+            cells = d.get("model_cells")
+            item.mol_cells = tuple(cells) if cells else None
             item.mol_atoms = d.get("model_atoms")
             item.mol_bonds = d.get("model_bonds")
     else:

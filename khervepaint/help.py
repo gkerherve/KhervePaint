@@ -362,7 +362,10 @@ ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
 up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
 (simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl).
 <b>Double-click</b> a placed model to <b>rotate it in 3D on the canvas</b>
-(drag to spin, Esc to finish). Right-click ▸ <b>Molecule builder…</b> opens
+(drag to spin, Esc to finish). Right-click a crystal ▸ <b>Stack unit
+cells…</b> to tile it into an <i>a×b×c</i> <b>supercell</b> (repeat the unit
+cell along each axis; 1×1×1 restores the single cell). Right-click ▸
+<b>Molecule builder…</b> opens
 a window with a cube-face view toolbar, a bond-length slider and an atom
 palette: click a sphere to select it (the status shows its free bonds —
 the builder tracks each element's valence), click an element to bond a new

@@ -397,6 +397,33 @@ class PropertiesDialog(QDialog):
         item.set_label_color(self.label_color.color())
 
 
+def stack_cells_dialog(window, item):
+    """Ask for the ``a×b×c`` unit-cell repeats and rebuild *item* as that
+    supercell (stacked unit cells). Prefilled from the item's current counts;
+    1×1×1 restores the single cell."""
+    cells = getattr(item, "mol_cells", None) or (1, 1, 1)
+    dlg = QDialog(window)
+    dlg.setWindowTitle("Stack unit cells")
+    layout = QVBoxLayout(dlg)
+    layout.addWidget(QLabel("Repeat the unit cell along each axis:"))
+    form = QFormLayout()
+    spins = []
+    for axis, val in zip(("a (→ x)", "b (→ y)", "c (→ z)"), cells):
+        sp = QSpinBox(dlg)
+        sp.setRange(1, 6)
+        sp.setValue(int(val))
+        form.addRow(axis, sp)
+        spins.append(sp)
+    layout.addLayout(form)
+    buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+                               parent=dlg)
+    buttons.accepted.connect(dlg.accept)
+    buttons.rejected.connect(dlg.reject)
+    layout.addWidget(buttons)
+    if dlg.exec_() == QDialog.Accepted:
+        window.scene.set_cells(item, *(s.value() for s in spins))
+
+
 def build_context_menu(window, item) -> QMenu:
     """Right-click menu for *item*, wired to *window* (the MainWindow)."""
     menu = QMenu(window)
@@ -407,12 +434,15 @@ def build_context_menu(window, item) -> QMenu:
                        lambda: window.view.open_molecule_builder(item))
         menu.addAction(icons.icon("mdi.rotate-3d-variant"), "Rotate in 3D",
                        lambda: window.scene.enter_orbit_mode(item))
-        from . import molrepr
+        from . import molrepr, molecules
         show_as = menu.addMenu(icons.icon("mdi.eye-outline"), "Show as")
         for mode in molrepr.MODES:
             show_as.addAction(
                 molrepr.MODE_LABELS[mode],
                 lambda _=False, mo=mode: window.scene.set_representation(item, mo))
+        if molecules.can_stack(item.mol_name):
+            menu.addAction(icons.icon("mdi.cube-outline"), "Stack unit cells…",
+                           lambda: stack_cells_dialog(window, item))
     if isinstance(item, ImageItem):
         menu.addAction(icons.icon("mdi.crop"), "Crop image",
                        lambda: window.crop_image(item))

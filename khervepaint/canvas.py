@@ -1552,10 +1552,11 @@ class PaintScene(QGraphicsScene):
 
     @staticmethod
     def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None,
-                   repr="3d"):
+                   repr="3d", cells=None):
         """Stamp a group with its model identity (name + view + bond spread +
-        stable build box + representation, and the raw atoms/bonds when the
-        structure was hand-built)."""
+        stable build box + representation, the raw atoms/bonds when the
+        structure was hand-built, and the ``(nx, ny, nz)`` supercell counts
+        when unit cells have been stacked)."""
         item.mol_name = name
         item.mol_az = az
         item.mol_el = el
@@ -1564,6 +1565,7 @@ class PaintScene(QGraphicsScene):
         item.mol_bonds = bonds
         item.mol_box = box
         item.mol_repr = repr
+        item.mol_cells = cells
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1614,12 +1616,14 @@ class PaintScene(QGraphicsScene):
         return top
 
     def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
-                       mode=None, commit=True):
+                       mode=None, cells="keep", commit=True):
         """Rebuild a placed molecule/crystal *item* at view angles (az, el),
         bond spread *bond* and representation *mode* (3d / structural / lewis
         / condensed), preserving its centre and footprint. When *atoms*/
         *bonds* are given the structure is replaced (hand-built in the
-        builder). Returns the new top-level item. Undoable when *commit*."""
+        builder); *cells* re-tiles a crystal supercell (``"keep"`` reuses the
+        item's current counts). Returns the new top-level item. Undoable when
+        *commit*."""
         name = getattr(item, "mol_name", None)
         if name is None:
             return None
@@ -1629,6 +1633,8 @@ class PaintScene(QGraphicsScene):
             bond = getattr(item, "mol_bond", None) or molecules.default_bond(name)
         if mode is None:
             mode = getattr(item, "mol_repr", None) or "3d"
+        if cells == "keep":
+            cells = getattr(item, "mol_cells", None)
         if atoms is None:
             atoms = getattr(item, "mol_atoms", None)
             bonds = getattr(item, "mol_bonds", None)
@@ -1645,9 +1651,10 @@ class PaintScene(QGraphicsScene):
                                                    box, az, el, bond)
             else:
                 specs = molecules.build_specs_oriented(name, box, box, az, el,
-                                                       bond)
+                                                       bond, cells=cells)
         else:                                     # 2D chemistry diagram
-            a2, b2 = (atoms, bonds) if atoms else molecules.model_data(name)[:2]
+            a2, b2 = ((atoms, bonds) if atoms
+                      else molecules.model_data(name, cells)[:2])
             specs = molrepr.representation_specs(mode, a2, b2, box, box)
         new_items = [it for it in (_spec_to_item(s) for s in specs)
                      if it is not None]
@@ -1657,7 +1664,7 @@ class PaintScene(QGraphicsScene):
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
         self._tag_model(top, name, az, el, bond, atoms, bonds, box=box,
-                        repr=mode)
+                        repr=mode, cells=cells)
         if commit:
             self.changed_by_user.emit()
         return top
@@ -1667,6 +1674,29 @@ class PaintScene(QGraphicsScene):
         and-stick, structural / Lewis formula, or condensed formula)."""
         self.reorient_model(item, getattr(item, "mol_az", None),
                             getattr(item, "mol_el", None), mode=mode)
+
+    def set_cells(self, item, nx, ny, nz):
+        """Rebuild a placed crystal *item* as an ``nx×ny×nz`` supercell —
+        stacking unit cells face-to-face — keeping it a tagged, rotatable
+        model. (1, 1, 1) restores the single unit cell. Undoable."""
+        from . import molecules
+        name = getattr(item, "mol_name", None)
+        if not name or not molecules.can_stack(name):
+            return None
+        cells = (int(nx), int(ny), int(nz))
+        if cells == (1, 1, 1):
+            cells = None
+        # Recompute the base single-cell box from the model's footprint, then
+        # magnify by the stack factor so the drawn spheres keep a constant
+        # size as the cell count grows (bigger span in a proportionally
+        # bigger box → same on-screen ball radius).
+        w_mm, h_mm = molecules.size_mm(name)
+        ref = getattr(molecules, "REFERENCE_MM", 130.0)
+        scale = (self.sceneRect().width() or 1) / ref
+        base = max(w_mm * scale, h_mm * scale)
+        item.mol_box = base * molecules.stack_factor(cells)
+        return self.reorient_model(item, getattr(item, "mol_az", None),
+                                   getattr(item, "mol_el", None), cells=cells)
 
     # ---------------------------------------------- on-canvas 3D rotation
     def enter_orbit_mode(self, item):

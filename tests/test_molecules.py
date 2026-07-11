@@ -435,6 +435,58 @@ def test_model_tag_round_trips_json_and_svg(scene, tmp_path):
     assert _find_model(restored2) == "fcc"
 
 
+def test_supercell_tiles_and_dedups():
+    a1, b1, e1, _ = molecules.model_data("simple_cubic")
+    a2, b2, e2, _ = molecules.model_data("simple_cubic", (2, 2, 2))
+    # 8 shared corners tile to a 3x3x3 lattice of unique points, not 8*8
+    assert len(a1) == 8 and len(a2) == 27
+    assert len(e2) > len(e1)                       # more cube edges
+    # bcc keeps its interior body-centre atom per cell (2 cells -> 2 extra)
+    ab, _, _, _ = molecules.model_data("bcc", (2, 1, 1))
+    assert len(ab) == 14                           # 12 corners + 2 centres
+
+
+def test_can_stack_gates_to_cubic_crystals():
+    assert molecules.can_stack("nacl") and molecules.can_stack("diamond")
+    assert not molecules.can_stack("hcp")          # hexagonal prism
+    assert not molecules.can_stack("water")        # not a crystal
+
+
+def test_set_cells_stacks_and_is_undoable(scene):
+    scene.place_mol_element("simple_cubic", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    base_box = top.mol_box
+    fired = []
+    scene.changed_by_user.connect(lambda: fired.append(1))
+    scene.set_cells(top, 2, 2, 2)
+    (new,) = scene.selectedItems()
+    assert new.mol_name == "simple_cubic"
+    assert new.mol_cells == (2, 2, 2)
+    assert new.mol_box > base_box                  # box grows with cell count
+    assert fired == [1]                            # one undoable gesture
+    # 1x1x1 restores the single cell (cells cleared)
+    scene.set_cells(new, 1, 1, 1)
+    (single,) = scene.selectedItems()
+    assert single.mol_cells is None
+
+
+def test_supercell_round_trips_json_and_svg(scene, tmp_path):
+    scene.place_mol_element("nacl", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    scene.set_cells(top, 2, 1, 3)
+    data = document.scene_to_dict(scene)
+    restored = PaintScene(600, 480)
+    document.dict_to_scene(data, restored)
+    g = next(i for i in restored.items() if getattr(i, "mol_name", None))
+    assert g.mol_cells == (2, 1, 3)
+    path = str(tmp_path / "super.svg")
+    svgio.save_svg(scene, path)
+    r2 = PaintScene(600, 480)
+    svgio.load_svg(r2, path)
+    g2 = next(i for i in r2.items() if getattr(i, "mol_name", None))
+    assert g2.mol_cells == (2, 1, 3)
+
+
 def test_custom_structure_round_trips(scene, tmp_path):
     scene.place_mol_element("methane", QPointF(300, 240))
     (top,) = scene.selectedItems()
