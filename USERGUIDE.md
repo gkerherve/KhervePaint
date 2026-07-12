@@ -337,6 +337,10 @@ Five further dropdowns cover general diagrams and more science:
   **perovskite** (ABX₃ octahedron), **zinc blende** and **fluorite**,
   drawn as open **wireframe unit cells** (thick cube edges plus dashed
   diagonals through the centring atoms). Each drops as an editable group.
+  Atoms that are the **same element but sit on a hidden lattice site** — a
+  BCC body-centre, the FCC/diamond face-centres, the diamond interior — are
+  **colour-coded** so they stand out instead of vanishing against identical
+  corners.
 
   **Double-click** a placed molecule or crystal to **rotate it in 3D right
   on the canvas** — grab and drag to spin it; press **Esc** (or click off

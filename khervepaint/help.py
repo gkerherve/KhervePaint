@@ -360,7 +360,10 @@ blue, S yellow, Cl green…) with single/double/triple bonds. Simple
 molecules (water, methane, CO₂), alcohols &amp; acids (methanol,
 ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
 up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
-(simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl).
+(simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl). Same-element atoms
+on a hidden lattice site (a BCC body-centre, the FCC/diamond face-centres,
+the diamond interior) are <b>colour-coded</b> so they don't disappear
+against identical corners.
 <b>Double-click</b> a placed model to <b>rotate it in 3D on the canvas</b>
 (drag to spin, Esc to finish). Right-click a crystal ▸ <b>Stack unit
 cells…</b> to tile it into an <i>a×b×c</i> <b>supercell</b> (repeat the unit

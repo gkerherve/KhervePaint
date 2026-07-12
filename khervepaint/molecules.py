@@ -54,6 +54,18 @@ _BOND_COLOR = "#6b6f76"
 _FRAME_COLOR = "#202020"         # solid unit-cell cube edges (thick, dark)
 _EDGE_COLOR = "#555555"          # dashed body/face diagonals
 
+#: Distinct tints for atoms that are the SAME element but sit on a different
+#: lattice site (a BCC body-centre, the FCC face-centres, the diamond
+#: sub-lattices, the HCP middle layer). Without them the interior balls
+#: vanish against identical-colour corners; the corners keep the element's
+#: CPK colour so the crystal still reads as Fe/C/Al.
+SITE_COLORS = {
+    "body": "#2f6fed",           # body-centre        → blue
+    "face": "#f5a623",           # face-centres       → amber
+    "inner": "#e5484d",          # interior tetrahedra → rose
+    "mid": "#12b5b0",            # HCP middle layer   → teal
+}
+
 # ------------------------------------------------------------ colour helpers
 def _mix(a, b, t):
     """Blend hex colour *a* toward *b* by fraction *t* (0..1)."""
@@ -64,13 +76,15 @@ def _mix(a, b, t):
     return "#%02x%02x%02x" % (r, g, bl)
 
 
-def atom_specs(cx, cy, r, element, label=False):
+def atom_specs(cx, cy, r, element, label=False, color=None):
     """A single lit-sphere spec for *element* centred at (cx, cy), radius r.
 
     The sphere is a circle filled with a `sun` gradient: a near-white
     highlight at the top-left fading to a darkened rim, so it reads as a
-    3D ball in the element's CPK colour."""
-    body = ATOM_COLORS.get(element, "#c8c8c8")
+    3D ball in the element's CPK colour. Pass *color* to override the body
+    tone (used to distinguish same-element atoms on different lattice
+    sites)."""
+    body = color or ATOM_COLORS.get(element, "#c8c8c8")
     hi = _mix(body, "#ffffff", 0.62)
     rim = _mix(body, "#000000", 0.40)
     stroke = _mix(body, "#000000", 0.52)
@@ -171,7 +185,8 @@ def _spread(atoms, edges, factor, centroid=None):
     def sc(p):
         return (cx + (p[0] - cx) * factor, cy + (p[1] - cy) * factor,
                 cz + (p[2] - cz) * factor)
-    at = [(a[0], *sc((a[1], a[2], a[3]))) for a in atoms]
+    # keep any trailing slots (e.g. a per-atom site colour) intact
+    at = [(a[0], *sc((a[1], a[2], a[3])), *a[4:]) for a in atoms]
     ed = None
     if edges:
         ed = [(sc(e[0]), sc(e[1]), e[2] if len(e) > 2 else "solid")
@@ -246,7 +261,10 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
                             T(proj[j][0], proj[j][1]), order, width=bw)
     for idx in sorted(range(len(atoms)), key=lambda k: proj[k][2]):
         cx, cy = T(proj[idx][0], proj[idx][1])
-        a_specs = atom_specs(cx, cy, rad[idx] * s, atoms[idx][0], label=labels)
+        atom = atoms[idx]
+        color = atom[4] if len(atom) > 4 else None
+        a_specs = atom_specs(cx, cy, rad[idx] * s, atom[0], label=labels,
+                             color=color)
         if tag_atoms and a_specs:
             a_specs[0]["_atom"] = idx        # for builder hit-testing
         specs += a_specs
@@ -260,8 +278,9 @@ _TETRA = [(_INV3, _INV3, _INV3), (_INV3, -_INV3, -_INV3),
           (-_INV3, _INV3, -_INV3), (-_INV3, -_INV3, _INV3)]
 
 
-def _add(atoms, el, p):
-    atoms.append((el, p[0], p[1], p[2]))
+def _add(atoms, el, p, color=None):
+    atoms.append((el, p[0], p[1], p[2]) if color is None
+                 else (el, p[0], p[1], p[2], color))
     return len(atoms) - 1
 
 
@@ -662,8 +681,14 @@ def _body_diagonals(a):
 
 
 def _crystal(el_at, a=2.0, extra_edges=None, bonds=None):
-    """Build a crystal model from ``el_at`` = list of (element, (x,y,z))."""
-    atoms = [(e, p[0], p[1], p[2]) for e, p in el_at]
+    """Build a crystal model from ``el_at`` = list of ``(element, (x,y,z))``
+    or ``(element, (x,y,z), color)`` — *color* tints atoms of the same
+    element that sit on a distinct lattice site."""
+    atoms = []
+    for entry in el_at:
+        el, p = entry[0], entry[1]
+        color = entry[2] if len(entry) > 2 else None
+        _add(atoms, el, p, color)
     edges = _cube_edges(a) + (extra_edges or [])
     return atoms, (bonds or []), edges
 
@@ -676,7 +701,7 @@ def _xtal_simple_cubic():
 def _xtal_bcc():
     a = 3.0
     pts = [("Fe", p) for p in _cube_corners(a)]
-    pts.append(("Fe", (a / 2, a / 2, a / 2)))
+    pts.append(("Fe", (a / 2, a / 2, a / 2), SITE_COLORS["body"]))
     return _crystal(pts, a, extra_edges=_body_diagonals(a))
 
 
@@ -685,7 +710,7 @@ def _xtal_fcc():
     pts = [("Al", p) for p in _cube_corners(a)]
     faces = [(a / 2, a / 2, 0), (a / 2, a / 2, a), (a / 2, 0, a / 2),
              (a / 2, a, a / 2), (0, a / 2, a / 2), (a, a / 2, a / 2)]
-    pts += [("Al", p) for p in faces]
+    pts += [("Al", p, SITE_COLORS["face"]) for p in faces]
     # dashed face diagonals (each passes through a face-centre atom)
     c = _cube_corners(a)
     fdiag = [(c[0], c[2], "dash"), (c[4], c[6], "dash"),
@@ -705,7 +730,7 @@ def _xtal_hcp():
     for k in range(3):
         ang = math.radians(30 + k * 120)
         _add(atoms, "Mg", (r * 0.58 * math.cos(ang),
-                           r * 0.58 * math.sin(ang), hz))
+                           r * 0.58 * math.sin(ang), hz), SITE_COLORS["mid"])
     # hexagon prism edges
     edges = []
     top = [(r * math.cos(math.radians(k * 60)),
@@ -728,10 +753,10 @@ def _xtal_diamond():
     faces = [(a / 2, a / 2, 0), (a / 2, a / 2, a), (a / 2, 0, a / 2),
              (a / 2, a, a / 2), (0, a / 2, a / 2), (a, a / 2, a / 2)]
     for p in faces:
-        _add(atoms, "C", p)
+        _add(atoms, "C", p, SITE_COLORS["face"])
     inner = [(a / 4, a / 4, a / 4), (3 * a / 4, 3 * a / 4, a / 4),
              (3 * a / 4, a / 4, 3 * a / 4), (a / 4, 3 * a / 4, 3 * a / 4)]
-    inner_idx = [_add(atoms, "C", p) for p in inner]
+    inner_idx = [_add(atoms, "C", p, SITE_COLORS["inner"]) for p in inner]
     # bond each interior atom to its 4 nearest lattice atoms
     bonds = []
     for ii in inner_idx:
@@ -789,7 +814,7 @@ def _diamond_like(el_lattice, el_inner, a=4.0):
     for p in _cube_corners(a):
         _add(atoms, el_lattice, p)
     for p in _face_centers(a):
-        _add(atoms, el_lattice, p)
+        _add(atoms, el_lattice, p, SITE_COLORS["face"])
     inner = [(a / 4, a / 4, a / 4), (3 * a / 4, 3 * a / 4, a / 4),
              (3 * a / 4, a / 4, 3 * a / 4), (a / 4, 3 * a / 4, 3 * a / 4)]
     inner_idx = [_add(atoms, el_inner, p) for p in inner]
@@ -815,8 +840,10 @@ def _xtal_fluorite():
     tetrahedral holes."""
     a = 4.0
     atoms = []
-    for p in _cube_corners(a) + _face_centers(a):
+    for p in _cube_corners(a):
         _add(atoms, "Ca", p)
+    for p in _face_centers(a):
+        _add(atoms, "Ca", p, SITE_COLORS["face"])
     for x in (a / 4, 3 * a / 4):
         for y in (a / 4, 3 * a / 4):
             for z in (a / 4, 3 * a / 4):
@@ -1014,11 +1041,13 @@ def _supercell(atoms, bonds, edges, nx, ny, nz):
             for k in range(nz):
                 ox, oy, oz = i * ax, j * ay, k * az
                 remap = {}
-                for oi, (el, x, y, z) in enumerate(atoms):
+                for oi, atom in enumerate(atoms):
+                    el, x, y, z = atom[0], atom[1], atom[2], atom[3]
                     ak = key(x + ox, y + oy, z + oz)
                     if ak not in seen_atom:
                         seen_atom[ak] = len(new_atoms)
-                        new_atoms.append((el, x + ox, y + oy, z + oz))
+                        new_atoms.append((el, x + ox, y + oy, z + oz)
+                                         + tuple(atom[4:]))
                     remap[oi] = seen_atom[ak]
                 for bi, bj, bo in bonds:
                     a, b = remap[bi], remap[bj]

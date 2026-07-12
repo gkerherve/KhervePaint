@@ -144,7 +144,15 @@ into a new module and import.
                        Atoms are **lit spheres** (a circle with a `sun`
                        gradient in the element's CPK colour, `ATOM_COLORS`/
                        `ATOM_RADII`); bonds are grey sticks (single/double/
-                       triple). The 3D look comes from an isometric `_proj`
+                       triple). An atom tuple may carry an optional 5th slot
+                       — a per-atom body-colour override (`atom_specs(color=)`,
+                       preserved through `_spread`/`_supercell`) — used to
+                       tint same-element atoms on a hidden lattice site
+                       (`SITE_COLORS`: BCC body-centre, FCC/diamond
+                       face-centres, diamond interior) so they don't vanish
+                       against identical corners. Crystals regenerate from
+                       their builder each draw, so the tints need no
+                       persistence. The 3D look comes from an isometric `_proj`
                        + depth-sorted `_model(atoms, bonds, edges)`, so
                        structures read as 3D while staying ordinary editable
                        gradient-filled items. Covers dozens of molecules

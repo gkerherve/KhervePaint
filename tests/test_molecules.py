@@ -446,6 +446,31 @@ def test_supercell_tiles_and_dedups():
     assert len(ab) == 14                           # 12 corners + 2 centres
 
 
+def test_site_colors_distinguish_same_element_atoms():
+    # BCC: 8 corner Fe (element colour) + 1 body-centre with a distinct tint
+    a, _b, _e, _r = molecules.model_data("bcc")
+    tinted = [x for x in a if len(x) > 4]
+    assert len(tinted) == 1 and tinted[0][4] == molecules.SITE_COLORS["body"]
+    # Diamond: three sub-lattices → corners (untinted) + face + interior tints
+    ad, _, _, _ = molecules.model_data("diamond")
+    tints = {x[4] for x in ad if len(x) > 4}
+    assert molecules.SITE_COLORS["face"] in tints
+    assert molecules.SITE_COLORS["inner"] in tints
+    assert any(len(x) == 4 for x in ad)             # corners keep element colour
+    # the tint drives the sphere's sun-gradient body colour
+    spec = molecules.atom_specs(0, 0, 10, "Fe",
+                                color=molecules.SITE_COLORS["body"])[0]
+    assert spec["fill"]["kind"] == "sun"
+    assert spec["fill"]["c1"] != molecules.atom_specs(0, 0, 10, "Fe")[0]["fill"]["c1"]
+
+
+def test_site_color_survives_supercell():
+    a2, _, _, _ = molecules.model_data("bcc", (2, 1, 1))
+    centres = [x for x in a2 if len(x) > 4
+               and x[4] == molecules.SITE_COLORS["body"]]
+    assert len(centres) == 2                         # one body-centre per cell
+
+
 def test_can_stack_gates_to_cubic_crystals():
     assert molecules.can_stack("nacl") and molecules.can_stack("diamond")
     assert not molecules.can_stack("hcp")          # hexagonal prism
