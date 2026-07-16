@@ -21,6 +21,14 @@ _ROOT = os.path.dirname(_HERE)                    # project root
 
 datas, binaries, hiddenimports = [], [], []
 
+# Bake the resolved version into the frozen build — a PyInstaller bundle
+# never ships .git, so without this khervepaint/_version.py would fall
+# back to the placeholder "0.1.0". build.py (or CI) writes this file with
+# the real git-derived version just before invoking PyInstaller.
+_version_file = os.path.join(_ROOT, "khervepaint", "VERSION")
+if os.path.isfile(_version_file):
+    datas.append((_version_file, "khervepaint"))
+
 # The whole app package (some submodules are imported lazily inside
 # functions, e.g. the spec-library palettes — pull them all in explicitly).
 hiddenimports += collect_submodules("khervepaint")
