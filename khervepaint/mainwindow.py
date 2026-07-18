@@ -68,6 +68,22 @@ DIRECT_TOOLS = [
     (ARROW, "mdi.arrow-top-right", "Arrow", "A"),
 ]
 
+#: Chemistry tools shared by the toolbar dropdown and the context menu.
+CHEM_BOND_TOOLS = [
+    (CHEM_SINGLE, "Single bond"),
+    (CHEM_CHAIN, "Chain (connected bonds)"),
+    (CHEM_DOUBLE, "Double bond"),
+    (CHEM_TRIPLE, "Triple bond"),
+    (CHEM_WEDGE, "Wedge (up)"),
+    (CHEM_HASH, "Hash (down)"),
+    (CHEM_HBOND, "Hydrogen bond (dashed)"),
+]
+CHEM_RING_TOOLS = [
+    (CHEM_BENZENE, "Benzene (aromatic)"),
+    (CHEM_CYCLOHEXANE, "Cyclohexane"),
+    (CHEM_CYCLOPENTANE, "Cyclopentane"),
+]
+
 #: Ruler dropdown: orientation choices and end-cap style choices, each
 #: (key, label). Picking any activates the dimension tool.
 DIM_ORIENTATIONS = [("aligned", "Aligned (free angle)"),
@@ -190,6 +206,7 @@ class MainWindow(QMainWindow):
             lambda p: self.statusBar().showMessage(
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
         self.view.item_context.connect(self._show_item_menu)
+        self.view.canvas_context.connect(self._show_canvas_menu)
         self.view.content_dropped.connect(self._on_drop)
         self.scene.color_picked.connect(self._on_color_picked)
 
@@ -405,18 +422,10 @@ class MainWindow(QMainWindow):
         """Fill *menu* with the chemistry tools (shared between the left
         toolbar dropdown and the Library menu)."""
         menu.addSection("Bonds")
-        for tool, label in ((CHEM_SINGLE, "Single bond"),
-                            (CHEM_CHAIN, "Chain (connected bonds)"),
-                            (CHEM_DOUBLE, "Double bond"),
-                            (CHEM_TRIPLE, "Triple bond"),
-                            (CHEM_WEDGE, "Wedge (up)"),
-                            (CHEM_HASH, "Hash (down)"),
-                            (CHEM_HBOND, "Hydrogen bond (dashed)")):
+        for tool, label in CHEM_BOND_TOOLS:
             self._add_grouped_tool(menu, tool, label)
         menu.addSection("Rings")
-        for tool, label in ((CHEM_BENZENE, "Benzene (aromatic)"),
-                            (CHEM_CYCLOHEXANE, "Cyclohexane"),
-                            (CHEM_CYCLOPENTANE, "Cyclopentane")):
+        for tool, label in CHEM_RING_TOOLS:
             self._add_grouped_tool(menu, tool, label)
         atoms = menu.addMenu("Atom / group label")
         for sym in chemistry.ATOMS:
@@ -1094,6 +1103,64 @@ class MainWindow(QMainWindow):
     def _show_item_menu(self, item, global_pos):
         from .properties import build_context_menu
         build_context_menu(self, item).exec_(global_pos)
+
+    def _show_canvas_menu(self, scene_pos, global_pos):
+        """Right-click on empty canvas: pop up the tools + library menu."""
+        self._build_canvas_menu(scene_pos).exec_(global_pos)
+
+    def _build_canvas_menu(self, scene_pos) -> QMenu:
+        """The empty-canvas menu: quick access to every drawing tool and
+        every symbol-library palette. A library pick drops that symbol at
+        the click point (grouped, selected, undoable)."""
+        menu = QMenu(self)
+        tools = menu.addMenu(icons.icon("mdi.toolbox-outline"), "Tools")
+        for tool, glyph, label, _sc in DIRECT_TOOLS:
+            tools.addAction(icons.icon(glyph), label,
+                            lambda _=False, t=tool: self._activate_tool(t))
+        tools.addAction(icons.icon("mdi.format-text"), "Text",
+                        lambda: self._activate_tool(TEXT))
+        tools.addAction(icons.icon("mdi.ruler"), "Dimension",
+                        self._activate_dimension)
+        tools.addSeparator()
+        for label, items in SHAPE_GROUPS:
+            sub = tools.addMenu(label)
+            for tool, glyph, lbl, _sc in items:
+                sub.addAction(self._tool_icon(tool, glyph), lbl,
+                              lambda _=False, t=tool: self._activate_tool(t))
+        chem = tools.addMenu(icons.icon("mdi.molecule"), "Chemistry")
+        for tool, lbl in CHEM_BOND_TOOLS + CHEM_RING_TOOLS:
+            chem.addAction(lbl,
+                           lambda _=False, t=tool: self._activate_tool(t))
+        atoms = chem.addMenu("Atom / group label")
+        for sym in chemistry.ATOMS:
+            atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
+
+        menu.addSeparator()
+        lib = menu.addMenu(icons.icon("mdi.shape-plus-outline"),
+                           "Insert from library")
+        for title, glyph, _tip, module, _attr, _tool in SYMBOL_LIBRARIES:
+            sub = lib.addMenu(icons.icon(glyph), title)
+            self._populate_symbol_menu(
+                sub, module,
+                lambda name, m=module: self._insert_library_item(m, name,
+                                                                 scene_pos))
+        return menu
+
+    def _activate_tool(self, tool):
+        """Switch to *tool*, keeping the left toolbar's lit button in sync by
+        triggering that tool's existing action when it has one."""
+        for act in self._tool_group.actions():
+            if act.data() == tool:
+                act.trigger()
+                return
+        self._set_tool(tool)
+
+    def _insert_library_item(self, module, name, scene_pos):
+        """Drop a symbol-library element at *scene_pos* on the canvas."""
+        if module is molecules:
+            self.scene.place_mol_element(name, scene_pos)
+        else:
+            self.scene._place_symbol(module, name, scene_pos)
 
     def edit_item(self, item):
         from .properties import PropertiesDialog

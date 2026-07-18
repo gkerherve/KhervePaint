@@ -122,10 +122,15 @@ Right-click any item for its menu: **Edit properties…**, Duplicate,
 Delete, Flip, Bring to front / Send to back, Group / Ungroup, Explode,
 and (for images) Crop and Remove background.
 
+**Right-click empty canvas** for a quick menu of every drawing **tool**
+and every symbol-**library** palette — picking a library element drops
+it right where you clicked.
+
 The **properties dialog** edits everything about an item — position,
 rotation, opacity, stroke and fill, the exact geometry, and for text the
 content and font. Shapes can also carry a **text label** drawn centred
-inside them (set it in the Label section).
+inside them (set it in the Label section). Use **Apply** to preview
+changes live on the canvas without closing the dialog.
 
 ## 6. Arrange: group, order, mirror, explode
 

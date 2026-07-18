@@ -196,10 +196,14 @@ into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
 <p>Right-click any item for its menu: <b>Edit properties…</b>,
 Duplicate, Delete, Flip, Bring to front / Send to back, Group / Ungroup,
 Explode, and (for images) Crop and Remove background.</p>
+<p><b>Right-click empty canvas</b> for a quick menu of every drawing
+<b>tool</b> and every symbol-<b>library</b> palette — picking a library
+element drops it right where you clicked.</p>
 <p>The <b>properties dialog</b> edits everything about an item — position,
 rotation, opacity, stroke and fill, the exact geometry, and for text the
 content and font. Shapes can also carry a <b>text label</b> drawn centred
-inside them (set it in the Label section).</p>
+inside them (set it in the Label section). Use <b>Apply</b> to preview
+changes live on the canvas without closing the dialog.</p>
 
 <h2>6 · Arrange: group, order, mirror, explode</h2>
 <ul>

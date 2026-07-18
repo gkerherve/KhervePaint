@@ -1474,6 +1474,30 @@ def test_properties_dialog_apply_live(app):
     assert emitted                            # undoable snapshot pushed
 
 
+def test_canvas_menu_inserts_library_symbol(window):
+    """The empty-canvas menu can arm a drawing tool and drop a library
+    symbol at the click point (grouped, undoable)."""
+    from khervepaint.canvas import LINE
+    from khervepaint import labware
+    win = window
+    before = len(win.scene.vector_items())
+    # Arm a tool the way a Tools-menu pick would.
+    win._activate_tool(LINE)
+    assert win.scene.tool == LINE
+    # Insert a glassware beaker at a chosen point; it appears on the canvas.
+    win._insert_library_item(labware, "beaker", QPointF(120, 90))
+    added = win.scene.vector_items()
+    assert len(added) == before + 1
+    top = added[-1]
+    assert top.sceneBoundingRect().contains(QPointF(120, 90))
+
+    # The menu itself builds with both a Tools and a library section.
+    menu = win._build_canvas_menu(QPointF(0, 0))
+    labels = [a.text() for a in menu.actions() if a.text()]
+    assert "Tools" in labels
+    assert "Insert from library" in labels
+
+
 def test_context_menu_builds(window):
     from khervepaint.properties import build_context_menu
     win = window

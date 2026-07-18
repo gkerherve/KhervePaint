@@ -2043,6 +2043,8 @@ class PaintView(QGraphicsView):
     cursor_moved = pyqtSignal(QPointF)
     #: (top-level item, global QPoint) when an item is right-clicked.
     item_context = pyqtSignal(object, object)
+    #: (scene QPointF, global QPoint) when empty canvas is right-clicked.
+    canvas_context = pyqtSignal(object, object)
     #: emitted with the new zoom factor (1.0 == 100%) whenever it changes.
     zoom_changed = pyqtSignal(float)
     #: (list of local file paths, dropped QImage or None, scene pos) on drop.
@@ -2108,7 +2110,9 @@ class PaintView(QGraphicsView):
         if self.scene().tool != POINTER:
             return
         item = self._pick_item(event.pos())
-        if item is None:
+        if item is None:                       # empty canvas: tools + library
+            self.canvas_context.emit(self.mapToScene(event.pos()),
+                                     event.globalPos())
             return
         if not item.isSelected():
             self.scene().clearSelection()
