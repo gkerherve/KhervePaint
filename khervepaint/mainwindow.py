@@ -1109,9 +1109,9 @@ class MainWindow(QMainWindow):
         self._build_canvas_menu(scene_pos).exec_(global_pos)
 
     def _build_canvas_menu(self, scene_pos) -> QMenu:
-        """The empty-canvas menu: quick access to every drawing tool and
-        every symbol-library palette. A library pick drops that symbol at
-        the click point (grouped, selected, undoable)."""
+        """The empty-canvas menu: a Tools submenu plus every symbol-library
+        palette listed directly (as on the left toolbar). A library pick
+        drops that symbol at the click point (grouped, selected, undoable)."""
         menu = QMenu(self)
         tools = menu.addMenu(icons.icon("mdi.toolbox-outline"), "Tools")
         for tool, glyph, label, _sc in DIRECT_TOOLS:
@@ -1136,10 +1136,8 @@ class MainWindow(QMainWindow):
             atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
 
         menu.addSeparator()
-        lib = menu.addMenu(icons.icon("mdi.shape-plus-outline"),
-                           "Insert from library")
         for title, glyph, _tip, module, _attr, _tool in SYMBOL_LIBRARIES:
-            sub = lib.addMenu(icons.icon(glyph), title)
+            sub = menu.addMenu(icons.icon(glyph), title)
             self._populate_symbol_menu(
                 sub, module,
                 lambda name, m=module: self._insert_library_item(m, name,

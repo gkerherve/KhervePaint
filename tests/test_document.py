@@ -1491,11 +1491,13 @@ def test_canvas_menu_inserts_library_symbol(window):
     top = added[-1]
     assert top.sceneBoundingRect().contains(QPointF(120, 90))
 
-    # The menu itself builds with both a Tools and a library section.
+    # The menu builds with a Tools entry and each library palette listed
+    # directly (not nested under an "Insert from library" submenu).
     menu = win._build_canvas_menu(QPointF(0, 0))
     labels = [a.text() for a in menu.actions() if a.text()]
     assert "Tools" in labels
-    assert "Insert from library" in labels
+    assert "Lab glassware" in labels
+    assert "Insert from library" not in labels
 
 
 def test_context_menu_builds(window):
