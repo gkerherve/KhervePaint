@@ -1426,6 +1426,24 @@ def test_properties_dialog_text(app):
     assert text.font().bold() is True
 
 
+def test_properties_dialog_apply_live(app):
+    """The Apply button previews changes on the item without closing the
+    dialog and emits changed_by_user (so the edit is undoable)."""
+    from PyQt5.QtWidgets import QDialog
+    from khervepaint.properties import PropertiesDialog
+    scene = PaintScene(200, 200)
+    text = TextItem("old")
+    scene.addItem(text)
+    emitted = []
+    scene.changed_by_user.connect(lambda: emitted.append(True))
+    dlg = PropertiesDialog(text)
+    dlg.font_size.setValue(40)
+    dlg._apply_live()
+    assert text.font().pointSize() == 40      # applied live
+    assert dlg.result() != QDialog.Accepted   # dialog stays open (not accepted)
+    assert emitted                            # undoable snapshot pushed
+
+
 def test_context_menu_builds(window):
     from khervepaint.properties import build_context_menu
     win = window

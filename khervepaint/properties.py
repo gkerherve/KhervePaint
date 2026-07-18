@@ -120,9 +120,12 @@ class PropertiesDialog(QDialog):
         right.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok
+                                   | QDialogButtonBox.Apply
                                    | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._apply_and_accept)
         buttons.rejected.connect(self.reject)
+        buttons.button(QDialogButtonBox.Apply).clicked.connect(
+            self._apply_live)
         layout.addWidget(buttons)
 
     # -------------------------------------------------------- sections
@@ -301,6 +304,19 @@ class PropertiesDialog(QDialog):
 
     # -------------------------------------------------------- apply
     def _apply_and_accept(self):
+        self._apply()
+        self.accept()
+
+    def _apply_live(self):
+        """Apply the current field values to the item now and push an
+        undoable snapshot, leaving the dialog open so changes (text size,
+        font, colour…) can be previewed live before OK."""
+        self._apply()
+        scene = self.item.scene()
+        if scene is not None:
+            scene.changed_by_user.emit()
+
+    def _apply(self):
         item = self.item
         # Honour the exact coordinates typed here, bypassing grid snap.
         scene = item.scene()
@@ -342,7 +358,6 @@ class PropertiesDialog(QDialog):
         item.setRotation(self.rotation.value())
         if scene is not None:
             scene.snap_enabled = prev_snap
-        self.accept()
 
     def _apply_geometry(self):
         from PyQt5.QtCore import QLineF, QRectF
