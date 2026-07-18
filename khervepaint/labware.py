@@ -77,44 +77,62 @@ def _poly(shape, x, y, w, h, rotation=0.0, stroke=OUTLINE, fill=GLASS,
             "width": width}
 
 
+def _bulb_liquid(cx, top, d, frac=0.55, fill=LIQUID):
+    """Liquid segment filling the lower *frac* of a round bulb.
+
+    The bulb is the circle of diameter *d* whose top is at *top* (centre
+    at ``top + d/2``). The liquid is a squashed half-circle whose flat
+    side sits on the surface chord and whose curve tucks *inside* the
+    bulb outline (so it never spills past the glass). Returns
+    ``(fill_spec, surface_line)``."""
+    r = d / 2.0
+    cyc = top + r                      # circle centre y
+    surf = top + d * (1.0 - frac)      # liquid surface height
+    dy = surf - cyc
+    half = math.sqrt(max(r * r - dy * dy, 0.0))   # chord half-width
+    # dome bulging DOWN (flat side on the surface): rotate the half-disc
+    fill_spec = _half(cx - half, surf, 2 * half, (top + d) - surf,
+                      180.0, NONE, fill, W_DET)
+    line = _line(cx - half, surf, cx + half, surf, OUTLINE, W_DET)
+    return fill_spec, line
+
+
 # ===========================================================================
 # Glassware
 # ===========================================================================
 def build_beaker(w, h):
-    """Tapered cup, pour spout, graduation ticks, liquid in lower ~40%."""
+    """Straight-walled cup: flared lip + pour spout, graduation ticks on
+    the right, liquid filling the lower ~55%."""
     specs = []
-    top = 0.16 * h
-    bot = 0.94 * h
+    left, right = 0.24 * w, 0.76 * w       # vertical walls
+    top, bot = 0.16 * h, 0.90 * h
     body_h = bot - top
-    # walls: slightly wider at top
-    lt, rt = 0.18 * w, 0.82 * w        # top edge
-    lb, rb = 0.24 * w, 0.76 * w        # bottom edge
-    # liquid (lower 40% of body)
-    liq_top = bot - 0.40 * body_h
-    f = (liq_top - top) / body_h
-    ll = lt + (lb - lt) * f
-    rl = rt + (rb - rt) * f
-    specs.append({"shape": "polygon" if False else "trapezoid",
-                  "x": min(lb, lt), "y": liq_top,
-                  "w": max(rt, rb) - min(lb, lt), "h": bot - liq_top,
-                  "rotation": 0.0, "stroke": NONE, "fill": LIQUID,
-                  "width": W_DET})
-    # walls
-    specs.append(_line(lt, top, lb, bot, OUTLINE, W_OUT))
-    specs.append(_line(rt, top, rb, bot, OUTLINE, W_OUT))
-    specs.append(_line(lb, bot, rb, bot, OUTLINE, W_OUT))
-    # liquid surface line
-    specs.append(_line(ll, liq_top, rl, liq_top, OUTLINE, W_DET))
-    # rim + pour spout (small notch at top-left)
-    specs.append(_line(lt, top, 0.30 * w, top, OUTLINE, W_OUT))
-    specs.append(_line(0.30 * w, top, lt - 0.04 * w, top - 0.05 * h,
+    # glass body + liquid
+    specs.append(_rect(left, top, right - left, body_h, NONE, GLASS, W_DET))
+    liq_top = top + body_h * 0.45          # liquid surface (lower 55%)
+    specs.append(_rect(left, liq_top, right - left, bot - liq_top,
+                       NONE, LIQUID, W_DET))
+    specs.append(_line(left, liq_top, right, liq_top, OUTLINE, W_DET))
+    # body outline: walls + flat bottom (open top)
+    specs.append(_line(left, top, left, bot, OUTLINE, W_OUT))
+    specs.append(_line(right, top, right, bot, OUTLINE, W_OUT))
+    specs.append(_line(left, bot, right, bot, OUTLINE, W_OUT))
+    # flared lip: a short bar slightly wider than the walls
+    lipL, lipR = left - 0.05 * w, right + 0.05 * w
+    specs.append(_line(lipL, top, right, top, OUTLINE, W_OUT))
+    specs.append(_line(lipL, top, left, top + 0.03 * h, OUTLINE, W_OUT))
+    specs.append(_line(right, top, lipR, top + 0.02 * h, OUTLINE, W_OUT))
+    specs.append(_line(lipR, top + 0.02 * h, right, top + 0.05 * h,
                        OUTLINE, W_OUT))
-    specs.append(_line(0.30 * w, top, rt, top, OUTLINE, W_OUT))
-    # graduation ticks (right wall)
-    for fr in (0.45, 0.65):
+    # pour spout beak on the left of the lip
+    specs.append(_line(lipL, top, lipL - 0.05 * w, top - 0.03 * h,
+                       OUTLINE, W_OUT))
+    specs.append(_line(lipL - 0.05 * w, top - 0.03 * h, left, top + 0.03 * h,
+                       OUTLINE, W_OUT))
+    # graduation ticks (right, upper portion)
+    for fr in (0.20, 0.32, 0.44):
         yy = top + body_h * fr
-        xx = rt + (rb - rt) * fr
-        specs.append(_line(xx - 0.10 * w, yy, xx, yy, OUTLINE, W_DET))
+        specs.append(_line(right - 0.12 * w, yy, right, yy, OUTLINE, W_DET))
     return specs
 
 
@@ -143,6 +161,19 @@ def build_erlenmeyer(w, h):
     specs.append(_line(bl, cone_bot, br, cone_bot, OUTLINE, W_OUT))
     # liquid surface
     specs.append(_line(ll, liq_top, rl, liq_top, OUTLINE, W_DET))
+    # flared rim on the neck
+    specs.append(_line(nl - 0.04 * w, neck_top, nr + 0.04 * w, neck_top,
+                       OUTLINE, W_OUT))
+    specs.append(_line(nl - 0.04 * w, neck_top, nl, neck_top + 0.03 * h,
+                       OUTLINE, W_OUT))
+    specs.append(_line(nr + 0.04 * w, neck_top, nr, neck_top + 0.03 * h,
+                       OUTLINE, W_OUT))
+    # graduation ticks on the right of the cone
+    for fr in (0.55, 0.70):
+        yy = neck_bot + (cone_bot - neck_bot) * fr
+        xr = nr + (br - nr) * fr
+        specs.append(_line(xr - 0.11 * w, yy, xr - 0.02 * w, yy,
+                           OUTLINE, W_DET))
     return specs
 
 
@@ -153,17 +184,23 @@ def build_round_bottom_flask(w, h):
     cx = 0.5 * w
     bulb_y = 0.94 * h - d
     neck_w = 0.18 * w
-    neck_top = 0.06 * h
+    neck_top = 0.08 * h
     neck_bot = bulb_y + 0.16 * d
-    # liquid fill (lower part of bulb) - draw bulb then liquid arc proxy
-    specs.append(_circle(cx - d / 2, bulb_y, d, d, OUTLINE, GLASS, W_OUT))
-    specs.append(_half(cx - d / 2 + 0.06 * d, bulb_y + d * 0.46,
-                       d - 0.12 * d, d * 0.44, 0.0, NONE, LIQUID, W_DET))
+    # neck (behind the bulb) + glass bulb
     specs.append(_rect(cx - neck_w / 2, neck_top, neck_w,
                        neck_bot - neck_top, OUTLINE, GLASS, W_OUT))
-    # rim
-    specs.append(_line(cx - neck_w / 2 - 0.03 * w, neck_top,
-                       cx + neck_w / 2 + 0.03 * w, neck_top, OUTLINE, W_OUT))
+    specs.append(_circle(cx - d / 2, bulb_y, d, d, OUTLINE, GLASS, W_OUT))
+    # liquid contained inside the bulb
+    fill, surf = _bulb_liquid(cx, bulb_y, d, 0.52)
+    specs.append(fill)
+    specs.append(surf)
+    # flared rim
+    specs.append(_line(cx - neck_w / 2 - 0.04 * w, neck_top,
+                       cx + neck_w / 2 + 0.04 * w, neck_top, OUTLINE, W_OUT))
+    specs.append(_line(cx - neck_w / 2 - 0.04 * w, neck_top,
+                       cx - neck_w / 2, neck_top + 0.03 * h, OUTLINE, W_OUT))
+    specs.append(_line(cx + neck_w / 2 + 0.04 * w, neck_top,
+                       cx + neck_w / 2, neck_top + 0.03 * h, OUTLINE, W_OUT))
     return specs
 
 
@@ -176,13 +213,14 @@ def build_volumetric_flask(w, h):
     neck_w = 0.14 * w
     neck_top = 0.05 * h
     neck_bot = bulb_y + 0.10 * d
-    specs.append(_circle(cx - d / 2, bulb_y, d, d, OUTLINE, GLASS, W_OUT))
-    specs.append(_half(cx - d / 2 + 0.07 * d, bulb_y + d * 0.50,
-                       d - 0.14 * d, d * 0.40, 0.0, NONE, LIQUID, W_DET))
     specs.append(_rect(cx - neck_w / 2, neck_top, neck_w,
                        neck_bot - neck_top, OUTLINE, GLASS, W_OUT))
-    # calibration ring on neck
-    ring_y = neck_top + (neck_bot - neck_top) * 0.45
+    specs.append(_circle(cx - d / 2, bulb_y, d, d, OUTLINE, GLASS, W_OUT))
+    fill, surf = _bulb_liquid(cx, bulb_y, d, 0.48)
+    specs.append(fill)
+    specs.append(surf)
+    # calibration ring on the visible neck (above the bulb)
+    ring_y = neck_top + (bulb_y - neck_top) * 0.55
     specs.append(_line(cx - neck_w / 2, ring_y, cx + neck_w / 2, ring_y,
                        OUTLINE, W_DET))
     # rim
@@ -192,29 +230,29 @@ def build_volumetric_flask(w, h):
 
 
 def build_test_tube(w, h):
-    """Tall thin rect with rounded (halfcircle) bottom, liquid lower part."""
+    """Straight tube with a U-shaped (round) bottom, liquid lower part."""
     specs = []
-    tw = 0.40 * w
+    tw = 0.36 * w
     x = 0.5 * w - tw / 2
+    r = tw / 2.0
     top = 0.06 * h
-    straight_bot = 0.80 * h
-    cap_h = 0.16 * h
-    # liquid
-    liq_top = 0.55 * h
+    straight_bot = 0.94 * h - r        # where the round bottom starts
+    liq_top = 0.50 * h
+    # liquid: straight column + filled round bottom (dome bulging down)
     specs.append(_rect(x, liq_top, tw, straight_bot - liq_top,
                        NONE, LIQUID, W_DET))
-    specs.append(_half(x, straight_bot - cap_h, tw, cap_h * 2.0,
-                       0.0, NONE, LIQUID, W_DET))
-    # straight walls
+    specs.append(_half(x, straight_bot, tw, r, 180.0, NONE, LIQUID, W_DET))
+    # walls + round bottom outline
     specs.append(_line(x, top, x, straight_bot, OUTLINE, W_OUT))
     specs.append(_line(x + tw, top, x + tw, straight_bot, OUTLINE, W_OUT))
-    # rounded bottom (half circle, flat side up)
-    specs.append(_half(x, straight_bot - cap_h, tw, cap_h * 2.0,
-                       0.0, OUTLINE, NONE, W_OUT))
+    specs.append(_half(x, straight_bot, tw, r, 180.0, OUTLINE, NONE, W_OUT))
     # liquid surface
     specs.append(_line(x, liq_top, x + tw, liq_top, OUTLINE, W_DET))
-    # rim
-    specs.append(_line(x - 0.03 * w, top, x + tw + 0.03 * w, top,
+    # flared rim
+    specs.append(_line(x - 0.04 * w, top, x + tw + 0.04 * w, top,
+                       OUTLINE, W_OUT))
+    specs.append(_line(x - 0.04 * w, top, x, top + 0.03 * h, OUTLINE, W_OUT))
+    specs.append(_line(x + tw + 0.04 * w, top, x + tw, top + 0.03 * h,
                        OUTLINE, W_OUT))
     return specs
 
@@ -246,12 +284,16 @@ def build_graduated_cylinder(w, h):
 
 
 def _trap_or_rect_base(specs, w, h, base_w, bot):
-    """Append a small splayed base trapezoid; return None (helper)."""
+    """Append a splayed foot (flared pedestal) under a tube; helper."""
     base_h = 0.10 * h
+    # flared stem: trapezoid widening downward
     specs.append({"shape": "trapezoid",
                   "x": 0.5 * w - base_w / 2, "y": bot,
                   "w": base_w, "h": base_h, "rotation": 180.0,
-                  "stroke": OUTLINE, "fill": METAL, "width": W_OUT})
+                  "stroke": OUTLINE, "fill": GLASS, "width": W_OUT})
+    # solid base pad
+    specs.append(_rrect(0.5 * w - base_w / 2, bot + base_h,
+                        base_w, 0.04 * h, 0.02 * h, OUTLINE, GLASS, W_OUT))
     return None
 
 
@@ -299,9 +341,10 @@ def build_separating_funnel(w, h):
                        bulb_bot - d + 0.18 * d, OUTLINE, W_OUT))
     specs.append(_line(cx + nw / 2, 0.24 * h, cx + d / 2 - 0.06 * d,
                        bulb_bot - d + 0.18 * d, OUTLINE, W_OUT))
-    # liquid
-    specs.append(_half(cx - d / 2 + 0.08 * d, bulb_bot - d * 0.50,
-                       d - 0.16 * d, d * 0.44, 0.0, NONE, LIQUID, W_DET))
+    # liquid contained in the lower bulb
+    fill, surf = _bulb_liquid(cx, bulb_bot - d, d, 0.46)
+    specs.append(fill)
+    specs.append(surf)
     # stopcock stem
     specs.append(_rect(cx - 0.05 * w, bulb_bot, 0.10 * w, 0.06 * h,
                        OUTLINE, GLASS, W_OUT))
@@ -402,10 +445,13 @@ def build_burette(w, h):
                        0.0, OUTLINE, METAL, W_DET))
     specs.append(_line(cx - 0.16 * w, stop_y + 0.04 * h,
                        cx + 0.16 * w, stop_y + 0.04 * h, OUTLINE, W_DET))
-    # fine tip
-    specs.append({"shape": "triangle", "x": cx - 0.06 * w, "y": stop_y + 0.08 * h,
-                  "w": 0.12 * w, "h": 0.10 * h, "rotation": 180.0,
-                  "stroke": OUTLINE, "fill": GLASS, "width": W_OUT})
+    # short stem below the stopcock, then the fine tapered tip
+    specs.append(_rect(cx - 0.04 * w, stop_y + 0.08 * h, 0.08 * w, 0.04 * h,
+                       OUTLINE, GLASS, W_OUT))
+    specs.append({"shape": "triangle", "x": cx - 0.04 * w,
+                  "y": stop_y + 0.12 * h, "w": 0.08 * w, "h": 0.06 * h,
+                  "rotation": 180.0, "stroke": OUTLINE, "fill": GLASS,
+                  "width": W_OUT})
     return specs
 
 
@@ -422,9 +468,11 @@ def build_pipette(w, h):
     bw = 0.46 * w
     specs.append(_ellipse(cx - bw / 2, 0.34 * h, bw, 0.24 * h, OUTLINE,
                           GLASS, W_OUT))
-    # liquid in bulb
-    specs.append(_half(cx - bw / 2 + 0.06 * w, 0.34 * h + 0.12 * h,
-                       bw - 0.12 * w, 0.12 * h, 0.0, NONE, LIQUID, W_DET))
+    # liquid: lower half of the bulb (dome bulging down)
+    specs.append(_half(cx - bw / 2, 0.46 * h, bw, 0.12 * h,
+                       180.0, NONE, LIQUID, W_DET))
+    specs.append(_line(cx - bw / 2, 0.46 * h, cx + bw / 2, 0.46 * h,
+                       OUTLINE, W_DET))
     # tube lower half
     specs.append(_rect(cx - tw / 2, 0.58 * h, tw, 0.20 * h, OUTLINE, GLASS,
                        W_OUT))
