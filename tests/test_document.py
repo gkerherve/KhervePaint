@@ -652,6 +652,36 @@ def test_kpaint_image_scale_rotation(scene, tmp_path):
     assert abs(after.y() - before.y()) < 0.5
 
 
+def test_eraser_and_pencil_edit_image_pixels(scene):
+    """The eraser clears an inserted image's pixels to transparent and the
+    pencil paints onto them — editing the bitmap, not the raster layer."""
+    from khervepaint.canvas import ERASER
+    from PyQt5.QtGui import QPixmap
+    pm = QPixmap(40, 40)
+    pm.fill(QColor("#3060c0"))          # fully opaque
+    img = ImageItem(pm)
+    img.setPos(0, 0)
+    scene.addItem(img)
+    scene.tool = ERASER
+
+    # The image (not the raster background) is picked under the cursor.
+    assert scene._image_at(QPointF(20, 20)) is img
+
+    scene.pen = QPen(QColor("#e01010"), 4)
+    # Erase near the centre -> transparent there.
+    scene._paint_image_stroke(img, QPointF(20, 20), QPointF(20, 20),
+                              erase=True)
+    assert img.pixmap().toImage().pixelColor(20, 20).alpha() == 0
+    # A far corner is untouched (still opaque).
+    assert img.pixmap().toImage().pixelColor(2, 2).alpha() == 255
+
+    # Pencil paints the stroke colour onto a fresh spot.
+    scene._paint_image_stroke(img, QPointF(6, 34), QPointF(6, 34),
+                              erase=False)
+    painted = img.pixmap().toImage().pixelColor(6, 34)
+    assert painted.red() > 180 and painted.green() < 80 and painted.blue() < 80
+
+
 def test_image_resize_snaps_to_grid(scene):
     from khervepaint.handles import SelectionHandles, RESIZE
     from PyQt5.QtGui import QPixmap

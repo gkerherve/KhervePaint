@@ -29,8 +29,8 @@ tool draws.
 | Key | Tool |
 | --- | --- |
 | V | Pointer — select, move, resize, rotate |
-| P | Pencil — freehand vector stroke |
-| X | Eraser — rub out the raster layer (to white) |
+| P | Pencil — freehand vector stroke (paints onto an image's pixels when started over one) |
+| X | Eraser — rub out the raster layer (to white); over an inserted image, erases its pixels to transparent |
 | K | Colour picker — sample a colour into the stroke (Shift+click: into the fill) |
 | B | Bucket — fill an enclosed region |
 | L | Line |

@@ -729,6 +729,7 @@ class PaintScene(QGraphicsScene):
         self._chain_pts = None            # vertices of an in-progress chain
         self._chain_preview = None        # rubber-band segment to the cursor
         self._erase_last = None           # previous eraser point while dragging
+        self._paint_image = None          # ImageItem being pixel-painted, if any
         self._orbit_item = None           # molecule being 3D-rotated in place
         self._orbit_last = None           # last drag point while orbiting
         self._orbiting = False            # an orbit drag is in progress
@@ -1186,10 +1187,20 @@ class PaintScene(QGraphicsScene):
         self._start = pos
 
         if self.tool == ERASER:
+            # Over an image -> erase that image's pixels; else the raster layer.
+            self._paint_image = self._image_at(event.scenePos())
             self._erase_last = event.scenePos()
             self._erase(event.scenePos(), event.scenePos())
         elif self.tool == PENCIL:
-            self.pencil_begin(event.scenePos())
+            # Over an image -> paint directly onto its pixels (raster, like
+            # Paint); over empty canvas -> a normal freehand vector stroke.
+            self._paint_image = self._image_at(event.scenePos())
+            if self._paint_image is not None:
+                self._erase_last = event.scenePos()
+                self._paint_image_stroke(self._paint_image, event.scenePos(),
+                                         event.scenePos(), erase=False)
+            else:
+                self.pencil_begin(event.scenePos())
         elif self.tool in _TWO_POINT_TOOLS:
             cls = {ARROW: ArrowItem, DIMENSION: DimensionItem}.get(
                 self.tool, LineItem)
@@ -1283,7 +1294,12 @@ class PaintScene(QGraphicsScene):
             self._erase_last = event.scenePos()
             return
         if self.tool == PENCIL:
-            self.pencil_extend(event.scenePos())
+            if self._paint_image is not None:
+                self._paint_image_stroke(self._paint_image, self._erase_last,
+                                         event.scenePos(), erase=False)
+                self._erase_last = event.scenePos()
+            else:
+                self.pencil_extend(event.scenePos())
             return
         if self._temp_item is None:
             return
@@ -1418,8 +1434,59 @@ class PaintScene(QGraphicsScene):
         self.changed_by_user.emit()
 
     # ------------------------------------------------------------ paint tools
+    def _image_at(self, pos: QPointF):
+        """Topmost inserted/pasted image item under *pos* (scene coords), or
+        None. The raster background (a plain pixmap item, not an ImageItem)
+        is intentionally excluded — it keeps the raster-layer paint path."""
+        for it in self.items(pos):
+            if isinstance(it, ImageItem):
+                return it
+        return None
+
+    def _paint_image_stroke(self, image_item, p1: QPointF, p2: QPointF,
+                            erase: bool):
+        """Paint a round-capped stroke onto *image_item*'s own pixels along
+        p1->p2 (scene coords). *erase* clears to transparent; otherwise the
+        current stroke colour is drawn. Editing the bitmap directly, like the
+        MS-Paint eraser/pencil, but on the selected image rather than the
+        raster layer. The alpha round-trips through save + undo."""
+        from PyQt5.QtGui import QImage
+        pixmap = image_item.pixmap()
+        if pixmap.isNull():
+            return
+        image = pixmap.toImage().convertToFormat(QImage.Format_ARGB32)
+        # Map scene points into the image's own pixel space (honours the
+        # image's position, rotation and scale).
+        a = image_item.mapFromScene(p1)
+        b = image_item.mapFromScene(p2)
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        if erase:
+            painter.setCompositionMode(QPainter.CompositionMode_Clear)
+            width = max(self.pen.widthF() * 4, 12)
+            color = Qt.transparent            # colour ignored in Clear mode
+        else:
+            width = max(self.pen.widthF(), 1)
+            color = self.pen.color()
+        pen = QPen(color, width)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        painter.setPen(pen)
+        if a == b:                            # single click -> a round dot
+            painter.setBrush(color)
+            painter.setPen(Qt.NoPen)
+            painter.drawEllipse(a, width / 2.0, width / 2.0)
+        else:
+            painter.drawLine(a, b)
+        painter.end()
+        image_item.setPixmap(QPixmap.fromImage(image))
+
     def _erase(self, p1: QPointF, p2: QPointF):
-        """Erase the raster layer to white along p1->p2 (MS-Paint eraser)."""
+        """Erase along p1->p2. Over an inserted image, clear its pixels to
+        transparent; otherwise paint the raster layer white (MS-Paint)."""
+        if self._paint_image is not None:
+            self._paint_image_stroke(self._paint_image, p1, p2, erase=True)
+            return
         pixmap = self.raster_item.pixmap()
         if pixmap.isNull():
             return
@@ -1774,10 +1841,16 @@ class PaintScene(QGraphicsScene):
         self._drawing = False
         if self.tool == ERASER:
             self._erase_last = None
-            self.changed_by_user.emit()         # raster change is undoable
+            self._paint_image = None
+            self.changed_by_user.emit()         # raster/image change is undoable
             return
         if self.tool == PENCIL:
-            self.pencil_end()
+            if self._paint_image is not None:   # painted onto an image's pixels
+                self._paint_image = None
+                self._erase_last = None
+                self.changed_by_user.emit()
+            else:
+                self.pencil_end()
             return
         item = self._temp_item
         self._temp_item = None
