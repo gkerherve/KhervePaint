@@ -144,6 +144,14 @@ dialog (right-click ▸ <i>Edit properties…</i>): end caps
 (<b>arrows, ticks, dots or none</b>), optional <b>extension lines</b>,
 a <b>dashed</b> line, and the label's <b>unit</b> (mm/cm/in),
 <b>decimals</b> and an optional <b>prefix/suffix</b> (e.g. Ø, ±).</p>
+<p>The <b>Measure</b> menu gathers the mm measuring tools:
+<b>Protractor (angle)</b> — three clicks (vertex, then each arm end)
+build an editable angle with an arc and degree label; <b>Scale bar…</b>
+— drop a labelled bar of a chosen real length (nm/µm/mm/cm), sized from
+the drawing's DPI; and <b>Show rulers (mm)</b> — graduated rulers along
+the top and left edges that track zoom/scroll with a cursor marker. The
+status bar also shows the <b>live size</b> (width × height, or a line's
+length) in mm of whatever you draw, resize or select.</p>
 
 <h2>3 · Colours, width and fill</h2>
 <p>On the top toolbar: click the <b>stroke</b> swatch (outline colour) or
