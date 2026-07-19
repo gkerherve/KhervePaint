@@ -37,7 +37,7 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
                      ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE,
                      RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
-                     PaintScene, PaintView)
+                     LineItem, PaintScene, PaintView)
 from . import (chemistry, electrical, floorplan, flowchart, labware, optics,
                vacuum, network, pid, arrows, biology, maths, molecules)
 from .style import THEMES, apply_style, current_theme
@@ -205,6 +205,8 @@ class MainWindow(QMainWindow):
         self.view.cursor_moved.connect(
             lambda p: self.statusBar().showMessage(
                 f"x: {p.x():.0f}  y: {p.y():.0f}"))
+        self.view.cursor_moved.connect(self._update_size_readout)
+        self.scene.selectionChanged.connect(self._update_size_readout)
         self.view.item_context.connect(self._show_item_menu)
         self.view.canvas_context.connect(self._show_canvas_menu)
         self.view.content_dropped.connect(self._on_drop)
@@ -305,6 +307,10 @@ class MainWindow(QMainWindow):
         """Zoom controls at the bottom-right of the status bar: a −/+
         pair, a log-scaled slider and a clickable percentage (reset)."""
         bar = self.statusBar()
+        # live size of the shape being drawn / resized / selected, in mm
+        self._size_label = QLabel("")
+        self._size_label.setToolTip("Size of the current shape (mm)")
+        bar.addPermanentWidget(self._size_label)
         # last eyedropper pick (permanent: the cursor-position message
         # repaints on every mouse move, so a temporary message would vanish)
         self._pick_label = QLabel("")
@@ -1098,6 +1104,44 @@ class MainWindow(QMainWindow):
     def open_objects_folder(self):
         QDesktopServices.openUrl(
             QUrl.fromLocalFile(str(library.objects_dir())))
+
+    def _update_size_readout(self, *_):
+        """Show the current shape's size in mm in the status bar: the item
+        being drawn (scene._temp_item) if any, else the selection. A single
+        line shows its length; other single shapes add their perimeter;
+        multiple items show the combined bounding box."""
+        from .handles import Handle
+        scene = self.scene
+        dpi = max(getattr(scene, "dpi", 96), 1)
+        k = 25.4 / dpi                                   # px -> mm
+        target = getattr(scene, "_temp_item", None)
+        items = [target] if target is not None else scene.selectedItems()
+        items = [it for it in items
+                 if it is not None and not isinstance(it, Handle)]
+        if not items:
+            self._size_label.setText("")
+            return
+        if len(items) == 1 and isinstance(items[0], LineItem):
+            self._size_label.setText(
+                f"↔ {items[0].line().length() * k:.1f} mm")
+            return
+        if len(items) == 1:
+            # Single shape: report its true geometry (outline, no stroke
+            # inflation) and perimeter where the outline is known.
+            outline = PaintScene._outline_path(items[0])
+            if outline is not None:
+                br = outline.boundingRect()
+                text = f"{br.width() * k:.1f} × {br.height() * k:.1f} mm"
+                if outline.length() > 0:
+                    text += f"   perim {outline.length() * k:.1f} mm"
+                self._size_label.setText(text)
+                return
+        rect = None
+        for it in items:
+            r = it.sceneBoundingRect()
+            rect = r if rect is None else rect.united(r)
+        self._size_label.setText(
+            f"{rect.width() * k:.1f} × {rect.height() * k:.1f} mm")
 
     # ------------------------------------------------------------ editing
     def _show_item_menu(self, item, global_pos):

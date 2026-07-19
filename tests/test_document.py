@@ -1474,6 +1474,30 @@ def test_properties_dialog_apply_live(app):
     assert emitted                            # undoable snapshot pushed
 
 
+def test_size_readout_mm(window):
+    """The status-bar size readout reports a shape's mm size and a line's
+    length, from the current selection."""
+    win = window
+    win.scene.dpi = 25.4                       # 1 px == 1 mm
+    rect = RectItem(QRectF(0, 0, 40, 20))
+    win.scene.addItem(rect)
+    win.scene.clearSelection()
+    rect.setSelected(True)
+    win._update_size_readout()
+    assert "40.0 × 20.0 mm" in win._size_label.text()
+
+    line = LineItem(QLineF(0, 0, 30, 40))      # 3-4-5 -> length 50
+    win.scene.addItem(line)
+    win.scene.clearSelection()
+    line.setSelected(True)
+    win._update_size_readout()
+    assert "50.0 mm" in win._size_label.text()
+
+    win.scene.clearSelection()
+    win._update_size_readout()
+    assert win._size_label.text() == ""
+
+
 def test_canvas_menu_inserts_library_symbol(window):
     """The empty-canvas menu can arm a drawing tool and drop a library
     symbol at the click point (grouped, undoable)."""

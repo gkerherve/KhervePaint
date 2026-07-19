@@ -2258,8 +2258,10 @@ class PaintView(QGraphicsView):
             self.setBackgroundBrush(QBrush())   # back to the theme surround
 
     def mouseMoveEvent(self, event):
-        self.cursor_moved.emit(self.mapToScene(event.pos()))
+        # Forward first so the scene updates the shape being drawn/resized,
+        # then emit — the size readout reads the just-updated geometry.
         super().mouseMoveEvent(event)
+        self.cursor_moved.emit(self.mapToScene(event.pos()))
 
     def keyPressEvent(self, event):
         if self.scene().crop_active():
