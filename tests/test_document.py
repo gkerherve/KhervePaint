@@ -1474,6 +1474,25 @@ def test_properties_dialog_apply_live(app):
     assert emitted                            # undoable snapshot pushed
 
 
+def test_scale_bar_length_and_roundtrip(scene, tmp_path):
+    """A scale bar's bar is the requested mm length at the scene dpi, it's
+    grouped, and it survives a save/load round-trip."""
+    from khervepaint.canvas import GroupItem, RectItem
+    scene.dpi = 25.4                               # 1 px == 1 mm
+    group = scene.place_scale_bar(10.0, "10 mm", QPointF(100, 100))
+    assert isinstance(group, GroupItem)
+    # The filled bar child spans 10 mm (== 10 px here).
+    bar = next(c for c in group.childItems() if isinstance(c, RectItem))
+    assert abs(bar.rect().width() - 10.0) < 0.01
+    # Round-trips through the SVG format as a group.
+    path = tmp_path / "scalebar.svg"
+    from khervepaint import svgio
+    svgio.save_svg(scene, str(path))
+    other = PaintScene(400, 300)
+    svgio.load_svg(other, str(path))
+    assert any(isinstance(i, GroupItem) for i in other.vector_items())
+
+
 def test_size_readout_mm(window):
     """The status-bar size readout reports a shape's mm size and a line's
     length, from the current selection."""

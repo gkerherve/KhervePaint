@@ -1682,6 +1682,53 @@ class PaintScene(QGraphicsScene):
         self.snap_enabled = was_snap
         return top
 
+    def place_scale_bar(self, length_mm: float, label: str, center: QPointF):
+        """Drop a labelled scale bar whose bar is *length_mm* long at the
+        current dpi (a filled bar + end ticks + a centred caption), grouped
+        and centred on *center*. Ordinary editable items, so it round-trips
+        and is undoable. Returns the group (or None)."""
+        dpi = max(getattr(self, "dpi", 96), 1)
+        length = length_mm / 25.4 * dpi                  # px
+        if length <= 0:
+            return None
+        thick = max(length * 0.04, 2.5)
+        tick = thick * 2.2
+        x0, y0 = -length / 2.0, 0.0
+        ink = QColor("#111111")
+        items = []
+        bar = RectItem(QRectF(x0, y0, length, thick))
+        bar.setPen(QPen(ink, 1))
+        bar.setBrush(QBrush(ink))
+        items.append(bar)
+        for xx in (x0, x0 + length):                     # end ticks
+            t = LineItem(QLineF(xx, y0 - tick + thick, xx, y0 + thick))
+            t.setPen(QPen(ink, max(thick * 0.5, 1.0)))
+            items.append(t)
+        cap = TextItem(label)                            # caption below
+        f = cap.font()
+        f.setPixelSize(max(int(length * 0.2), 12))
+        cap.setFont(f)
+        cap.setDefaultTextColor(ink)
+        cb = cap.boundingRect()
+        cap.setPos(-cb.width() / 2.0, y0 + thick + tick * 0.2)
+        items.append(cap)
+        # Group and move so the group's centre lands on *center*.
+        group = GroupItem()
+        self.addItem(group)
+        self.clearSelection()
+        for z, it in enumerate(items):
+            it.setZValue(z)
+            group.addToGroup(it)
+        c = group.sceneBoundingRect().center()
+        was_snap = self.snap_enabled
+        self.snap_enabled = False
+        group.moveBy(center.x() - c.x(), center.y() - c.y())
+        self.snap_enabled = was_snap
+        center_origin(group)
+        group.setSelected(True)
+        self.changed_by_user.emit()
+        return group
+
     def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
                        mode=None, cells="keep", commit=True):
         """Rebuild a placed molecule/crystal *item* at view angles (az, el),

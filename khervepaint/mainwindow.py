@@ -815,12 +815,55 @@ class MainWindow(QMainWindow):
             theme_menu.addAction(act)
 
         self._build_library_menu(m)
+        self._build_measure_menu(m)
         self._build_examples_menu(m)
 
         help_menu = m.addMenu("&Help")
         help_menu.addAction("&User Guide", self._user_guide, "F1")
         help_menu.addSeparator()
         help_menu.addAction("&About", self._about)
+
+    def _build_measure_menu(self, menubar):
+        """Measure ▸ the mm measuring tools: dimension line and scale bar."""
+        menu = self._measure_menu = menubar.addMenu("&Measure")
+        menu.addAction(icons.icon("mdi.ruler"),
+                       "&Dimension line\tM", self._activate_dimension)
+        menu.addSeparator()
+        menu.addAction(icons.icon("mdi.ruler-square-compass"),
+                       "&Scale bar…", self._insert_scale_bar)
+
+    def _insert_scale_bar(self):
+        """Ask for a length + unit and drop a labelled scale bar at the
+        centre of the current view."""
+        from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
+                                     QDoubleSpinBox, QFormLayout, QVBoxLayout)
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Scale bar")
+        layout = QVBoxLayout(dlg)
+        form = QFormLayout()
+        layout.addLayout(form)
+        value = QDoubleSpinBox()
+        value.setRange(0.001, 1_000_000.0)
+        value.setDecimals(3)
+        value.setValue(10.0)
+        unit = QComboBox()
+        unit.addItems(["nm", "µm", "mm", "cm"])
+        unit.setCurrentText("mm")
+        form.addRow("Length", value)
+        form.addRow("Unit", unit)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok
+                                   | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        layout.addWidget(buttons)
+        if dlg.exec_() != QDialog.Accepted:
+            return
+        factor = {"nm": 1e-6, "µm": 1e-3, "mm": 1.0, "cm": 10.0}[
+            unit.currentText()]
+        length_mm = value.value() * factor
+        label = f"{value.value():g} {unit.currentText()}"
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        self.scene.place_scale_bar(length_mm, label, center)
 
     def _build_library_menu(self, menubar):
         """Library ▸ every symbol palette of the left toolbar (chemistry,

@@ -56,6 +56,14 @@ end caps between **arrows, ticks, dots or none**, add perpendicular
 label's **unit** (mm/cm/in), **decimals** and an optional
 **prefix/suffix** (e.g. Ø, ±).
 
+The **Measure** menu gathers the mm measuring tools. **Scale bar…**
+drops a labelled bar (a filled bar + end ticks + caption) whose length
+is a real distance you choose — pick a value and unit (nm/µm/mm/cm) and
+it's sized from the drawing's DPI; it's an ordinary group you can move,
+recolour or edit. The status bar also shows the **live size** (width ×
+height, or length for a line, in mm) of whatever you're drawing,
+resizing or have selected.
+
 Related **shapes** are grouped under four dropdown buttons — click the
 small arrow to pick one (the button then remembers it), then drag on the
 canvas to draw:
