@@ -1474,6 +1474,26 @@ def test_properties_dialog_apply_live(app):
     assert emitted                            # undoable snapshot pushed
 
 
+def test_edge_rulers_toggle_and_steps(window):
+    """The mm rulers reserve viewport margin space when shown, release it
+    when hidden, and pick sensible tick steps for the zoom level."""
+    from khervepaint.canvas import _RulerBar
+    win = window
+    # nice-step: coarser mm step when zoomed out (fewer px per mm)
+    assert _RulerBar._nice_step_mm(2.0) >= 10
+    assert _RulerBar._nice_step_mm(40.0) <= 5
+
+    win.view.set_rulers_visible(True)
+    assert win.view._rulers_on is True
+    # viewport is pushed down/right to make room for the rulers
+    assert win.view.viewport().geometry().top() >= _RulerBar.THICK - 2
+    assert win.view.viewport().geometry().left() >= _RulerBar.THICK - 2
+
+    win.view.set_rulers_visible(False)
+    assert win.view._rulers_on is False
+    assert win.view.viewport().geometry().top() < _RulerBar.THICK
+
+
 def test_scale_bar_length_and_roundtrip(scene, tmp_path):
     """A scale bar's bar is the requested mm length at the scene dpi, it's
     grouped, and it survives a save/load round-trip."""

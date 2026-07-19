@@ -17,7 +17,7 @@ the Free Software Foundation, either version 3 of the License, or
 
 import math
 
-from PyQt5.QtCore import QLineF, QPointF, QRectF, Qt, pyqtSignal
+from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, Qt, pyqtSignal
 from PyQt5.QtGui import (QBrush, QColor, QFont, QPainter, QPainterPath,
                          QPainterPathStroker, QPen, QPixmap, QPolygonF,
                          QTextCursor, QTransform)
@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (QGraphicsEllipseItem, QGraphicsItem,
                              QGraphicsPathItem, QGraphicsPixmapItem,
                              QGraphicsPolygonItem, QGraphicsRectItem,
                              QGraphicsScene, QGraphicsTextItem,
-                             QGraphicsView, QStyle)
+                             QGraphicsView, QStyle, QWidget)
 
 from . import chemistry
 
@@ -2084,6 +2084,97 @@ class PaintScene(QGraphicsScene):
                       self._start + QPointF(dx, dy)).normalized()
 
 
+class _RulerBar(QWidget):
+    """A thin ruler along the top or left edge of the view, graduated in
+    millimetres. Reads the view's transform + the scene dpi each paint, so
+    ticks track zoom and scroll; a marker follows the cursor."""
+
+    THICK = 22
+
+    def __init__(self, view, horizontal: bool):
+        super().__init__(view)
+        self._view = view
+        self._h = horizontal
+        self._cursor = None                       # scene coord of the cursor
+        self.setFont(QFont("Segoe UI", 7))
+
+    def set_cursor(self, scene_val):
+        self._cursor = scene_val
+        self.update()
+
+    @staticmethod
+    def _nice_step_mm(px_per_mm, target=58):
+        """Smallest 1/2/5·10ⁿ mm step whose labels are ≥ ~target px apart."""
+        if px_per_mm <= 0:
+            return 1.0
+        raw = target / px_per_mm
+        mag = 10.0 ** math.floor(math.log10(raw)) if raw > 0 else 1.0
+        for m in (1, 2, 5, 10):
+            if m * mag >= raw:
+                return m * mag
+        return 10 * mag
+
+    def paintEvent(self, _event):
+        view = self._view
+        scene = view.scene()
+        dpi = max(getattr(scene, "dpi", 96), 1)
+        zoom = view.current_zoom()
+        px_per_mm = zoom * dpi / 25.4
+        pal = self.palette()
+        bg = pal.window().color()
+        ink = pal.windowText().color()
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), bg)
+        painter.setPen(QPen(ink, 0))
+        length = self.width() if self._h else self.height()
+        edge = self.THICK
+        # visible scene range across this ruler
+        if self._h:
+            s0 = view.mapToScene(QPoint(0, 0)).x()
+            s1 = view.mapToScene(QPoint(length, 0)).x()
+        else:
+            s0 = view.mapToScene(QPoint(0, 0)).y()
+            s1 = view.mapToScene(QPoint(0, length)).y()
+        mm0, mm1 = s0 / dpi * 25.4, s1 / dpi * 25.4
+        step = self._nice_step_mm(px_per_mm)
+        minor = step / 5.0
+        v = math.floor(mm0 / minor) * minor
+        while v <= mm1:
+            scene_v = v / 25.4 * dpi
+            if self._h:
+                pos = view.mapFromScene(QPointF(scene_v, 0)).x()
+            else:
+                pos = view.mapFromScene(QPointF(0, scene_v)).y()
+            major = abs(v - round(v / step) * step) < minor * 0.5
+            t = edge * (0.62 if major else 0.32)
+            if self._h:
+                painter.drawLine(int(pos), int(edge - t), int(pos), edge)
+            else:
+                painter.drawLine(int(edge - t), int(pos), edge, int(pos))
+            if major:
+                label = f"{round(v / step) * step:g}"
+                if self._h:
+                    painter.drawText(int(pos) + 2, edge - t - 1, label)
+                else:
+                    painter.save()
+                    painter.translate(edge - t - 1, int(pos) - 2)
+                    painter.rotate(-90)
+                    painter.drawText(0, 0, label)
+                    painter.restore()
+            v += minor
+        # cursor marker
+        if self._cursor is not None:
+            if self._h:
+                cp = view.mapFromScene(QPointF(self._cursor, 0)).x()
+                painter.setPen(QPen(QColor("#d23b3b"), 1))
+                painter.drawLine(int(cp), 0, int(cp), edge)
+            else:
+                cp = view.mapFromScene(QPointF(0, self._cursor)).y()
+                painter.setPen(QPen(QColor("#d23b3b"), 1))
+                painter.drawLine(0, int(cp), edge, int(cp))
+        painter.end()
+
+
 class PaintView(QGraphicsView):
     """Canvas view: grid overlay, zoom, cursor tracking."""
 
@@ -2111,6 +2202,14 @@ class PaintView(QGraphicsView):
         # Repaint the whole viewport on every change: partial updates
         # leave stale selection dashes / handles behind after deselect.
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+
+        # Edge rulers (mm), hidden until toggled from the Measure menu.
+        self._rulers_on = False
+        self._ruler_h = _RulerBar(self, horizontal=True)
+        self._ruler_v = _RulerBar(self, horizontal=False)
+        self._ruler_corner = QWidget(self)
+        for w in (self._ruler_h, self._ruler_v, self._ruler_corner):
+            w.hide()
 
     # --------------------------------------------------------- drag & drop
     @staticmethod
@@ -2277,6 +2376,37 @@ class PaintView(QGraphicsView):
         if self.MIN_ZOOM <= current * factor <= self.MAX_ZOOM:
             self.scale(factor, factor)
             self.zoom_changed.emit(self.transform().m11())
+            self._update_rulers()
+
+    # ------------------------------------------------------------ rulers
+    def set_rulers_visible(self, on: bool):
+        """Show/hide the mm edge rulers (reserving viewport margin space)."""
+        self._rulers_on = bool(on)
+        m = _RulerBar.THICK if on else 0
+        self.setViewportMargins(m, m, 0, 0)
+        for w in (self._ruler_h, self._ruler_v, self._ruler_corner):
+            w.setVisible(bool(on))
+        if on:
+            self._layout_rulers()
+        self._update_rulers()
+
+    def _layout_rulers(self):
+        if not self._rulers_on:
+            return
+        vp = self.viewport().geometry()
+        rw = _RulerBar.THICK
+        self._ruler_h.setGeometry(vp.x(), vp.y() - rw, vp.width(), rw)
+        self._ruler_v.setGeometry(vp.x() - rw, vp.y(), rw, vp.height())
+        self._ruler_corner.setGeometry(vp.x() - rw, vp.y() - rw, rw, rw)
+
+    def _update_rulers(self):
+        if self._rulers_on:
+            self._ruler_h.update()
+            self._ruler_v.update()
+
+    def scrollContentsBy(self, dx, dy):
+        super().scrollContentsBy(dx, dy)
+        self._update_rulers()
 
     def set_zoom(self, scale: float):
         """Set the absolute zoom factor (1.0 == 100%), clamped."""
@@ -2284,6 +2414,7 @@ class PaintView(QGraphicsView):
         self.resetTransform()
         self.scale(scale, scale)
         self.zoom_changed.emit(scale)
+        self._update_rulers()
 
     def current_zoom(self) -> float:
         return self.transform().m11()
@@ -2291,6 +2422,11 @@ class PaintView(QGraphicsView):
     def zoom_reset(self):
         self.resetTransform()
         self.zoom_changed.emit(1.0)
+        self._update_rulers()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._layout_rulers()
 
     def apply_scroll_bounds(self):
         """Let the view scroll across a large empty area when the scene
@@ -2308,7 +2444,11 @@ class PaintView(QGraphicsView):
         # Forward first so the scene updates the shape being drawn/resized,
         # then emit — the size readout reads the just-updated geometry.
         super().mouseMoveEvent(event)
-        self.cursor_moved.emit(self.mapToScene(event.pos()))
+        sp = self.mapToScene(event.pos())
+        self.cursor_moved.emit(sp)
+        if self._rulers_on:
+            self._ruler_h.set_cursor(sp.x())
+            self._ruler_v.set_cursor(sp.y())
 
     def keyPressEvent(self, event):
         if self.scene().crop_active():

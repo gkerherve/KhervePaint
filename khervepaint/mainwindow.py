@@ -824,13 +824,18 @@ class MainWindow(QMainWindow):
         help_menu.addAction("&About", self._about)
 
     def _build_measure_menu(self, menubar):
-        """Measure ▸ the mm measuring tools: dimension line and scale bar."""
+        """Measure ▸ the mm measuring tools: dimension line, scale bar and
+        the edge-ruler toggle."""
         menu = self._measure_menu = menubar.addMenu("&Measure")
         menu.addAction(icons.icon("mdi.ruler"),
                        "&Dimension line\tM", self._activate_dimension)
         menu.addSeparator()
         menu.addAction(icons.icon("mdi.ruler-square-compass"),
                        "&Scale bar…", self._insert_scale_bar)
+        menu.addSeparator()
+        self._rulers_act = QAction("Show &rulers (mm)", self, checkable=True)
+        self._rulers_act.toggled.connect(self.view.set_rulers_visible)
+        menu.addAction(self._rulers_act)
 
     def _insert_scale_bar(self):
         """Ask for a length + unit and drop a labelled scale bar at the
