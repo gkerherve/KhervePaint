@@ -24,7 +24,8 @@ from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
 
 from . import APP_NAME, __version__, canvassize, document, icons, library, svgio
 from .undo import SnapshotCommand
-from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, CHEM_ATOM,
+from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, PROTRACTOR,
+                     CHEM_ATOM,
                      CHEM_BENZENE,
                      CHEM_CYCLOHEXANE, CHEM_CYCLOPENTANE, CHEM_DOUBLE,
                      CHEM_CHAIN, CHEM_HASH, CHEM_HBOND, CHEM_SINGLE,
@@ -829,6 +830,8 @@ class MainWindow(QMainWindow):
         menu = self._measure_menu = menubar.addMenu("&Measure")
         menu.addAction(icons.icon("mdi.ruler"),
                        "&Dimension line\tM", self._activate_dimension)
+        menu.addAction(icons.icon("mdi.angle-acute"),
+                       "&Protractor (angle)", self._activate_protractor)
         menu.addSeparator()
         menu.addAction(icons.icon("mdi.ruler-square-compass"),
                        "&Scale bar…", self._insert_scale_bar)
@@ -869,6 +872,10 @@ class MainWindow(QMainWindow):
         label = f"{value.value():g} {unit.currentText()}"
         center = self.view.mapToScene(self.view.viewport().rect().center())
         self.scene.place_scale_bar(length_mm, label, center)
+
+    def _activate_protractor(self):
+        """Arm the three-click angle-measure tool."""
+        self._activate_placement_tool(PROTRACTOR)
 
     def _build_library_menu(self, menubar):
         """Library ▸ every symbol palette of the left toolbar (chemistry,
@@ -923,6 +930,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------ state
     def _set_tool(self, tool: str):
         self.scene.end_chain()              # finish any in-progress bond chain
+        self.scene.end_angle()              # cancel any in-progress protractor
         self.scene.tool = tool
         self.view.set_tool_cursor(tool)
         if tool != POINTER:

@@ -1474,6 +1474,39 @@ def test_properties_dialog_apply_live(app):
     assert emitted                            # undoable snapshot pushed
 
 
+def test_protractor_measures_angle(scene):
+    """Three clicks (vertex, arm A, arm B) build a grouped angle with a
+    degree label; a right angle reads 90.0°."""
+    from khervepaint.canvas import PROTRACTOR, GroupItem, TextItem
+
+    class _Ev:
+        def __init__(self, x, y):
+            self._p = QPointF(x, y)
+
+        def button(self):
+            return Qt.LeftButton
+
+        def scenePos(self):
+            return self._p
+
+    scene.tool = PROTRACTOR
+    scene._protractor_click(_Ev(0, 0))         # vertex
+    scene._protractor_click(_Ev(10, 0))        # arm A (→ +x)
+    assert scene._angle_pts is not None        # mid-measurement
+    scene._protractor_click(_Ev(0, 10))        # arm B (→ +y): 90°
+    assert scene._angle_pts is None            # finished
+    group = next(i for i in scene.vector_items()
+                 if isinstance(i, GroupItem))
+    label = next(c for c in group.childItems() if isinstance(c, TextItem))
+    assert label.toPlainText() == "90.0°"
+
+    # Cancel mid-measurement leaves no stray preview items.
+    n = len(scene.vector_items())
+    scene._protractor_click(_Ev(50, 50))
+    scene.end_angle()
+    assert len(scene.vector_items()) == n
+
+
 def test_edge_rulers_toggle_and_steps(window):
     """The mm rulers reserve viewport margin space when shown, release it
     when hidden, and pick sensible tick steps for the zoom level."""

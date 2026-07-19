@@ -35,6 +35,7 @@ POINTER, PENCIL, LINE, RECT, CIRCLE, ELLIPSE, TEXT = (
     "pointer", "pencil", "line", "rect", "circle", "ellipse", "text")
 BUCKET = "bucket"
 ERASER, PICKER = "eraser", "picker"
+PROTRACTOR = "protractor"     # three-click angle measurement
 ROOM = "room"                 # drag-to-size room (the empty space / walls)
 ARROW, ROUNDRECT = "arrow", "roundrect"
 DIMENSION = "dimension"
@@ -728,6 +729,8 @@ class PaintScene(QGraphicsScene):
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
         self._chain_preview = None        # rubber-band segment to the cursor
+        self._angle_pts = None            # clicked points of the protractor
+        self._angle_preview = None        # preview arm items while measuring
         self._erase_last = None           # previous eraser point while dragging
         self._paint_image = None          # ImageItem being pixel-painted, if any
         self._orbit_item = None           # molecule being 3D-rotated in place
@@ -1136,6 +1139,101 @@ class PaintScene(QGraphicsScene):
         self._chain_preview = None
         self._chain_pts = None
 
+    # ------------------------------------------------------- protractor
+    def _protractor_click(self, event):
+        """Three-click angle measure: click the vertex, then each arm end.
+        A non-left button (or Esc) cancels the in-progress measurement."""
+        if event.button() != Qt.LeftButton:
+            self.end_angle()
+            return
+        pos = event.scenePos()
+        if self._angle_pts is None:                 # 1st click: the vertex
+            self._angle_pts = [pos]
+            arm = LineItem(QLineF(pos, pos))
+            arm.setPen(QPen(self.pen))
+            self.addItem(arm)
+            self._angle_preview = [arm]
+            return
+        if len(self._angle_pts) == 1:               # 2nd click: first arm end
+            self._angle_pts.append(pos)
+            self._angle_preview[0].setLine(QLineF(self._angle_pts[0], pos))
+            arm = LineItem(QLineF(self._angle_pts[0], pos))
+            arm.setPen(QPen(self.pen))
+            self.addItem(arm)
+            self._angle_preview.append(arm)
+            return
+        # 3rd click: second arm end -> build the measured angle
+        v, a = self._angle_pts[0], self._angle_pts[1]
+        b = pos
+        for it in self._angle_preview:
+            self.removeItem(it)
+        self._angle_preview = None
+        self._angle_pts = None
+        self._finish_angle(v, a, b)
+
+    def _update_angle_preview(self, pos: QPointF):
+        if not self._angle_pts or self._angle_preview is None:
+            return
+        self._angle_preview[-1].setLine(QLineF(self._angle_pts[-1], pos))
+
+    def end_angle(self):
+        """Cancel an in-progress protractor measurement (drop previews)."""
+        if self._angle_preview is not None:
+            for it in self._angle_preview:
+                self.removeItem(it)
+        self._angle_preview = None
+        self._angle_pts = None
+
+    def _finish_angle(self, v: QPointF, a: QPointF, b: QPointF):
+        """Build the measured angle at vertex *v* between arms v→a and v→b:
+        the two arms, an arc through the smaller sweep, and a degree label —
+        grouped, editable and undoable."""
+        aa = math.atan2(a.y() - v.y(), a.x() - v.x())
+        ab = math.atan2(b.y() - v.y(), b.x() - v.x())
+        if QLineF(v, a).length() < 1 or QLineF(v, b).length() < 1:
+            return
+        delta = ab - aa
+        while delta <= -math.pi:
+            delta += 2 * math.pi
+        while delta > math.pi:
+            delta -= 2 * math.pi
+        deg = abs(math.degrees(delta))
+        r = min(QLineF(v, a).length(), QLineF(v, b).length()) * 0.4
+        r = max(min(r, 60.0), 12.0)
+        items = []
+        for end in (a, b):                          # the two arms
+            arm = LineItem(QLineF(v, end))
+            arm.setPen(QPen(self.pen))
+            items.append(arm)
+        arc = QPainterPath()                        # arc through the sweep
+        steps = max(int(abs(delta) / (math.pi / 36)) + 1, 2)
+        for i in range(steps + 1):
+            ang = aa + delta * i / steps
+            p = QPointF(v.x() + r * math.cos(ang), v.y() + r * math.sin(ang))
+            arc.moveTo(p) if i == 0 else arc.lineTo(p)
+        arc_item = PathItem(arc)
+        arc_item.setPen(QPen(self.pen))
+        arc_item.setBrush(QBrush(Qt.NoBrush))
+        items.append(arc_item)
+        mid = aa + delta / 2.0                       # label on the bisector
+        lp = QPointF(v.x() + (r + 14) * math.cos(mid),
+                     v.y() + (r + 14) * math.sin(mid))
+        label = TextItem(f"{deg:.1f}°")
+        label.setDefaultTextColor(self.pen.color())
+        lb = label.boundingRect()
+        label.setPos(lp.x() - lb.width() / 2.0, lp.y() - lb.height() / 2.0)
+        items.append(label)
+        group = GroupItem()
+        self.addItem(group)
+        self.clearSelection()
+        for z, it in enumerate(items):
+            it.setZValue(z)
+            group.addToGroup(it)
+        center_origin(group)
+        group.setSelected(True)
+        self.changed_by_user.emit()
+        return group
+
     # ------------------------------------------------------------ tools
     def mousePressEvent(self, event):
         if self._orbit_item is not None:
@@ -1149,6 +1247,9 @@ class PaintScene(QGraphicsScene):
             self._exit_orbit()                # any other press ends orbiting
         if self.tool == CHEM_CHAIN:
             self._chain_click(event)
+            return
+        if self.tool == PROTRACTOR:
+            self._protractor_click(event)
             return
         if self.tool == POINTER or event.button() != Qt.LeftButton:
             if (self.tool == POINTER and event.button() == Qt.LeftButton
@@ -1285,6 +1386,9 @@ class PaintScene(QGraphicsScene):
             last = self._chain_pts[-1]
             self._chain_preview.setLine(
                 QLineF(last, self._chem_constrain(last, event.scenePos())))
+            return
+        if self.tool == PROTRACTOR and self._angle_pts is not None:
+            self._update_angle_preview(event.scenePos())
             return
         if not self._drawing:
             super().mouseMoveEvent(event)
@@ -2460,5 +2564,6 @@ class PaintView(QGraphicsView):
                 return
         if event.key() == Qt.Key_Escape:        # finish a bond chain / orbit
             self.scene().end_chain()
+            self.scene().end_angle()
             self.scene()._exit_orbit()
         super().keyPressEvent(event)
