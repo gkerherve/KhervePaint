@@ -377,17 +377,27 @@ up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
 (simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl). Same-element atoms
 on a hidden lattice site (a BCC body-centre, the FCC/diamond face-centres,
 the diamond interior) are <b>colour-coded</b> so they don't disappear
-against identical corners.
+against identical corners. A <b>Lattice systems</b> category adds the
+non-cubic crystal systems as unit cells built from their lattice
+parameters (a, b, c, α, β, γ): <b>tetragonal, orthorhombic, hexagonal,
+rhombohedral, monoclinic, triclinic</b>.
 <b>Double-click</b> a placed model to <b>rotate it in 3D on the canvas</b>
 (drag to spin, Esc to finish). Right-click a crystal ▸ <b>Stack unit
-cells…</b> to tile it into an <i>a×b×c</i> <b>supercell</b> (repeat the unit
-cell along each axis; 1×1×1 restores the single cell). Right-click ▸
+cells…</b> to tile it into an <i>a×b×c</i> <b>supercell</b> — cells repeat
+along the cell's own <b>lattice vectors</b>, so hexagonal/monoclinic
+supercells stack skewed in the crystallographically correct orientations
+(1×1×1 restores the single cell). Right-click ▸
 <b>Molecule builder…</b> opens
 a window with a cube-face view toolbar, a bond-length slider and an atom
 palette: click a sphere to select it (the status shows its free bonds —
 the builder tracks each element's valence), click an element to bond a new
 atom on at the chosen order, drag a sphere to bend a bond angle, or drag
 the background to rotate. Chains build straight, not into rings.
+Select a sphere and click <b>Colour…</b> to recolour it as you please
+(on a crystal this recolours every atom of that element and site;
+<b>Reset colours</b> restores the CPK colours), and right-click a placed
+model ▸ <b>Add colour legend</b> to drop an editable key naming each
+colour beside it.
 Right-click ▸ <b>Show as</b> redraws a molecule as a 3D model, a 2D
 <b>structural</b> or <b>Lewis</b> formula, or the <b>condensed</b>
 molecular formula. The AI Chat can build molecules and 3D structures on

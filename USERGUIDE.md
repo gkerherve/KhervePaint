@@ -360,6 +360,15 @@ Five further dropdowns cover general diagrams and more science:
   **colour-coded** so they stand out instead of vanishing against identical
   corners.
 
+  A **Lattice systems** category adds the non-cubic crystal systems as
+  wireframe unit cells built from their real lattice parameters
+  (a, b, c, α, β, γ): **tetragonal**, **orthorhombic**, **hexagonal**
+  (γ = 120°), **rhombohedral** (trigonal), **monoclinic** and
+  **triclinic**. These stack too — the supercell tiles along the cell's
+  own **lattice vectors**, so a hexagonal or monoclinic supercell grows
+  skewed, with the cells meeting face-to-face in the crystallographically
+  correct orientations rather than on a square grid.
+
   **Double-click** a placed molecule or crystal to **rotate it in 3D right
   on the canvas** — grab and drag to spin it; press **Esc** (or click off
   it) to finish. The whole spin is a single undo step, and the orientation
@@ -387,9 +396,21 @@ Five further dropdowns cover general diagrams and more science:
   - **Drag a sphere** to move that atom and open up a bond angle by hand;
     **drag the background** to rotate the whole model.
   - **Delete atom** removes the selected sphere.
+  - **Atom colour** — select a sphere and click **Colour…** to give it any
+    colour you like. On a molecule the colour sticks to that one atom; on
+    a crystal it recolours **every atom of that element on that lattice
+    site** (so you can tint just the body-centres, say). **Reset colours**
+    restores the standard CPK / site colours. Custom colours are saved
+    with the drawing.
 
   Bonds are drawn longer by default so the sticks are clear; the slider
   spreads the atoms further.
+
+  **Colour legend** — right-click a placed model ▸ **Add colour legend**
+  drops a key beside it: one lit sphere per colour with its element name
+  (and lattice site, e.g. "Fe — Iron (body centre)"). The legend is an
+  ordinary editable group — double-click a label to reword it, move or
+  restyle it like anything else.
 
   **Representations.** A molecule can be drawn four ways (as in a textbook
   figure): pick from right-click ▸ **Show as**, or the **Insert as** combo
