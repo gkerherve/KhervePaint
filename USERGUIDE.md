@@ -381,6 +381,17 @@ Five further dropdowns cover general diagrams and more science:
   cell. The stacked model is still one rotatable, editable group, and the
   cell counts are saved with the drawing.
 
+  **Tilt cells inside a supercell** — in the Molecule builder, a crystal
+  gets a **Supercell** row (the same a×b×c repeats, previewed live) and
+  **Tilt cell** controls: click any atom to select the unit cell it
+  belongs to (the status line names it, e.g. "cell (1, 0, 0)"), then set
+  its **x / y / z rotation** in degrees. The chosen cell spins rigidly
+  about its own centre — like a misoriented grain, or an octahedral-tilt
+  figure in a perovskite — and separates cleanly from its neighbours
+  (rotated corners no longer merge with the untilted lattice). Any number
+  of cells can carry their own tilt; **Reset tilts** clears them all, and
+  tilts are saved with the drawing.
+
   For more control, right-click ▸ **Molecule builder…** opens a window
   with a **view toolbar** (Front / Back / Left / Right / Top / Bottom /
   Isometric — each a little cube with the viewed face shaded), a

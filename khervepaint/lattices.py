@@ -45,6 +45,27 @@ def lattice_vectors(a, b, c, alpha, beta, gamma):
     return va, vb, (cx, cy, cz)
 
 
+def rotation(rx, ry, rz):
+    """A 3D rotation for tilt angles in **degrees** about the x, y then z
+    axes; returns a point -> rotated-point function. Used to tilt a single
+    unit cell inside a supercell about its own centre."""
+    ax, ay, az = (math.radians(v) for v in (rx, ry, rz))
+    cx, sx = math.cos(ax), math.sin(ax)
+    cy, sy = math.cos(ay), math.sin(ay)
+    cz, sz = math.cos(az), math.sin(az)
+    m = (                                       # R = Rz · Ry · Rx
+        (cz * cy, cz * sy * sx - sz * cx, cz * sy * cx + sz * sx),
+        (sz * cy, sz * sy * sx + cz * cx, sz * sy * cx - cz * sx),
+        (-sy, cy * sx, cy * cx),
+    )
+
+    def apply(p):
+        return (m[0][0] * p[0] + m[0][1] * p[1] + m[0][2] * p[2],
+                m[1][0] * p[0] + m[1][1] * p[1] + m[1][2] * p[2],
+                m[2][0] * p[0] + m[2][1] * p[1] + m[2][2] * p[2])
+    return apply
+
+
 def _corner(f, va, vb, vc):
     return tuple(f[0] * va[k] + f[1] * vb[k] + f[2] * vc[k] for k in range(3))
 

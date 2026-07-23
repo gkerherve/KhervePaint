@@ -146,6 +146,23 @@ def center_origin(item):
     item.setTransformOriginPoint(item.boundingRect().center())
 
 
+def _tilts_in_range(tilts, cells):
+    """Keep only the cell tilts that fall inside the *cells* supercell (and
+    actually rotate something); None when there is no supercell at all."""
+    if not tilts or not cells:
+        return None
+    kept = {}
+    for key, angles in tilts.items():
+        try:
+            i, j, k = (int(v) for v in str(key).split(","))
+        except ValueError:
+            continue
+        if any(angles) and 0 <= i < cells[0] and 0 <= j < cells[1] \
+                and 0 <= k < cells[2]:
+            kept[key] = angles
+    return kept or None
+
+
 class LabelMixin:
     """An optional text label drawn centred inside a shape. Defaults
     live at class level (immutable), so an unlabelled shape carries no
@@ -1723,12 +1740,13 @@ class PaintScene(QGraphicsScene):
 
     @staticmethod
     def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None,
-                   repr="3d", cells=None, colors=None):
+                   repr="3d", cells=None, colors=None, tilts=None):
         """Stamp a group with its model identity (name + view + bond spread +
         stable build box + representation, the raw atoms/bonds when the
         structure was hand-built, the ``(nx, ny, nz)`` supercell counts
-        when unit cells have been stacked, and the per-element/site colour
-        override map for crystals — see `molcolor`)."""
+        when unit cells have been stacked, the per-element/site colour
+        override map for crystals — see `molcolor` — and the per-cell tilt
+        map ``{"i,j,k": (rx, ry, rz)}`` for rotated cells in a supercell)."""
         item.mol_name = name
         item.mol_az = az
         item.mol_el = el
@@ -1739,6 +1757,7 @@ class PaintScene(QGraphicsScene):
         item.mol_repr = repr
         item.mol_cells = cells
         item.mol_colors = colors
+        item.mol_tilts = tilts
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1836,14 +1855,16 @@ class PaintScene(QGraphicsScene):
         return group
 
     def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
-                       mode=None, cells="keep", colors="keep", commit=True):
+                       mode=None, cells="keep", colors="keep", tilts="keep",
+                       commit=True):
         """Rebuild a placed molecule/crystal *item* at view angles (az, el),
         bond spread *bond* and representation *mode* (3d / structural / lewis
         / condensed), preserving its centre and footprint. When *atoms*/
         *bonds* are given the structure is replaced (hand-built in the
-        builder); *cells* re-tiles a crystal supercell and *colors* recolours
-        its atoms (``"keep"`` reuses the item's current values). Returns the
-        new top-level item. Undoable when *commit*."""
+        builder); *cells* re-tiles a crystal supercell, *colors* recolours
+        its atoms and *tilts* rotates chosen cells inside the supercell
+        (``"keep"`` reuses the item's current values). Returns the new
+        top-level item. Undoable when *commit*."""
         name = getattr(item, "mol_name", None)
         if name is None:
             return None
@@ -1857,6 +1878,9 @@ class PaintScene(QGraphicsScene):
             cells = getattr(item, "mol_cells", None)
         if colors == "keep":
             colors = getattr(item, "mol_colors", None)
+        if tilts == "keep":
+            tilts = getattr(item, "mol_tilts", None)
+        tilts = _tilts_in_range(tilts, cells)
         if atoms is None:
             atoms = getattr(item, "mol_atoms", None)
             bonds = getattr(item, "mol_bonds", None)
@@ -1874,10 +1898,11 @@ class PaintScene(QGraphicsScene):
             else:
                 specs = molecules.build_specs_oriented(name, box, box, az, el,
                                                        bond, cells=cells,
-                                                       colors=colors)
+                                                       colors=colors,
+                                                       tilts=tilts)
         else:                                     # 2D chemistry diagram
             a2, b2 = ((atoms, bonds) if atoms
-                      else molecules.model_data(name, cells)[:2])
+                      else molecules.model_data(name, cells, tilts=tilts)[:2])
             specs = molrepr.representation_specs(mode, a2, b2, box, box)
         new_items = [it for it in (_spec_to_item(s) for s in specs)
                      if it is not None]
@@ -1887,7 +1912,7 @@ class PaintScene(QGraphicsScene):
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
         self._tag_model(top, name, az, el, bond, atoms, bonds, box=box,
-                        repr=mode, cells=cells, colors=colors)
+                        repr=mode, cells=cells, colors=colors, tilts=tilts)
         if commit:
             self.changed_by_user.emit()
         return top
@@ -2403,13 +2428,26 @@ class PaintView(QGraphicsView):
                              getattr(item, "mol_bonds", None),
                              getattr(item, "mol_repr", None),
                              colors=getattr(item, "mol_colors", None),
+                             cells=getattr(item, "mol_cells", None),
+                             tilts=getattr(item, "mol_tilts", None),
                              parent=self)
         if dlg.exec_():
             atoms, bonds = dlg.result()
-            self.scene().reorient_model(item, dlg.az, dlg.el, bond=dlg.bond,
-                                        atoms=atoms, bonds=bonds,
-                                        mode=dlg.representation(),
-                                        colors=dlg.colors or None)
+            kwargs = dict(bond=dlg.bond, atoms=atoms, bonds=bonds,
+                          mode=dlg.representation(),
+                          colors=dlg.colors or None)
+            if not dlg.editable:
+                # crystal: the builder also chooses the supercell + tilts;
+                # regrow the build box so the spheres keep a constant size
+                from . import molecules
+                cells = dlg.cells if dlg.cells != (1, 1, 1) else None
+                w_mm, h_mm = molecules.size_mm(item.mol_name)
+                ref = getattr(molecules, "REFERENCE_MM", 130.0)
+                scale = (self.scene().sceneRect().width() or 1) / ref
+                item.mol_box = max(w_mm * scale, h_mm * scale) \
+                    * molecules.stack_factor(cells)
+                kwargs.update(cells=cells, tilts=dlg.tilts or None)
+            self.scene().reorient_model(item, dlg.az, dlg.el, **kwargs)
 
     def set_tool_cursor(self, tool: str):
         if tool == POINTER:

@@ -1022,7 +1022,8 @@ def stack_factor(cells):
     return max(cells) if cells else 1
 
 
-def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None):
+def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None, tilts=None,
+               owners=None):
     """Tile a crystal unit cell into an ``nx×ny×nz`` supercell.
 
     Cells translate along *vectors* — the lattice's three cell vectors —
@@ -1031,22 +1032,29 @@ def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None):
     cubic-family cells pass no vectors and fall back to the wireframe's
     extent along x/y/z (the cube edge length). Atoms, bonds and cell edges
     shared between neighbouring cells are de-duplicated by rounded
-    coordinate, so corners/faces aren't drawn on top of each other."""
+    coordinate, so corners/faces aren't drawn on top of each other.
+
+    *tilts* maps ``"i,j,k"`` cell keys to ``(rx, ry, rz)`` degrees: those
+    cells rotate rigidly about their own centre — a misoriented grain in
+    the supercell — and so naturally stop sharing atoms with their
+    neighbours (their rotated corners no longer coincide). *owners* (a
+    list, filled in place) records the ``"i,j,k"`` cell that created each
+    output atom, for cell picking in the builder."""
     edges = edges or []
     bonds = bonds or []
+    pts = [p for e in edges for p in (e[0], e[1])] or \
+        [(a[1], a[2], a[3]) for a in atoms]
+    lo = [min(p[d] for p in pts) for d in range(3)]
+    hi = [max(p[d] for p in pts) for d in range(3)]
     if vectors:
         va, vb, vc = vectors
     else:
-        pts = [p for e in edges for p in (e[0], e[1])]
-        if pts:
-            ax = (max(p[0] for p in pts) - min(p[0] for p in pts)) or 1.0
-            ay = (max(p[1] for p in pts) - min(p[1] for p in pts)) or 1.0
-            az = (max(p[2] for p in pts) - min(p[2] for p in pts)) or 1.0
-        else:                                    # no wireframe: use atom span
-            ax = (max(a[1] for a in atoms) - min(a[1] for a in atoms)) or 1.0
-            ay = (max(a[2] for a in atoms) - min(a[2] for a in atoms)) or 1.0
-            az = (max(a[3] for a in atoms) - min(a[3] for a in atoms)) or 1.0
-        va, vb, vc = (ax, 0.0, 0.0), (0.0, ay, 0.0), (0.0, 0.0, az)
+        va = ((hi[0] - lo[0]) or 1.0, 0.0, 0.0)
+        vb = (0.0, (hi[1] - lo[1]) or 1.0, 0.0)
+        vc = (0.0, 0.0, (hi[2] - lo[2]) or 1.0)
+    #: tilt pivot: the base cell's centre (bounding midpoint — exact for a
+    #: parallelepiped spanned from the origin)
+    centre = [(lo[d] + hi[d]) / 2.0 for d in range(3)]
 
     def key(x, y, z):
         return (round(x, 3), round(y, 3), round(z, 3))
@@ -1059,14 +1067,26 @@ def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None):
                 ox = i * va[0] + j * vb[0] + k * vc[0]
                 oy = i * va[1] + j * vb[1] + k * vc[1]
                 oz = i * va[2] + j * vb[2] + k * vc[2]
+                ck = "%d,%d,%d" % (i, j, k)
+                tilt = (tilts or {}).get(ck)
+                rot = lattices.rotation(*tilt) if tilt and any(tilt) else None
+
+                def place(x, y, z):
+                    if rot is not None:          # spin about the cell centre
+                        x, y, z = rot((x - centre[0], y - centre[1],
+                                       z - centre[2]))
+                        x, y, z = x + centre[0], y + centre[1], z + centre[2]
+                    return x + ox, y + oy, z + oz
+
                 remap = {}
                 for oi, atom in enumerate(atoms):
-                    el, x, y, z = atom[0], atom[1], atom[2], atom[3]
-                    ak = key(x + ox, y + oy, z + oz)
+                    x, y, z = place(atom[1], atom[2], atom[3])
+                    ak = key(x, y, z)
                     if ak not in seen_atom:
                         seen_atom[ak] = len(new_atoms)
-                        new_atoms.append((el, x + ox, y + oy, z + oz)
-                                         + tuple(atom[4:]))
+                        new_atoms.append((atom[0], x, y, z) + tuple(atom[4:]))
+                        if owners is not None:
+                            owners.append(ck)
                     remap[oi] = seen_atom[ak]
                 for bi, bj, bo in bonds:
                     a, b = remap[bi], remap[bj]
@@ -1076,8 +1096,8 @@ def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None):
                         new_bonds.append((a, b, bo))
                 for e in edges:
                     style = e[2] if len(e) > 2 else "solid"
-                    p1 = (e[0][0] + ox, e[0][1] + oy, e[0][2] + oz)
-                    p2 = (e[1][0] + ox, e[1][1] + oy, e[1][2] + oz)
+                    p1 = place(*e[0])
+                    p2 = place(*e[1])
                     ek = (frozenset((key(*p1), key(*p2))), style)
                     if ek not in seen_edge:
                         seen_edge.add(ek)
@@ -1090,13 +1110,14 @@ def default_bond(name):
     return 1.0 if is_crystal(name) else DEFAULT_BOND
 
 
-def model_data(name, cells=None):
+def model_data(name, cells=None, tilts=None, owners=None):
     """Return ``(atoms, bonds, edges, rscale)`` for a named model.
 
     The 3D data behind a model, so the viewer can re-project it at any
     orientation. Polymers share the zig-zag backbone builder. A crystal can
-    be tiled into an ``nx×ny×nz`` supercell by passing *cells* (stacked unit
-    cells)."""
+    be tiled into an ``nx×ny×nz`` supercell by passing *cells* (stacked
+    unit cells); *tilts* rotates chosen cells about their own centre and
+    *owners* collects each atom's home cell (see `_supercell`)."""
     if name in _POLYMERS:
         atoms, bonds, edges = _polymer_atoms(_POLYMER_LEN, _POLYMERS[name])
         return atoms, bonds, edges, 0.92
@@ -1104,18 +1125,22 @@ def model_data(name, cells=None):
     atoms, bonds, edges = builder()
     if cells and can_stack(name) and tuple(cells) != (1, 1, 1):
         atoms, bonds, edges = _supercell(atoms, bonds, edges, *cells,
-                                         vectors=lattices.LATTICE_VECTORS.get(name))
+                                         vectors=lattices.LATTICE_VECTORS.get(name),
+                                         tilts=tilts, owners=owners)
+    elif owners is not None:
+        owners.extend(["0,0,0"] * len(atoms))
     return atoms, bonds, edges, rscale
 
 
 def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None,
-                         colors=None, tag_atoms=False):
+                         colors=None, tag_atoms=False, tilts=None):
     """Shape specs for model *name* in a (w, h) box, viewed at (az, el)
     radians, with bond spread *bond* (defaults per model). *cells* tiles a
-    crystal into a stacked supercell; *colors* is a per-element/site colour
-    override map (see `molcolor`); *tag_atoms* stamps sphere specs with
-    their atom index for builder hit-testing."""
-    atoms, bonds, edges, rscale = model_data(name, cells)
+    crystal into a stacked supercell and *tilts* rotates chosen cells in
+    it; *colors* is a per-element/site colour override map (see
+    `molcolor`); *tag_atoms* stamps sphere specs with their atom index for
+    builder hit-testing."""
+    atoms, bonds, edges, rscale = model_data(name, cells, tilts=tilts)
     if colors:
         from . import molcolor
         atoms = molcolor.apply_colors(atoms, colors)

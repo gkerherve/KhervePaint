@@ -393,6 +393,11 @@ palette: click a sphere to select it (the status shows its free bonds —
 the builder tracks each element's valence), click an element to bond a new
 atom on at the chosen order, drag a sphere to bend a bond angle, or drag
 the background to rotate. Chains build straight, not into rings.
+For a crystal the builder instead shows a <b>Supercell</b> row (a×b×c
+repeats, previewed live) and <b>Tilt cell</b> controls: click an atom to
+select its unit cell, then set that cell's x/y/z rotation — it spins
+rigidly about its own centre, like a misoriented grain in the lattice
+(<b>Reset tilts</b> clears them; tilts are saved with the drawing).
 Select a sphere and click <b>Colour…</b> to recolour it as you please
 (on a crystal this recolours every atom of that element and site;
 <b>Reset colours</b> restores the CPK colours), and right-click a placed

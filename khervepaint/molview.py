@@ -159,7 +159,8 @@ class MoleculeViewer(QDialog):
     """Rotate and build a molecule / crystal in 3D."""
 
     def __init__(self, name, az=None, el=None, bond=None,
-                 atoms=None, bonds=None, repr=None, colors=None, parent=None):
+                 atoms=None, bonds=None, repr=None, colors=None, cells=None,
+                 tilts=None, parent=None):
         super().__init__(parent)
         self.name = name
         self.editable = not molecules.is_crystal(name)
@@ -172,9 +173,13 @@ class MoleculeViewer(QDialog):
         self.dirty = atoms is not None
         #: Per-element/site colour overrides (crystals; see `molcolor`).
         self.colors = dict(colors or {})
+        #: Supercell repeats + per-cell tilt map (crystals only).
+        self.cells = tuple(cells) if cells else (1, 1, 1)
+        self.tilts = {k: list(v) for k, v in (tilts or {}).items()}
+        self._owners = []               # atom index -> "i,j,k" home cell
         # Editable structure: reuse a hand-built one, else load the model.
-        # A crystal keeps its fixed lattice, but its atoms are still loaded
-        # so clicked spheres can be identified for recolouring.
+        # A crystal keeps its fixed lattice, but its (supercell) atoms are
+        # still loaded so clicked spheres map to an element and a cell.
         if self.editable:
             if atoms is not None:
                 self.atoms = [list(a) for a in atoms]
@@ -185,8 +190,7 @@ class MoleculeViewer(QDialog):
                 self.atoms = [list(a) for a in ma]
                 self.bonds = [list(b) for b in mb]
         else:
-            ma, _mb, _edges, self.rscale = molecules.model_data(name)
-            self.atoms, self.bonds = [list(a) for a in ma], []
+            self._sync_crystal()
 
         label = "new molecule" if name == "custom" \
             else molecules.LABELS.get(name, name)
@@ -208,6 +212,8 @@ class MoleculeViewer(QDialog):
         if self.editable:
             layout.addLayout(self._palette_row())
         layout.addLayout(self._color_row())
+        if not self.editable and molecules.can_stack(name):
+            layout.addLayout(self._supercell_row())
         if self.editable:
             layout.addLayout(self._repr_row())
 
@@ -293,6 +299,38 @@ class MoleculeViewer(QDialog):
         row.addStretch(1)
         return row
 
+    def _supercell_row(self):
+        from PyQt5.QtWidgets import QSpinBox
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Supercell:"))
+        self.cell_spins = []
+        for axis in range(3):
+            sp = QSpinBox()
+            sp.setRange(1, 6)
+            sp.setValue(self.cells[axis])
+            sp.valueChanged.connect(self._on_cells)
+            self.cell_spins.append(sp)
+            row.addWidget(sp)
+            if axis < 2:
+                row.addWidget(QLabel("×"))
+        row.addSpacing(14)
+        row.addWidget(QLabel("Tilt cell:"))
+        self.tilt_spins = []
+        for axis in ("x", "y", "z"):
+            sp = QSpinBox()
+            sp.setRange(-180, 180)
+            sp.setSingleStep(5)
+            sp.setSuffix("°")
+            sp.setToolTip(f"Rotate the selected unit cell about {axis}")
+            sp.valueChanged.connect(self._on_tilt)
+            self.tilt_spins.append(sp)
+            row.addWidget(sp)
+        reset = QPushButton("Reset tilts")
+        reset.clicked.connect(self._reset_tilts)
+        row.addWidget(reset)
+        row.addStretch(1)
+        return row
+
     def _repr_row(self):
         from . import molrepr
         row = QHBoxLayout()
@@ -316,15 +354,33 @@ class MoleculeViewer(QDialog):
         return "3d"
 
     # ---------------------------------------------------------- rendering
+    def _crystal_cells(self):
+        return self.cells if self.cells != (1, 1, 1) else None
+
+    def _sync_crystal(self):
+        """Refresh the crystal's atoms + per-atom home cells for the current
+        supercell/tilt configuration (colour and cell picking hit-test
+        against these; ordering matches the rendered specs exactly)."""
+        self._owners = []
+        ma, _mb, _me, self.rscale = molecules.model_data(
+            self.name, self._crystal_cells(), tilts=self.tilts,
+            owners=self._owners)
+        self.atoms, self.bonds = [list(a) for a in ma], []
+        if self.selected is not None and self.selected >= len(self.atoms):
+            self.selected = None
+
     def render_specs(self, w, h, frozen=None):
         if self.editable:
             return molecules.specs_from_atoms(
                 self.atoms, self.bonds, w, h, self.az, self.el, self.bond,
                 self.rscale, tag_atoms=True, frozen=frozen)
+        self._sync_crystal()
         return molecules.build_specs_oriented(self.name, w, h, self.az,
                                               self.el, self.bond,
+                                              cells=self._crystal_cells(),
                                               colors=self.colors,
-                                              tag_atoms=True)
+                                              tag_atoms=True,
+                                              tilts=self.tilts)
 
     # ------------------------------------------------------------ actions
     def _set_view(self, az, el):
@@ -337,8 +393,63 @@ class MoleculeViewer(QDialog):
 
     def _on_atom_clicked(self, index):
         self.selected = None if index < 0 else index
+        # show the selected atom's cell tilt in the tilt spinboxes
+        if hasattr(self, "tilt_spins") and self.selected is not None \
+                and self.selected < len(self._owners):
+            vals = self.tilts.get(self._owners[self.selected], [0, 0, 0])
+            for sp, v in zip(self.tilt_spins, vals):
+                sp.blockSignals(True)
+                sp.setValue(int(v))
+                sp.blockSignals(False)
         self._update_status()
         self.preview.rebuild()
+
+    def _on_cells(self):
+        self.cells = tuple(sp.value() for sp in self.cell_spins)
+        # drop tilts that now point outside the supercell
+        self.tilts = {k: v for k, v in self.tilts.items()
+                      if self._cell_in_range(k)}
+        self.selected = None
+        self.preview.rebuild()
+        self._update_status()
+
+    def _cell_in_range(self, key):
+        try:
+            i, j, k = (int(v) for v in key.split(","))
+        except ValueError:
+            return False
+        return i < self.cells[0] and j < self.cells[1] and k < self.cells[2]
+
+    def _on_tilt(self):
+        if self.selected is None or self.selected >= len(self._owners):
+            self.status.setText("Click an atom of the cell you want to tilt "
+                                "first.")
+            return
+        key = self._owners[self.selected]
+        vals = [sp.value() for sp in self.tilt_spins]
+        if any(vals):
+            self.tilts[key] = vals
+        else:
+            self.tilts.pop(key, None)
+        self.preview.rebuild()
+        # tilting re-dedups the lattice, which can renumber atoms — keep
+        # the same CELL selected so the next spin tick hits the right one
+        if self.selected is None or self.selected >= len(self._owners) \
+                or self._owners[self.selected] != key:
+            self.selected = next((i for i, o in enumerate(self._owners)
+                                  if o == key), None)
+            self.preview.rebuild()
+        self._update_status()
+
+    def _reset_tilts(self):
+        self.tilts = {}
+        if hasattr(self, "tilt_spins"):
+            for sp in self.tilt_spins:
+                sp.blockSignals(True)
+                sp.setValue(0)
+                sp.blockSignals(False)
+        self.preview.rebuild()
+        self._update_status()
 
     def _add_atom(self, element):
         anchor = self.selected if self.selected is not None else \
@@ -409,12 +520,21 @@ class MoleculeViewer(QDialog):
                 site = molcolor.SITE_LABELS.get(atom[4]) \
                     if len(atom) > 4 else None
                 where = f" ({site})" if site else ""
+                cell = ""
+                if self.cells != (1, 1, 1) and self.selected < len(self._owners):
+                    cell = " in cell (" \
+                        + self._owners[self.selected].replace(",", ", ") + ")"
+                tilt = " Tilt-cell spins rotate that whole cell." \
+                    if hasattr(self, "tilt_spins") and cell else ""
                 self.status.setText(
-                    f"Selected {atom[0]}{where} — Colour… recolours every "
-                    f"{atom[0]} on this site. Drag to rotate.")
+                    f"Selected {atom[0]}{where}{cell} — Colour… recolours "
+                    f"every {atom[0]} on this site.{tilt}")
             else:
+                extra = " Set Supercell counts to stack cells; click an " \
+                    "atom, then tilt its cell." if hasattr(self, "tilt_spins") \
+                    else ""
                 self.status.setText("Drag to rotate, pick a standard view, "
-                                    "or click an atom to recolour it.")
+                                    f"or click an atom to recolour it.{extra}")
             return
         if self.selected is not None and self.selected < len(self.atoms):
             el = self.atoms[self.selected][0]
