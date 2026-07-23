@@ -377,7 +377,7 @@ Five further dropdowns cover general diagrams and more science:
 
   **Stack unit cells** — right-click a crystal ▸ **Stack unit cells…** to
   tile the unit cell into an **_a_×_b_×_c_ supercell**. Pick how many times
-  to repeat it along each axis (1–6); shared corner and face atoms are
+  to repeat it along each axis (1–30); shared corner and face atoms are
   merged so the lattice stays clean, and **1×1×1** restores the single
   cell. The stacked model is still one rotatable, editable group, and the
   cell counts are saved with the drawing.
@@ -389,9 +389,11 @@ Five further dropdowns cover general diagrams and more science:
   its **x / y / z rotation** in degrees. The chosen cell spins rigidly
   about its own centre — like a misoriented grain, or an octahedral-tilt
   figure in a perovskite — and separates cleanly from its neighbours
-  (rotated corners no longer merge with the untilted lattice). Any number
-  of cells can carry their own tilt; **Reset tilts** clears them all, and
-  tilts are saved with the drawing.
+  (rotated corners no longer merge with the untilted lattice). Only the
+  tilted cell moves: the rest of the supercell keeps its exact position
+  and size, because the layout stays anchored to the untilted lattice.
+  Any number of cells can carry their own tilt; **Reset tilts** clears
+  them all, and tilts are saved with the drawing.
 
   For more control, right-click ▸ **Molecule builder…** opens a window
   with a **view toolbar** (Front / Back / Left / Right / Top / Bottom /

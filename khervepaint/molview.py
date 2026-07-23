@@ -90,8 +90,14 @@ class _Preview(QGraphicsView):
             ring.setPen(QPen(QColor("#2176c7"), 3))
             scene.addItem(ring)
         # Keep a fixed scene rect while dragging so the view doesn't jump.
+        # Crystals always use the stable model box: their layout is anchored
+        # to the untilted lattice, so tilting one cell (whose corners may
+        # poke out of the box) must not re-zoom the whole preview.
         if self._frozen is None:
-            src = scene.itemsBoundingRect().adjusted(-10, -10, 10, 10)
+            if b.editable:
+                src = scene.itemsBoundingRect().adjusted(-10, -10, 10, 10)
+            else:
+                src = QRectF(0, 0, W, W).adjusted(-10, -10, 10, 10)
             scene.setSceneRect(src)
             self.fitInView(src, Qt.KeepAspectRatio)
 
@@ -311,7 +317,7 @@ class MoleculeViewer(QDialog):
         self.cell_spins = []
         for axis in range(3):
             sp = QSpinBox()
-            sp.setRange(1, 6)
+            sp.setRange(1, 30)
             sp.setValue(self.cells[axis])
             sp.valueChanged.connect(self._on_cells)
             self.cell_spins.append(sp)

@@ -425,7 +425,7 @@ def stack_cells_dialog(window, item):
     spins = []
     for axis, val in zip(("a", "b", "c"), cells):
         sp = QSpinBox(dlg)
-        sp.setRange(1, 6)
+        sp.setRange(1, 30)
         sp.setValue(int(val))
         form.addRow(axis, sp)
         spins.append(sp)
