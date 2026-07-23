@@ -220,6 +220,15 @@ def _spec_to_item(spec):
         item = ArcShapeItem(rect, kind=shape)
         item.setPen(_pen(spec))
         item.setBrush(_brush(spec))
+    elif shape == "polygon" and spec.get("points"):
+        # free polygon with explicit [[x, y], …] vertices (absolute coords)
+        from PyQt5.QtCore import QPointF
+        from PyQt5.QtGui import QPolygonF
+        poly = QPolygonF([QPointF(float(px), float(py))
+                          for px, py in spec["points"]])
+        item = PolygonItem(poly)
+        item.setPen(_pen(spec))
+        item.setBrush(_brush(spec))
     elif shape in POLYGON_KINDS:
         item = PolygonItem(kind=shape)
         item.set_rect(rect)
@@ -234,6 +243,8 @@ def _spec_to_item(spec):
     center_origin(item)
     if spec.get("rotation"):
         item.setRotation(float(spec["rotation"]))
+    if spec.get("opacity") is not None:
+        item.setOpacity(max(0.0, min(1.0, float(spec["opacity"]))))
     return item
 
 

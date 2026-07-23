@@ -246,16 +246,21 @@ class MoleculeViewer(QDialog):
 
     def _bond_row(self):
         row = QHBoxLayout()
-        self._bond_label = QLabel("Bond length:")
+        self._bond_label = QLabel("Bond length:" if self.editable
+                                  else "Atom spacing:")
         row.addWidget(self._bond_label)
         self.bond_slider = QSlider(Qt.Horizontal)
-        self.bond_slider.setRange(80, 260)          # 0.8 .. 2.6
+        # Crystals slide all the way to 0: the lattice contracts about its
+        # centre until the spheres touch (a close-packed electrode look)
+        # and finally coincide.
+        self.bond_slider.setRange(80 if self.editable else 0, 260)
         self.bond_slider.setValue(int(self.bond * 100))
         self.bond_slider.valueChanged.connect(self._on_bond)
+        self.bond_slider.setToolTip(
+            "Spread the atoms apart (molecule bond length)" if self.editable
+            else "Contract or expand the lattice — near 0 the spheres "
+                 "touch and overlap")
         row.addWidget(self.bond_slider, 1)
-        if not self.editable:                        # crystals: fixed spacing
-            self._bond_label.setEnabled(False)
-            self.bond_slider.setEnabled(False)
         return row
 
     def _palette_row(self):

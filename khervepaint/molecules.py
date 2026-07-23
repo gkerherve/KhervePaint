@@ -306,6 +306,26 @@ def _mol_water():
     return atoms, bonds, None
 
 
+def _diatomic(element, length, order):
+    atoms, bonds = [], []
+    i1 = _add(atoms, element, (-length / 2, 0.0, 0.0))
+    i2 = _add(atoms, element, (length / 2, 0.0, 0.0))
+    bonds.append((i1, i2, order))
+    return atoms, bonds, None
+
+
+def _mol_hydrogen():
+    return _diatomic("H", 0.74, 1)
+
+
+def _mol_oxygen():
+    return _diatomic("O", 1.21, 2)
+
+
+def _mol_nitrogen():
+    return _diatomic("N", 1.10, 3)
+
+
 def _mol_ammonia():
     atoms, bonds = [], []
     i_n = _add(atoms, "N", (0.0, 0.0, 0.0))
@@ -891,6 +911,8 @@ def _skeleton_builder(name):
 
 #: name -> (builder returning (atoms, bonds, edges), radius scale)
 _MODELS = {
+    "hydrogen": (_mol_hydrogen, 0.9), "oxygen": (_mol_oxygen, 0.9),
+    "nitrogen": (_mol_nitrogen, 0.9),
     "water": (_mol_water, 0.9), "ammonia": (_mol_ammonia, 0.9),
     "methane": (_mol_methane, 0.9), "carbon_dioxide": (_mol_carbon_dioxide, 0.9),
     "methanol": (_mol_methanol, 0.9), "ethanol": (_mol_ethanol, 0.9),
@@ -925,6 +947,7 @@ _POLYMER_LEN = 6
 #: Page footprint (mm) per model; scaled to a fraction of the page.
 REFERENCE_MM = 130.0
 SIZES = {
+    "hydrogen": (44, 26), "oxygen": (50, 30), "nitrogen": (48, 28),
     "water": (48, 40), "ammonia": (48, 44), "methane": (52, 52),
     "carbon_dioxide": (64, 34), "methanol": (58, 50), "ethanol": (68, 52),
     "formaldehyde": (52, 46), "acetic_acid": (66, 54),
@@ -938,6 +961,8 @@ SIZES = {
     "cscl": (66, 72),
 }
 LABELS = {
+    "hydrogen": "Hydrogen (H₂)", "oxygen": "Oxygen (O₂)",
+    "nitrogen": "Nitrogen (N₂)",
     "water": "Water (H₂O)", "ammonia": "Ammonia (NH₃)",
     "methane": "Methane (CH₄)", "carbon_dioxide": "Carbon dioxide (CO₂)",
     "methanol": "Methanol", "ethanol": "Ethanol",
@@ -966,8 +991,8 @@ LABELS = {
 }
 CATEGORIES = [
     ("Simple molecules",
-     ["water", "ammonia", "methane", "carbon_dioxide", "formaldehyde",
-      "hydrogen_peroxide"]),
+     ["hydrogen", "oxygen", "nitrogen", "water", "ammonia", "methane",
+      "carbon_dioxide", "formaldehyde", "hydrogen_peroxide"]),
     ("Alcohols & ethers",
      ["methanol", "ethanol", "propanol", "isopropanol", "ethylene_glycol",
       "dimethyl_ether"]),
@@ -1403,6 +1428,8 @@ _NAME_ALIASES = {
     "methyl alcohol": "methanol", "wood alcohol": "methanol",
     "ethanoic acid": "acetic_acid", "vinegar": "acetic_acid",
     "methanoic acid": "formic_acid",
+    "h2": "hydrogen", "o2": "oxygen", "n2": "nitrogen",
+    "dihydrogen": "hydrogen", "dioxygen": "oxygen", "dinitrogen": "nitrogen",
     "co2": "carbon_dioxide", "ethane-1,2-diol": "ethylene_glycol",
     "glycol": "ethylene_glycol", "methoxymethane": "dimethyl_ether",
     "table salt": "nacl", "sodium chloride": "nacl", "salt": "nacl",

@@ -35,12 +35,13 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, PROTRACTOR,
                      PENCIL, PENTAGON, PLUS, POINTER, QUARTERCIRCLE, RECT,
                      ELEC_PLACE, PLAN_PLACE, OPTICS_PLACE, VACUUM_PLACE,
                      LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
-                     ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE,
+                     ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE, S3D_PLACE,
                      RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      LineItem, PaintScene, PaintView)
 from . import (chemistry, electrical, floorplan, flowchart, labware, optics,
-               vacuum, network, pid, arrows, biology, maths, molecules)
+               vacuum, network, pid, arrows, biology, maths, molecules,
+               scheme3d)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -136,6 +137,9 @@ SYMBOL_LIBRARIES = [
     ("Molecules", "mdi.molecule",
      "Molecules — 3D ball-and-stick models & crystal cells",
      molecules, "mol_element", MOL_PLACE),
+    ("3D scheme", "mdi.layers-triple-outline",
+     "3D scheme — slabs, particle beds, glows (device schematics)",
+     scheme3d, "s3d_element", S3D_PLACE),
     ("Room layout", "mdi.floor-plan",
      "Room layout — walls, doors, furniture (top view)",
      floorplan, "plan_element", PLAN_PLACE),

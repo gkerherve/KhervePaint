@@ -371,7 +371,7 @@ vector, angle, right angle, and ready-to-place symbol glyphs
 <li><b>Molecules</b> — 3D <b>ball-and-stick</b> models: atoms as
 lit spheres in standard element colours (H white, C grey, O red, N
 blue, S yellow, Cl green…) with single/double/triple bonds. Simple
-molecules (water, methane, CO₂), alcohols &amp; acids (methanol,
+molecules (H₂, O₂, N₂, water, methane, CO₂), alcohols &amp; acids (methanol,
 ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
 up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
 (simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl). Same-element atoms
@@ -403,10 +403,20 @@ Select a sphere and click <b>Colour…</b> to recolour it as you please
 <b>Reset colours</b> restores the CPK colours), and right-click a placed
 model ▸ <b>Add colour legend</b> to drop an editable key naming each
 colour beside it.
+For a crystal the bond slider becomes <b>Atom spacing</b> and runs to
+<b>0</b> — the lattice contracts until the spheres touch (a close-packed
+particle look) and finally coincide.
 Right-click ▸ <b>Show as</b> redraws a molecule as a 3D model, a 2D
 <b>structural</b> or <b>Lewis</b> formula, or the <b>condensed</b>
 molecular formula. The AI Chat can build molecules and 3D structures on
 request too.</li>
+<li><b>3D scheme</b> — layered-device schematic blocks (fuel cells,
+batteries, membranes): shaded <b>3D slabs</b> and a <b>3D disk</b> for
+electrolyte/substrate layers, close-packed <b>particle beds</b> and
+<b>rows</b> of lit spheres in five colours for porous electrodes, single
+spheres, translucent reaction <b>glows</b>, <b>active-site dots</b> and a
+dotted <b>ion trail</b>. Combine with the Molecules palette (H₂/O₂/H₂O)
+and Arrows &amp; callouts for a full PCFC-style figure.</li>
 </ul>
 
 <h2>11 · Drawing size &amp; publication figures</h2>

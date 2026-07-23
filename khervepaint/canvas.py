@@ -73,10 +73,11 @@ ARROW_PLACE = "arrow_place"
 BIO_PLACE = "bio_place"
 MATH_PLACE = "math_place"
 MOL_PLACE = "mol_place"
+S3D_PLACE = "s3d_place"
 #: All spec-library placement tools (drop a symbol on click).
 _PLACE_TOOLS = (PLAN_PLACE, ELEC_PLACE, OPTICS_PLACE, VACUUM_PLACE,
                 LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
-                ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE)
+                ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE, S3D_PLACE)
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -742,6 +743,7 @@ class PaintScene(QGraphicsScene):
         self.bio_element = "cell"         # biology symbol to place
         self.math_element = "axes_2d"     # math/graph symbol to place
         self.mol_element = "methane"      # molecule/crystal model to place
+        self.s3d_element = "slab_grey"    # 3D-schematic block to place
         self.chem_fixed = True            # ChemDraw-style fixed length + angle
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
@@ -1393,6 +1395,9 @@ class PaintScene(QGraphicsScene):
         elif self.tool == MOL_PLACE:                # molecule / crystal model
             self._drawing = False
             self.place_mol_element(self.mol_element, pos)
+        elif self.tool == S3D_PLACE:                # 3D-schematic block
+            self._drawing = False
+            self.place_s3d_element(self.s3d_element, pos)
 
     def mouseMoveEvent(self, event):
         if self._orbiting:
@@ -1695,6 +1700,11 @@ class PaintScene(QGraphicsScene):
         from . import maths
         self._place_symbol(maths, name, center)
 
+    def place_s3d_element(self, name: str, center: QPointF):
+        """Drop a 3D-schematic block (slab, particle bed, glow, trail…)."""
+        from . import scheme3d
+        self._place_symbol(scheme3d, name, center)
+
     def place_mol_element(self, name: str, center: QPointF):
         """Drop a molecule / crystal ball-and-stick model."""
         from . import molecules
@@ -1871,7 +1881,9 @@ class PaintScene(QGraphicsScene):
         from . import molecules, molrepr
         from .ai_assistant import _spec_to_item
         if bond is None:
-            bond = getattr(item, "mol_bond", None) or molecules.default_bond(name)
+            bond = getattr(item, "mol_bond", None)
+            if bond is None:            # NOT `or`: a 0.0 spacing is valid
+                bond = molecules.default_bond(name)
         if mode is None:
             mode = getattr(item, "mol_repr", None) or "3d"
         if cells == "keep":

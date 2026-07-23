@@ -346,7 +346,8 @@ Five further dropdowns cover general diagrams and more science:
   (H white, C dark grey, O red, N blue, S yellow, Cl green…) with single/
   double/triple bonds, laid out with correct linear / trigonal /
   tetrahedral geometry. Dozens of ready-made molecules by category —
-  simple molecules, **alcohols & ethers**, **acids & carbonyls**,
+  simple molecules (including the **H₂ / O₂ / N₂** diatomics for gas-flow
+  schematics), **alcohols & ethers**, **acids & carbonyls**,
   **nitrogen compounds** (amines, urea, glycine…), **hydrocarbons**
   (methane→hexane, alkenes, alkynes), **aromatics** (benzene, toluene,
   phenol), **halogenated** (chloroform, CCl₄…), **polymers**
@@ -415,7 +416,23 @@ Five further dropdowns cover general diagrams and more science:
     with the drawing.
 
   Bonds are drawn longer by default so the sticks are clear; the slider
-  spreads the atoms further.
+  spreads the atoms further. For a **crystal** the slider becomes **Atom
+  spacing** and runs all the way to **0**: the lattice contracts about
+  its centre until the spheres touch and finally coincide — near 0 a unit
+  cell reads as a **close-packed particle** (the touching-sphere electrode
+  look in fuel-cell figures) rather than an open wireframe.
+
+- **3D scheme** — the building blocks of layered device schematics
+  (fuel cells, batteries, membranes, thin-film stacks): shaded **3D
+  slabs** (grey / orange / blue) and a **3D disk** for electrolyte and
+  substrate layers; close-packed **particle beds** and single **particle
+  rows** of lit spheres (grey, dark grey, blue, green, white) for porous
+  electrodes; single **spheres**; soft translucent **glows** (blue /
+  orange / yellow) for reaction hot-spots; **active-site dots** and a
+  dotted **ion trail** for conduction paths. Everything drops as an
+  editable, resizable group — combine with the Molecules palette
+  (H₂ / O₂ / H₂O ball models), Arrows & callouts and text to reproduce a
+  full PCFC-style figure.
 
   **Colour legend** — right-click a placed model ▸ **Add colour legend**
   drops a key beside it: one lit sphere per colour with its element name
