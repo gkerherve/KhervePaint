@@ -141,6 +141,30 @@ def test_tilt_rotates_about_the_cell_centre():
         centroid(a2, o2, "1,0,0"), abs=1e-6)
 
 
+def test_tilting_one_cell_leaves_neighbours_untouched():
+    # The user-visible guarantee: tilt cell (1,0,0) and every atom of cell
+    # (0,0,0) keeps its exact drawn position AND size. (Regression: the
+    # fit-to-box followed the tilted cell's protruding corners, so tilting
+    # one cell rescaled and shifted all the others.)
+    def cell0_spheres(specs):
+        # cell (0,0,0) is tiled first, so its 8 corners are atoms 0..7
+        return {s["_atom"]: (round(s["x"], 3), round(s["y"], 3),
+                             round(s["w"], 3))
+                for s in specs if s.get("shape") == "circle"
+                and s.get("_atom", 99) < 8}
+    plain = molecules.build_specs_oriented(
+        "simple_cubic", 300, 300, cells=(2, 1, 1), tag_atoms=True)
+    tilted = molecules.build_specs_oriented(
+        "simple_cubic", 300, 300, cells=(2, 1, 1), tag_atoms=True,
+        tilts={"1,0,0": [20, 10, 30]})
+    assert cell0_spheres(plain) == cell0_spheres(tilted)
+    # …while the tilted cell itself really did move
+    others = lambda specs: {s["_atom"]: (round(s["x"], 2), round(s["y"], 2))
+                            for s in specs if s.get("shape") == "circle"
+                            and s.get("_atom", 0) >= 8}
+    assert others(plain) != others(tilted)
+
+
 def test_tilts_round_trip_json_and_svg(scene, tmp_path):
     scene.place_mol_element("simple_cubic", QPointF(300, 240))
     (top,) = scene.selectedItems()
@@ -198,6 +222,17 @@ def test_builder_supercell_and_tilt_controls(app):
     assert dlg.tilts == {}
     # crystals stay non-editable: no structure handed back
     assert dlg.result() == (None, None)
+    dlg.deleteLater()
+
+
+def test_large_supercells_allowed(app):
+    # counts above the old 6-per-axis cap tile correctly…
+    a, _b, _e, _r = molecules.model_data("simple_cubic", (10, 10, 1))
+    assert len(a) == 11 * 11 * 2
+    # …and both spinner UIs accept them
+    from khervepaint.molview import MoleculeViewer
+    dlg = MoleculeViewer("simple_cubic")
+    assert all(sp.maximum() >= 30 for sp in dlg.cell_spins)
     dlg.deleteLater()
 
 

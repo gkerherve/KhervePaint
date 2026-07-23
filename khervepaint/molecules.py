@@ -1165,15 +1165,24 @@ def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None,
     it; *colors* is a per-element/site colour override map (see
     `molcolor`); *tag_atoms* stamps sphere specs with their atom index for
     builder hit-testing."""
+    az = DEFAULT_AZ if az is None else az
+    el = DEFAULT_EL if el is None else el
+    bond = default_bond(name) if bond is None else bond
     atoms, bonds, edges, rscale = model_data(name, cells, tilts=tilts)
+    frozen = None
+    if cells and can_stack(name) and tuple(cells) != (1, 1, 1):
+        # Anchor a supercell's layout to its UNTILTED geometry: the fit
+        # would otherwise follow a tilted cell's protruding corners and
+        # rescale/shift every other cell with it. With the frozen fit,
+        # tilting one cell moves that cell alone.
+        base_atoms = model_data(name, cells)[0] if tilts else atoms
+        frozen = fit_params(base_atoms, [], w, h, az, el, bond, rscale)
     if colors:
         from . import molcolor
         atoms = molcolor.apply_colors(atoms, colors)
     return _model(atoms, bonds, w, h, edges=edges, rscale=rscale,
-                  az=DEFAULT_AZ if az is None else az,
-                  el=DEFAULT_EL if el is None else el,
-                  bond_scale=default_bond(name) if bond is None else bond,
-                  tag_atoms=tag_atoms)
+                  az=az, el=el, bond_scale=bond, tag_atoms=tag_atoms,
+                  frozen=frozen)
 
 
 def build_specs(name, w, h):
