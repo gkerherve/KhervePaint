@@ -1723,11 +1723,12 @@ class PaintScene(QGraphicsScene):
 
     @staticmethod
     def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None,
-                   repr="3d", cells=None):
+                   repr="3d", cells=None, colors=None):
         """Stamp a group with its model identity (name + view + bond spread +
         stable build box + representation, the raw atoms/bonds when the
-        structure was hand-built, and the ``(nx, ny, nz)`` supercell counts
-        when unit cells have been stacked)."""
+        structure was hand-built, the ``(nx, ny, nz)`` supercell counts
+        when unit cells have been stacked, and the per-element/site colour
+        override map for crystals — see `molcolor`)."""
         item.mol_name = name
         item.mol_az = az
         item.mol_el = el
@@ -1737,6 +1738,7 @@ class PaintScene(QGraphicsScene):
         item.mol_box = box
         item.mol_repr = repr
         item.mol_cells = cells
+        item.mol_colors = colors
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1834,14 +1836,14 @@ class PaintScene(QGraphicsScene):
         return group
 
     def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
-                       mode=None, cells="keep", commit=True):
+                       mode=None, cells="keep", colors="keep", commit=True):
         """Rebuild a placed molecule/crystal *item* at view angles (az, el),
         bond spread *bond* and representation *mode* (3d / structural / lewis
         / condensed), preserving its centre and footprint. When *atoms*/
         *bonds* are given the structure is replaced (hand-built in the
-        builder); *cells* re-tiles a crystal supercell (``"keep"`` reuses the
-        item's current counts). Returns the new top-level item. Undoable when
-        *commit*."""
+        builder); *cells* re-tiles a crystal supercell and *colors* recolours
+        its atoms (``"keep"`` reuses the item's current values). Returns the
+        new top-level item. Undoable when *commit*."""
         name = getattr(item, "mol_name", None)
         if name is None:
             return None
@@ -1853,6 +1855,8 @@ class PaintScene(QGraphicsScene):
             mode = getattr(item, "mol_repr", None) or "3d"
         if cells == "keep":
             cells = getattr(item, "mol_cells", None)
+        if colors == "keep":
+            colors = getattr(item, "mol_colors", None)
         if atoms is None:
             atoms = getattr(item, "mol_atoms", None)
             bonds = getattr(item, "mol_bonds", None)
@@ -1869,7 +1873,8 @@ class PaintScene(QGraphicsScene):
                                                    box, az, el, bond)
             else:
                 specs = molecules.build_specs_oriented(name, box, box, az, el,
-                                                       bond, cells=cells)
+                                                       bond, cells=cells,
+                                                       colors=colors)
         else:                                     # 2D chemistry diagram
             a2, b2 = ((atoms, bonds) if atoms
                       else molecules.model_data(name, cells)[:2])
@@ -1882,7 +1887,7 @@ class PaintScene(QGraphicsScene):
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
         self._tag_model(top, name, az, el, bond, atoms, bonds, box=box,
-                        repr=mode, cells=cells)
+                        repr=mode, cells=cells, colors=colors)
         if commit:
             self.changed_by_user.emit()
         return top
@@ -2396,12 +2401,15 @@ class PaintView(QGraphicsView):
                              getattr(item, "mol_bond", None),
                              getattr(item, "mol_atoms", None),
                              getattr(item, "mol_bonds", None),
-                             getattr(item, "mol_repr", None), self)
+                             getattr(item, "mol_repr", None),
+                             colors=getattr(item, "mol_colors", None),
+                             parent=self)
         if dlg.exec_():
             atoms, bonds = dlg.result()
             self.scene().reorient_model(item, dlg.az, dlg.el, bond=dlg.bond,
                                         atoms=atoms, bonds=bonds,
-                                        mode=dlg.representation())
+                                        mode=dlg.representation(),
+                                        colors=dlg.colors or None)
 
     def set_tool_cursor(self, tool: str):
         if tool == POINTER:

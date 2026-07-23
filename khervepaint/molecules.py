@@ -29,6 +29,8 @@ import math
 
 from PyQt5.QtGui import QColor
 
+from . import lattices
+
 # --------------------------------------------------------------- element data
 #: CPK-ish body colour per element (the sphere's mid tone).
 ATOM_COLORS = {
@@ -989,6 +991,14 @@ CATEGORIES = [
       "perovskite", "zincblende", "fluorite"]),
 ]
 
+# Non-cubic lattice systems (tetragonal … triclinic) live in `lattices`;
+# registering them here gives them the dropdown, stacking, rotation and
+# persistence machinery for free.
+_MODELS.update(lattices.MODELS)
+SIZES.update(lattices.SIZES)
+LABELS.update(lattices.LABELS)
+CATEGORIES.append(lattices.CATEGORY)
+
 
 #: Default bond spread for molecules — >1 so the sticks read clearly
 #: between the spheres (crystals keep their true lattice spacing, 1.0).
@@ -1012,24 +1022,31 @@ def stack_factor(cells):
     return max(cells) if cells else 1
 
 
-def _supercell(atoms, bonds, edges, nx, ny, nz):
+def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None):
     """Tile a crystal unit cell into an ``nx×ny×nz`` supercell.
 
-    The cell translation vectors are the wireframe's extent along x/y/z (the
-    cube edge length), so cells stack face-to-face. Atoms, bonds and cell
-    edges shared between neighbouring cells are de-duplicated by rounded
+    Cells translate along *vectors* — the lattice's three cell vectors —
+    when given, so skewed (hexagonal/monoclinic/triclinic…) cells stack
+    face-to-face in their crystallographically correct orientations. The
+    cubic-family cells pass no vectors and fall back to the wireframe's
+    extent along x/y/z (the cube edge length). Atoms, bonds and cell edges
+    shared between neighbouring cells are de-duplicated by rounded
     coordinate, so corners/faces aren't drawn on top of each other."""
     edges = edges or []
     bonds = bonds or []
-    pts = [p for e in edges for p in (e[0], e[1])]
-    if pts:
-        ax = (max(p[0] for p in pts) - min(p[0] for p in pts)) or 1.0
-        ay = (max(p[1] for p in pts) - min(p[1] for p in pts)) or 1.0
-        az = (max(p[2] for p in pts) - min(p[2] for p in pts)) or 1.0
-    else:                                        # no wireframe: use atom span
-        ax = (max(a[1] for a in atoms) - min(a[1] for a in atoms)) or 1.0
-        ay = (max(a[2] for a in atoms) - min(a[2] for a in atoms)) or 1.0
-        az = (max(a[3] for a in atoms) - min(a[3] for a in atoms)) or 1.0
+    if vectors:
+        va, vb, vc = vectors
+    else:
+        pts = [p for e in edges for p in (e[0], e[1])]
+        if pts:
+            ax = (max(p[0] for p in pts) - min(p[0] for p in pts)) or 1.0
+            ay = (max(p[1] for p in pts) - min(p[1] for p in pts)) or 1.0
+            az = (max(p[2] for p in pts) - min(p[2] for p in pts)) or 1.0
+        else:                                    # no wireframe: use atom span
+            ax = (max(a[1] for a in atoms) - min(a[1] for a in atoms)) or 1.0
+            ay = (max(a[2] for a in atoms) - min(a[2] for a in atoms)) or 1.0
+            az = (max(a[3] for a in atoms) - min(a[3] for a in atoms)) or 1.0
+        va, vb, vc = (ax, 0.0, 0.0), (0.0, ay, 0.0), (0.0, 0.0, az)
 
     def key(x, y, z):
         return (round(x, 3), round(y, 3), round(z, 3))
@@ -1039,7 +1056,9 @@ def _supercell(atoms, bonds, edges, nx, ny, nz):
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
-                ox, oy, oz = i * ax, j * ay, k * az
+                ox = i * va[0] + j * vb[0] + k * vc[0]
+                oy = i * va[1] + j * vb[1] + k * vc[1]
+                oz = i * va[2] + j * vb[2] + k * vc[2]
                 remap = {}
                 for oi, atom in enumerate(atoms):
                     el, x, y, z = atom[0], atom[1], atom[2], atom[3]
@@ -1084,19 +1103,27 @@ def model_data(name, cells=None):
     builder, rscale = _MODELS[name]
     atoms, bonds, edges = builder()
     if cells and can_stack(name) and tuple(cells) != (1, 1, 1):
-        atoms, bonds, edges = _supercell(atoms, bonds, edges, *cells)
+        atoms, bonds, edges = _supercell(atoms, bonds, edges, *cells,
+                                         vectors=lattices.LATTICE_VECTORS.get(name))
     return atoms, bonds, edges, rscale
 
 
-def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None):
+def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None,
+                         colors=None, tag_atoms=False):
     """Shape specs for model *name* in a (w, h) box, viewed at (az, el)
     radians, with bond spread *bond* (defaults per model). *cells* tiles a
-    crystal into a stacked supercell."""
+    crystal into a stacked supercell; *colors* is a per-element/site colour
+    override map (see `molcolor`); *tag_atoms* stamps sphere specs with
+    their atom index for builder hit-testing."""
     atoms, bonds, edges, rscale = model_data(name, cells)
+    if colors:
+        from . import molcolor
+        atoms = molcolor.apply_colors(atoms, colors)
     return _model(atoms, bonds, w, h, edges=edges, rscale=rscale,
                   az=DEFAULT_AZ if az is None else az,
                   el=DEFAULT_EL if el is None else el,
-                  bond_scale=default_bond(name) if bond is None else bond)
+                  bond_scale=default_bond(name) if bond is None else bond,
+                  tag_atoms=tag_atoms)
 
 
 def build_specs(name, w, h):

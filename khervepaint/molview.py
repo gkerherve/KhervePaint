@@ -26,12 +26,13 @@ import math
 
 from PyQt5.QtCore import QRectF, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter, QPen
-from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
-                             QGraphicsEllipseItem, QGraphicsScene,
-                             QGraphicsView, QHBoxLayout, QLabel, QPushButton,
-                             QSlider, QToolButton, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QColorDialog, QComboBox, QDialog,
+                             QDialogButtonBox, QGraphicsEllipseItem,
+                             QGraphicsScene, QGraphicsView, QHBoxLayout,
+                             QLabel, QPushButton, QSlider, QToolButton,
+                             QVBoxLayout, QWidget)
 
-from . import icons, molecules
+from . import icons, molcolor, molecules
 
 _HALF = math.pi / 2.0
 #: (label, azimuth, elevation) for the view toolbar (icons are 3D cubes).
@@ -158,7 +159,7 @@ class MoleculeViewer(QDialog):
     """Rotate and build a molecule / crystal in 3D."""
 
     def __init__(self, name, az=None, el=None, bond=None,
-                 atoms=None, bonds=None, repr=None, parent=None):
+                 atoms=None, bonds=None, repr=None, colors=None, parent=None):
         super().__init__(parent)
         self.name = name
         self.editable = not molecules.is_crystal(name)
@@ -169,7 +170,11 @@ class MoleculeViewer(QDialog):
         self.selected = None
         self.order = 1
         self.dirty = atoms is not None
+        #: Per-element/site colour overrides (crystals; see `molcolor`).
+        self.colors = dict(colors or {})
         # Editable structure: reuse a hand-built one, else load the model.
+        # A crystal keeps its fixed lattice, but its atoms are still loaded
+        # so clicked spheres can be identified for recolouring.
         if self.editable:
             if atoms is not None:
                 self.atoms = [list(a) for a in atoms]
@@ -180,7 +185,8 @@ class MoleculeViewer(QDialog):
                 self.atoms = [list(a) for a in ma]
                 self.bonds = [list(b) for b in mb]
         else:
-            self.atoms, self.bonds, self.rscale = [], [], 0.92
+            ma, _mb, _edges, self.rscale = molecules.model_data(name)
+            self.atoms, self.bonds = [list(a) for a in ma], []
 
         label = "new molecule" if name == "custom" \
             else molecules.LABELS.get(name, name)
@@ -201,6 +207,8 @@ class MoleculeViewer(QDialog):
         layout.addLayout(self._bond_row())
         if self.editable:
             layout.addLayout(self._palette_row())
+        layout.addLayout(self._color_row())
+        if self.editable:
             layout.addLayout(self._repr_row())
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok
@@ -270,6 +278,21 @@ class MoleculeViewer(QDialog):
         row.addStretch(1)
         return row
 
+    def _color_row(self):
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Atom colour:"))
+        pick = QPushButton("Colour…")
+        pick.setToolTip("Recolour the selected atom (a crystal recolours "
+                        "every atom of that element and site)")
+        pick.clicked.connect(self._pick_color)
+        row.addWidget(pick)
+        reset = QPushButton("Reset colours")
+        reset.setToolTip("Restore the standard CPK / site colours")
+        reset.clicked.connect(self._reset_colors)
+        row.addWidget(reset)
+        row.addStretch(1)
+        return row
+
     def _repr_row(self):
         from . import molrepr
         row = QHBoxLayout()
@@ -299,7 +322,9 @@ class MoleculeViewer(QDialog):
                 self.atoms, self.bonds, w, h, self.az, self.el, self.bond,
                 self.rscale, tag_atoms=True, frozen=frozen)
         return molecules.build_specs_oriented(self.name, w, h, self.az,
-                                              self.el, self.bond)
+                                              self.el, self.bond,
+                                              colors=self.colors,
+                                              tag_atoms=True)
 
     # ------------------------------------------------------------ actions
     def _set_view(self, az, el):
@@ -340,6 +365,34 @@ class MoleculeViewer(QDialog):
         self._update_status()
         self.preview.rebuild()
 
+    def _pick_color(self):
+        if self.selected is None or self.selected >= len(self.atoms):
+            self.status.setText("Click an atom first, then pick its colour.")
+            return
+        atom = self.atoms[self.selected]
+        current = molcolor.atom_color(atom, self.colors)
+        color = QColorDialog.getColor(QColor(current), self, "Atom colour")
+        if not color.isValid():
+            return
+        if self.editable:                     # colour rides on the atom
+            if len(atom) > 4:
+                atom[4] = color.name()
+            else:
+                atom.append(color.name())
+            self.dirty = True
+        else:                                 # crystal: element/site override
+            self.colors[molcolor.color_key(atom)] = color.name()
+        self.preview.rebuild()
+
+    def _reset_colors(self):
+        if self.editable:
+            for atom in self.atoms:
+                if len(atom) > 4:
+                    del atom[4:]
+                    self.dirty = True
+        self.colors = {}
+        self.preview.rebuild()
+
     def _delete_atom(self):
         if self.selected is None or len(self.atoms) <= 1:
             return
@@ -351,7 +404,17 @@ class MoleculeViewer(QDialog):
 
     def _update_status(self):
         if not self.editable:
-            self.status.setText("Drag to rotate, or pick a standard view.")
+            if self.selected is not None and self.selected < len(self.atoms):
+                atom = self.atoms[self.selected]
+                site = molcolor.SITE_LABELS.get(atom[4]) \
+                    if len(atom) > 4 else None
+                where = f" ({site})" if site else ""
+                self.status.setText(
+                    f"Selected {atom[0]}{where} — Colour… recolours every "
+                    f"{atom[0]} on this site. Drag to rotate.")
+            else:
+                self.status.setText("Drag to rotate, pick a standard view, "
+                                    "or click an atom to recolour it.")
             return
         if self.selected is not None and self.selected < len(self.atoms):
             el = self.atoms[self.selected][0]

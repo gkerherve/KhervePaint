@@ -239,6 +239,9 @@ def _item_to_element(parent, item, ctx=None):
                 g.set(_kp("model-box"), f"{item.mol_box:g}")
             if getattr(item, "mol_repr", None):
                 g.set(_kp("model-repr"), item.mol_repr)
+            if getattr(item, "mol_colors", None):  # colour override map
+                import json as _json
+                g.set(_kp("model-colors"), _json.dumps(item.mol_colors))
             if getattr(item, "mol_cells", None):   # stacked supercell counts
                 import json as _json
                 g.set(_kp("model-cells"), _json.dumps(list(item.mol_cells)))
@@ -814,6 +817,7 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
             group.mol_repr = el.get(_kp("model-repr")) or "3d"
             cells = _json_or_none(el.get(_kp("model-cells")))
             group.mol_cells = tuple(cells) if cells else None
+            group.mol_colors = _json_or_none(el.get(_kp("model-colors")))
             group.mol_atoms = _json_or_none(el.get(_kp("model-atoms")))
             group.mol_bonds = _json_or_none(el.get(_kp("model-bonds")))
         return group if group.childItems() else None

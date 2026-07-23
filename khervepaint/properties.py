@@ -420,10 +420,10 @@ def stack_cells_dialog(window, item):
     dlg = QDialog(window)
     dlg.setWindowTitle("Stack unit cells")
     layout = QVBoxLayout(dlg)
-    layout.addWidget(QLabel("Repeat the unit cell along each axis:"))
+    layout.addWidget(QLabel("Repeat the unit cell along each lattice vector:"))
     form = QFormLayout()
     spins = []
-    for axis, val in zip(("a (→ x)", "b (→ y)", "c (→ z)"), cells):
+    for axis, val in zip(("a", "b", "c"), cells):
         sp = QSpinBox(dlg)
         sp.setRange(1, 6)
         sp.setValue(int(val))
@@ -458,6 +458,9 @@ def build_context_menu(window, item) -> QMenu:
         if molecules.can_stack(item.mol_name):
             menu.addAction(icons.icon("mdi.cube-outline"), "Stack unit cells…",
                            lambda: stack_cells_dialog(window, item))
+        from . import molcolor
+        menu.addAction(icons.icon("mdi.palette-outline"), "Add colour legend",
+                       lambda: molcolor.place_legend(window.scene, item))
     if isinstance(item, ImageItem):
         menu.addAction(icons.icon("mdi.crop"), "Crop image",
                        lambda: window.crop_image(item))
