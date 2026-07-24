@@ -66,6 +66,52 @@ def rotation(rx, ry, rz):
     return apply
 
 
+def coordination_faces(pts, eps=1e-6):
+    """Faces of the convex hull of a small 3D point set — a coordination
+    shell around a centre atom. Each face is an ordered vertex list on one
+    supporting plane: 8 triangles for an octahedron, 4 for a tetrahedron,
+    6 squares for a cube. Brute force over point triples; fine for the ≤8
+    neighbours a coordination shell has."""
+    import itertools
+    n = len(pts)
+    if n < 3:
+        return []
+    faces, seen = [], set()
+    for i, j, k in itertools.combinations(range(n), 3):
+        a, b, c = pts[i], pts[j], pts[k]
+        u = tuple(b[d] - a[d] for d in range(3))
+        v = tuple(c[d] - a[d] for d in range(3))
+        nrm = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2],
+               u[0] * v[1] - u[1] * v[0])
+        ln = math.sqrt(sum(x * x for x in nrm))
+        if ln < eps:
+            continue
+        nrm = tuple(x / ln for x in nrm)
+        d0 = sum(nrm[d] * a[d] for d in range(3))
+        sides = [sum(nrm[d] * p[d] for d in range(3)) - d0 for p in pts]
+        if max(sides) > eps and min(sides) < -eps:
+            continue                              # not a supporting plane
+        on = tuple(sorted(m for m, s in enumerate(sides) if abs(s) <= eps))
+        if on in seen:                            # a square face is found by
+            continue                              # several triples — once only
+        seen.add(on)
+        fpts = [pts[m] for m in on]
+        fc = tuple(sum(p[d] for p in fpts) / len(fpts) for d in range(3))
+        ref = tuple(fpts[0][d] - fc[d] for d in range(3))
+        rl = math.sqrt(sum(x * x for x in ref)) or 1.0
+        ref = tuple(x / rl for x in ref)
+        side = (nrm[1] * ref[2] - nrm[2] * ref[1],
+                nrm[2] * ref[0] - nrm[0] * ref[2],
+                nrm[0] * ref[1] - nrm[1] * ref[0])
+
+        def ang(p):
+            w = tuple(p[d] - fc[d] for d in range(3))
+            return math.atan2(sum(w[d] * side[d] for d in range(3)),
+                              sum(w[d] * ref[d] for d in range(3)))
+        faces.append(sorted(fpts, key=ang))
+    return faces
+
+
 def _corner(f, va, vb, vc):
     return tuple(f[0] * va[k] + f[1] * vb[k] + f[2] * vc[k] for k in range(3))
 

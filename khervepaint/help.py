@@ -398,6 +398,11 @@ repeats, previewed live) and <b>Tilt cell</b> controls: click an atom to
 select its unit cell, then set that cell's x/y/z rotation — it spins
 rigidly about its own centre, like a misoriented grain in the lattice
 (<b>Reset tilts</b> clears them; tilts are saved with the drawing).
+Bonded crystals (perovskite, diamond, zinc blende) also offer
+<b>Polyhedra</b> (builder checkbox or right-click ▸ <b>Show
+polyhedra</b>): translucent coordination faces around each centre atom —
+octahedra/tetrahedra in the VESTA style — that follow the atom colours
+and tile across supercells.
 Select a sphere and click <b>Colour…</b> to recolour it as you please
 (on a crystal this recolours every atom of that element and site;
 <b>Reset colours</b> restores the CPK colours), and right-click a placed

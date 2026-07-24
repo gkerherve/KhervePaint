@@ -30,7 +30,7 @@ from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 9      # 9: per-cell supercell tilts ("model_tilts")
+FORMAT_VERSION = 10     # 10: coordination polyhedra flag ("model_poly")
 
 
 # ---------------------------------------------------------------- pens
@@ -220,6 +220,8 @@ def item_to_dict(item) -> dict:
                 d["model_colors"] = dict(item.mol_colors)
             if getattr(item, "mol_tilts", None):   # per-cell tilt map
                 d["model_tilts"] = dict(item.mol_tilts)
+            if getattr(item, "mol_poly", False):   # coordination polyhedra
+                d["model_poly"] = True
             if getattr(item, "mol_atoms", None):   # hand-built structure
                 d["model_atoms"] = item.mol_atoms
                 d["model_bonds"] = item.mol_bonds
@@ -295,6 +297,7 @@ def item_from_dict(d: dict):
             item.mol_cells = tuple(cells) if cells else None
             item.mol_colors = d.get("model_colors")
             item.mol_tilts = d.get("model_tilts")
+            item.mol_poly = bool(d.get("model_poly", False))
             item.mol_atoms = d.get("model_atoms")
             item.mol_bonds = d.get("model_bonds")
     else:

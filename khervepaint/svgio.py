@@ -245,6 +245,8 @@ def _item_to_element(parent, item, ctx=None):
             if getattr(item, "mol_tilts", None):   # per-cell tilt map
                 import json as _json
                 g.set(_kp("model-tilts"), _json.dumps(item.mol_tilts))
+            if getattr(item, "mol_poly", False):   # coordination polyhedra
+                g.set(_kp("model-poly"), "1")
             if getattr(item, "mol_cells", None):   # stacked supercell counts
                 import json as _json
                 g.set(_kp("model-cells"), _json.dumps(list(item.mol_cells)))
@@ -822,6 +824,7 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
             group.mol_cells = tuple(cells) if cells else None
             group.mol_colors = _json_or_none(el.get(_kp("model-colors")))
             group.mol_tilts = _json_or_none(el.get(_kp("model-tilts")))
+            group.mol_poly = el.get(_kp("model-poly")) == "1"
             group.mol_atoms = _json_or_none(el.get(_kp("model-atoms")))
             group.mol_bonds = _json_or_none(el.get(_kp("model-bonds")))
         return group if group.childItems() else None

@@ -1750,7 +1750,8 @@ class PaintScene(QGraphicsScene):
 
     @staticmethod
     def _tag_model(item, name, az, el, bond, atoms=None, bonds=None, box=None,
-                   repr="3d", cells=None, colors=None, tilts=None):
+                   repr="3d", cells=None, colors=None, tilts=None,
+                   poly=False):
         """Stamp a group with its model identity (name + view + bond spread +
         stable build box + representation, the raw atoms/bonds when the
         structure was hand-built, the ``(nx, ny, nz)`` supercell counts
@@ -1768,6 +1769,7 @@ class PaintScene(QGraphicsScene):
         item.mol_cells = cells
         item.mol_colors = colors
         item.mol_tilts = tilts
+        item.mol_poly = bool(poly)
 
     def _place_symbol(self, module, name: str, center: QPointF):
         """Build items from a spec-library module's `build_specs`/`size_mm`
@@ -1866,7 +1868,7 @@ class PaintScene(QGraphicsScene):
 
     def reorient_model(self, item, az, el, bond=None, atoms=None, bonds=None,
                        mode=None, cells="keep", colors="keep", tilts="keep",
-                       commit=True):
+                       poly="keep", commit=True):
         """Rebuild a placed molecule/crystal *item* at view angles (az, el),
         bond spread *bond* and representation *mode* (3d / structural / lewis
         / condensed), preserving its centre and footprint. When *atoms*/
@@ -1893,6 +1895,8 @@ class PaintScene(QGraphicsScene):
         if tilts == "keep":
             tilts = getattr(item, "mol_tilts", None)
         tilts = _tilts_in_range(tilts, cells)
+        if poly == "keep":
+            poly = bool(getattr(item, "mol_poly", False))
         if atoms is None:
             atoms = getattr(item, "mol_atoms", None)
             bonds = getattr(item, "mol_bonds", None)
@@ -1911,7 +1915,7 @@ class PaintScene(QGraphicsScene):
                 specs = molecules.build_specs_oriented(name, box, box, az, el,
                                                        bond, cells=cells,
                                                        colors=colors,
-                                                       tilts=tilts)
+                                                       tilts=tilts, poly=poly)
         else:                                     # 2D chemistry diagram
             a2, b2 = ((atoms, bonds) if atoms
                       else molecules.model_data(name, cells, tilts=tilts)[:2])
@@ -1924,7 +1928,8 @@ class PaintScene(QGraphicsScene):
         self.removeItem(item)
         top = self._drop_items(new_items, center, box, box)
         self._tag_model(top, name, az, el, bond, atoms, bonds, box=box,
-                        repr=mode, cells=cells, colors=colors, tilts=tilts)
+                        repr=mode, cells=cells, colors=colors, tilts=tilts,
+                        poly=poly)
         if commit:
             self.changed_by_user.emit()
         return top
@@ -2442,6 +2447,7 @@ class PaintView(QGraphicsView):
                              colors=getattr(item, "mol_colors", None),
                              cells=getattr(item, "mol_cells", None),
                              tilts=getattr(item, "mol_tilts", None),
+                             poly=getattr(item, "mol_poly", False),
                              parent=self)
         if dlg.exec_():
             atoms, bonds = dlg.result()
@@ -2458,7 +2464,8 @@ class PaintView(QGraphicsView):
                 scale = (self.scene().sceneRect().width() or 1) / ref
                 item.mol_box = max(w_mm * scale, h_mm * scale) \
                     * molecules.stack_factor(cells)
-                kwargs.update(cells=cells, tilts=dlg.tilts or None)
+                kwargs.update(cells=cells, tilts=dlg.tilts or None,
+                              poly=dlg.poly)
             self.scene().reorient_model(item, dlg.az, dlg.el, **kwargs)
 
     def set_tool_cursor(self, tool: str):

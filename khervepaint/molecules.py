@@ -198,7 +198,7 @@ def _spread(atoms, edges, factor, centroid=None):
 
 def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
            margin=0.12, az=_AZ, el=_EL, bond_scale=1.0, tag_atoms=False,
-           frozen=None):
+           frozen=None, poly=False):
     """Lay out a 3D model into the (w, h) box and return its shape specs.
 
     *atoms* is a list of ``(element, x, y, z)``; *bonds* a list of
@@ -207,9 +207,13 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
     is ``"solid"`` (a thick dark cube edge) or ``"dash"`` (a dashed body
     diagonal). *bond_scale* spreads the atoms apart to lengthen the bonds.
     The projected model is scaled uniformly (spheres stay round) to fit the
-    box, then drawn back-to-front: edges, bonds, spheres. Passing *frozen*
-    (from `fit_params`) reuses a captured scale/origin/centroid so dragging
-    one atom in the builder doesn't rescale or recentre the rest."""
+    box, then drawn back-to-front: edges, bonds, then spheres — with
+    *poly*, translucent coordination-polyhedron faces (see
+    `molcolor.coordination_polyhedra`) interleave with the spheres in the
+    same depth sort, so a centre atom shows through its front faces.
+    Passing *frozen* (from `fit_params`) reuses a captured scale/origin/
+    centroid so dragging one atom in the builder doesn't rescale or
+    recentre the rest."""
     fc = frozen.get("centroid") if frozen else None
     atoms, edges = _spread(atoms, edges, bond_scale, fc)
     proj = [_proj(a[1], a[2], a[3], az, el) for a in atoms]
@@ -261,7 +265,23 @@ def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,
     for i, j, order in bonds:
         specs += bond_specs(T(proj[i][0], proj[i][1]),
                             T(proj[j][0], proj[j][1]), order, width=bw)
-    for idx in sorted(range(len(atoms)), key=lambda k: proj[k][2]):
+    drawables = [(proj[i][2], "atom", i) for i in range(len(atoms))]
+    if poly:
+        from . import molcolor
+        for face, color in molcolor.coordination_polyhedra(atoms, bonds):
+            pf = [_proj(p[0], p[1], p[2], az, el) for p in face]
+            depth = sum(q[2] for q in pf) / len(pf)
+            drawables.append((depth, "face", (pf, color)))
+    for _depth, kind, payload in sorted(drawables, key=lambda t: t[0]):
+        if kind == "face":
+            pf, color = payload
+            specs.append({"shape": "polygon",
+                          "points": [list(T(q[0], q[1])) for q in pf],
+                          "fill": color, "opacity": 0.32,
+                          "stroke": _mix(color, "#000000", 0.35),
+                          "width": max(1.0, s * 0.02)})
+            continue
+        idx = payload
         cx, cy = T(proj[idx][0], proj[idx][1])
         atom = atoms[idx]
         color = atom[4] if len(atom) > 4 else None
@@ -1157,14 +1177,30 @@ def model_data(name, cells=None, tilts=None, owners=None):
     return atoms, bonds, edges, rscale
 
 
+def has_polyhedra(name):
+    """Whether crystal *name* can draw coordination polyhedra — i.e. some
+    atom bonds to ≥4 neighbours (perovskite's BX₆ octahedron, diamond's
+    tetrahedra…)."""
+    if name not in _MODELS or not is_crystal(name):
+        return False
+    _atoms, bonds, _edges, _r = model_data(name)
+    count = {}
+    for i, j, _o in bonds:
+        count[i] = count.get(i, 0) + 1
+        count[j] = count.get(j, 0) + 1
+    return any(v >= 4 for v in count.values())
+
+
 def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None,
-                         colors=None, tag_atoms=False, tilts=None):
+                         colors=None, tag_atoms=False, tilts=None,
+                         poly=False):
     """Shape specs for model *name* in a (w, h) box, viewed at (az, el)
     radians, with bond spread *bond* (defaults per model). *cells* tiles a
     crystal into a stacked supercell and *tilts* rotates chosen cells in
     it; *colors* is a per-element/site colour override map (see
-    `molcolor`); *tag_atoms* stamps sphere specs with their atom index for
-    builder hit-testing."""
+    `molcolor`); *poly* draws translucent coordination polyhedra;
+    *tag_atoms* stamps sphere specs with their atom index for builder
+    hit-testing."""
     az = DEFAULT_AZ if az is None else az
     el = DEFAULT_EL if el is None else el
     bond = default_bond(name) if bond is None else bond
@@ -1182,7 +1218,7 @@ def build_specs_oriented(name, w, h, az=None, el=None, bond=None, cells=None,
         atoms = molcolor.apply_colors(atoms, colors)
     return _model(atoms, bonds, w, h, edges=edges, rscale=rscale,
                   az=az, el=el, bond_scale=bond, tag_atoms=tag_atoms,
-                  frozen=frozen)
+                  frozen=frozen, poly=poly)
 
 
 def build_specs(name, w, h):

@@ -321,6 +321,82 @@ def test_reorient_keeps_colors_by_default(scene):
     assert new.mol_colors == {"Al": "#dd0044"}
 
 
+# ---------------------------------------------------- coordination polyhedra
+def test_hull_faces_for_octahedron_tetrahedron_cube():
+    octa = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1),
+            (0, 0, -1)]
+    faces = lattices.coordination_faces(octa)
+    assert len(faces) == 8 and all(len(f) == 3 for f in faces)
+    tetra = [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+    faces = lattices.coordination_faces(tetra)
+    assert len(faces) == 4 and all(len(f) == 3 for f in faces)
+    cube = [(x, y, z) for x in (0, 1) for y in (0, 1) for z in (0, 1)]
+    faces = lattices.coordination_faces(cube)
+    assert len(faces) == 6 and all(len(f) == 4 for f in faces)
+
+
+def test_has_polyhedra_gates_to_bonded_crystals():
+    assert molecules.has_polyhedra("perovskite")      # BX6 octahedron
+    assert molecules.has_polyhedra("diamond")         # tetrahedra
+    assert not molecules.has_polyhedra("nacl")        # no bonds
+    assert not molecules.has_polyhedra("simple_cubic")
+    assert not molecules.has_polyhedra("water")       # not a crystal
+
+
+def test_polyhedra_specs_are_translucent_and_tiled():
+    plain = molecules.build_specs_oriented("perovskite", 300, 300)
+    poly = molecules.build_specs_oriented("perovskite", 300, 300, poly=True)
+    faces = [s for s in poly if s.get("shape") == "polygon"]
+    assert not [s for s in plain if s.get("shape") == "polygon"]
+    assert len(faces) == 8                            # one octahedron
+    assert all(0 < s["opacity"] < 1 for s in faces)
+    assert all(len(s["points"]) == 3 for s in faces)  # triangles
+    # faces interleave with the spheres (not all first or all last)
+    kinds = [s["shape"] for s in poly]
+    first_face = kinds.index("polygon")
+    assert "circle" in kinds[:first_face] or first_face == 0
+    assert "circle" in kinds[first_face:]
+    # a supercell tiles one octahedron per cell
+    stacked = molecules.build_specs_oriented("perovskite", 300, 300,
+                                             cells=(2, 1, 1), poly=True)
+    assert len([s for s in stacked
+                if s.get("shape") == "polygon"]) == 16
+
+
+def test_polyhedra_follow_atom_recolour():
+    teal = molecules.build_specs_oriented("perovskite", 300, 300, poly=True,
+                                          colors={"Ti": "#008b8b"})
+    faces = [s for s in teal if s.get("shape") == "polygon"]
+    assert all(s["fill"] == "#008b8b" for s in faces)
+
+
+def test_polyhedra_round_trip_and_builder(scene, tmp_path, app):
+    scene.place_mol_element("perovskite", QPointF(300, 240))
+    (top,) = scene.selectedItems()
+    new = scene.reorient_model(top, top.mol_az, top.mol_el, poly=True)
+    assert new.mol_poly
+    spun = scene.reorient_model(new, 0.4, 0.3)        # rotation keeps it
+    assert spun.mol_poly
+    data = document.scene_to_dict(scene)
+    restored = PaintScene(600, 480)
+    document.dict_to_scene(data, restored)
+    g = next(i for i in restored.items() if getattr(i, "mol_name", None))
+    assert g.mol_poly
+    path = str(tmp_path / "poly.svg")
+    svgio.save_svg(scene, path)
+    r2 = PaintScene(600, 480)
+    svgio.load_svg(r2, path)
+    g2 = next(i for i in r2.items() if getattr(i, "mol_name", None))
+    assert g2.mol_poly
+    # builder: checkbox present, enabled only when the model has polyhedra
+    from khervepaint.molview import MoleculeViewer
+    dlg = MoleculeViewer("perovskite", poly=True)
+    assert dlg.poly_check.isChecked() and dlg.poly_check.isEnabled()
+    nacl = MoleculeViewer("nacl")
+    assert not nacl.poly_check.isEnabled()
+    dlg.deleteLater(); nacl.deleteLater()
+
+
 # ------------------------------------------------------------ colour legend
 def test_legend_entries_cover_sites_and_overrides():
     atoms, _b, _e, _r = molecules.model_data("bcc")

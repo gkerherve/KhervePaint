@@ -73,6 +73,28 @@ def apply_colors(atoms, colors):
     return out
 
 
+def coordination_polyhedra(atoms, bonds):
+    """Coordination polyhedra for a model: for every atom bonded to ≥4
+    neighbours (a B-site cation, a tetrahedral carbon…), the convex-hull
+    faces spanned by those neighbours, tinted in the centre atom's drawn
+    colour. Returns ``[(face_points_3d, color), …]`` — drawn as translucent
+    polygons (the VESTA-style octahedra look)."""
+    from . import lattices
+    neigh = {}
+    for i, j, _o in bonds:
+        neigh.setdefault(i, set()).add(j)
+        neigh.setdefault(j, set()).add(i)
+    out = []
+    for centre, ns in neigh.items():
+        if len(ns) < 4:
+            continue
+        pts = [(atoms[k][1], atoms[k][2], atoms[k][3]) for k in sorted(ns)]
+        color = atom_color(atoms[centre])
+        for face in lattices.coordination_faces(pts):
+            out.append((face, color))
+    return out
+
+
 def legend_entries(atoms, colors=None):
     """Ordered unique ``(element, label, color)`` rows for a legend —
     one per distinct colour actually drawn."""

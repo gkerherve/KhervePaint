@@ -26,7 +26,7 @@ import math
 
 from PyQt5.QtCore import QRectF, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter, QPen
-from PyQt5.QtWidgets import (QColorDialog, QComboBox, QDialog,
+from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog,
                              QDialogButtonBox, QGraphicsEllipseItem,
                              QGraphicsScene, QGraphicsView, QHBoxLayout,
                              QLabel, QPushButton, QSlider, QToolButton,
@@ -166,7 +166,7 @@ class MoleculeViewer(QDialog):
 
     def __init__(self, name, az=None, el=None, bond=None,
                  atoms=None, bonds=None, repr=None, colors=None, cells=None,
-                 tilts=None, parent=None):
+                 tilts=None, poly=False, parent=None):
         super().__init__(parent)
         self.name = name
         self.editable = not molecules.is_crystal(name)
@@ -182,6 +182,8 @@ class MoleculeViewer(QDialog):
         #: Supercell repeats + per-cell tilt map (crystals only).
         self.cells = tuple(cells) if cells else (1, 1, 1)
         self.tilts = {k: list(v) for k, v in (tilts or {}).items()}
+        #: Translucent coordination polyhedra (crystals with bonds).
+        self.poly = bool(poly)
         self._owners = []               # atom index -> "i,j,k" home cell
         # Editable structure: reuse a hand-built one, else load the model.
         # A crystal keeps its fixed lattice, but its (supercell) atoms are
@@ -307,8 +309,21 @@ class MoleculeViewer(QDialog):
         reset.setToolTip("Restore the standard CPK / site colours")
         reset.clicked.connect(self._reset_colors)
         row.addWidget(reset)
+        if not self.editable:
+            self.poly_check = QCheckBox("Polyhedra")
+            self.poly_check.setChecked(self.poly)
+            self.poly_check.setEnabled(molecules.has_polyhedra(self.name))
+            self.poly_check.setToolTip(
+                "Draw translucent coordination polyhedra (the faces spanned "
+                "by each cation's bonded neighbours — VESTA style)")
+            self.poly_check.toggled.connect(self._on_poly)
+            row.addWidget(self.poly_check)
         row.addStretch(1)
         return row
+
+    def _on_poly(self, on):
+        self.poly = bool(on)
+        self.preview.rebuild()
 
     def _supercell_row(self):
         from PyQt5.QtWidgets import QSpinBox
@@ -391,7 +406,8 @@ class MoleculeViewer(QDialog):
                                               cells=self._crystal_cells(),
                                               colors=self.colors,
                                               tag_atoms=True,
-                                              tilts=self.tilts)
+                                              tilts=self.tilts,
+                                              poly=self.poly)
 
     # ------------------------------------------------------------ actions
     def _set_view(self, az, el):

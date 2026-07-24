@@ -458,6 +458,15 @@ def build_context_menu(window, item) -> QMenu:
         if molecules.can_stack(item.mol_name):
             menu.addAction(icons.icon("mdi.cube-outline"), "Stack unit cells…",
                            lambda: stack_cells_dialog(window, item))
+        if molecules.has_polyhedra(item.mol_name):
+            act = menu.addAction(icons.icon("mdi.pyramid"),
+                                 "Show polyhedra")
+            act.setCheckable(True)
+            act.setChecked(bool(getattr(item, "mol_poly", False)))
+            act.toggled.connect(
+                lambda on: window.scene.reorient_model(
+                    item, getattr(item, "mol_az", None),
+                    getattr(item, "mol_el", None), poly=on))
         from . import molcolor
         menu.addAction(icons.icon("mdi.palette-outline"), "Add colour legend",
                        lambda: molcolor.place_legend(window.scene, item))

@@ -395,6 +395,18 @@ Five further dropdowns cover general diagrams and more science:
   Any number of cells can carry their own tilt; **Reset tilts** clears
   them all, and tilts are saved with the drawing.
 
+  **Coordination polyhedra** — for crystals whose structure bonds a
+  central atom to 4+ neighbours (perovskite's BX₆ octahedra, the
+  tetrahedra in diamond and zinc blende), tick **Polyhedra** in the
+  builder (or right-click ▸ **Show polyhedra**) to draw the translucent
+  faces spanned by each centre's neighbours — the classic VESTA look.
+  The faces are depth-sorted with the atoms, so a cation shows through
+  its front faces; they take the centre atom's colour (recolour the atom
+  and the polyhedra follow), tile across supercells and rotate with the
+  model. Free-standing translucent planes are ordinary shapes: draw a
+  rectangle/polygon, set its fill, and lower **Opacity** in Edit
+  properties.
+
   For more control, right-click ▸ **Molecule builder…** opens a window
   with a **view toolbar** (Front / Back / Left / Right / Top / Bottom /
   Isometric — each a little cube with the viewed face shaded), a
