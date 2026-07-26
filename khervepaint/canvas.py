@@ -762,7 +762,7 @@ class PaintScene(QGraphicsScene):
         # canvas dpi (see grid_size). Smaller mm -> finer cells.
         self.grid_mm = 1.0
         self.snap_enabled = True
-        self.show_grid = True
+        self.show_grid = False
         self.infinite = True      # infinite paper by default (grid fills view)
         self.dpi = 96             # pixels per inch, for physical export size
 
