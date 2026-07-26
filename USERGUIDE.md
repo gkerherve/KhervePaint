@@ -350,16 +350,18 @@ Five further dropdowns cover general diagrams and more science:
   schematics), **alcohols & ethers**, **acids & carbonyls**,
   **nitrogen compounds** (amines, urea, glycine…), **hydrocarbons**
   (methane→hexane, alkenes, alkynes), **aromatics** (benzene, toluene,
-  phenol), **halogenated** (chloroform, CCl₄…), **polymers**
-  (polyethylene, PVC, PTFE, polystyrene, **PET**) — and **crystal unit
-  cells**: simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl,
+  phenol), **halogenated** (chloroform, CCl₄…) and **polymers**
+  (polyethylene, PVC, PTFE, polystyrene, **PET**). Each drops as an
+  editable group.
+
+- **Crystals** — a **palette of its own** (split out from Molecules so unit
+  cells are easy to find): simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl,
   **perovskite** (ABX₃ octahedron), **zinc blende** and **fluorite**,
   drawn as open **wireframe unit cells** (thick cube edges plus dashed
-  diagonals through the centring atoms). Each drops as an editable group.
-  Atoms that are the **same element but sit on a hidden lattice site** — a
-  BCC body-centre, the FCC/diamond face-centres, the diamond interior — are
-  **colour-coded** so they stand out instead of vanishing against identical
-  corners.
+  diagonals through the centring atoms). Atoms that are the **same element
+  but sit on a hidden lattice site** — a BCC body-centre, the FCC/diamond
+  face-centres, the diamond interior — are **colour-coded** so they stand
+  out instead of vanishing against identical corners.
 
   A **Lattice systems** category adds the non-cubic crystal systems as
   wireframe unit cells built from their real lattice parameters
@@ -386,14 +388,15 @@ Five further dropdowns cover general diagrams and more science:
   gets a **Supercell** row (the same a×b×c repeats, previewed live) and
   **Tilt cell** controls: click any atom to select the unit cell it
   belongs to (the status line names it, e.g. "cell (1, 0, 0)"), then set
-  its **x / y / z rotation** in degrees. The chosen cell spins rigidly
-  about its own centre — like a misoriented grain, or an octahedral-tilt
-  figure in a perovskite — and separates cleanly from its neighbours
-  (rotated corners no longer merge with the untilted lattice). Only the
-  tilted cell moves: the rest of the supercell keeps its exact position
-  and size, because the layout stays anchored to the untilted lattice.
-  Any number of cells can carry their own tilt; **Reset tilts** clears
-  them all, and tilts are saved with the drawing.
+  its **x / y / z rotation** in degrees. Tilting introduces a **defect**:
+  the chosen cell rotates about its own centre and **drags the atoms it
+  shares** with its neighbours, so the surrounding cells stretch and shear
+  to stay connected — like a misoriented grain or an octahedral tilt in a
+  perovskite. No atom is duplicated (an isolated tilt stays rigid while its
+  neighbours absorb the strain), and the defect is **localised** — cells
+  far from the tilt keep their position. Any number of cells can carry
+  their own tilt; **Reset tilts** clears them all, and tilts are saved with
+  the drawing.
 
   **Coordination polyhedra** — for crystals whose structure bonds a
   central atom to 4+ neighbours (perovskite's BX₆ octahedra, the

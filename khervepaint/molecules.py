@@ -1031,9 +1031,18 @@ CATEGORIES = [
      ["chloroform", "dichloromethane", "tetrachloromethane"]),
     ("Polymers",
      ["polyethylene", "polypropylene", "pvc", "ptfe", "polystyrene", "pet"]),
+]
+
+#: Crystal categories — the cubic-family unit cells plus the seven
+#: `lattices` systems. These are registered in `_MODELS`/`LABELS`/`SIZES`
+#: below (so placement, stacking, rotation and persistence work), but they
+#: are surfaced through the separate **Crystals** palette (`crystals.py`),
+#: not the Molecules dropdown.
+CRYSTAL_CATEGORIES = [
     ("Crystal structures",
      ["simple_cubic", "bcc", "fcc", "hcp", "diamond", "nacl", "cscl",
       "perovskite", "zincblende", "fluorite"]),
+    lattices.CATEGORY,
 ]
 
 # Non-cubic lattice systems (tetragonal … triclinic) live in `lattices`;
@@ -1042,7 +1051,6 @@ CATEGORIES = [
 _MODELS.update(lattices.MODELS)
 SIZES.update(lattices.SIZES)
 LABELS.update(lattices.LABELS)
-CATEGORIES.append(lattices.CATEGORY)
 
 
 #: Default bond spread for molecules — >1 so the sticks read clearly
@@ -1079,12 +1087,17 @@ def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None, tilts=None,
     shared between neighbouring cells are de-duplicated by rounded
     coordinate, so corners/faces aren't drawn on top of each other.
 
-    *tilts* maps ``"i,j,k"`` cell keys to ``(rx, ry, rz)`` degrees: those
-    cells rotate rigidly about their own centre — a misoriented grain in
-    the supercell — and so naturally stop sharing atoms with their
-    neighbours (their rotated corners no longer coincide). *owners* (a
-    list, filled in place) records the ``"i,j,k"`` cell that created each
-    output atom, for cell picking in the builder."""
+    *tilts* maps ``"i,j,k"`` cell keys to ``(rx, ry, rz)`` degrees. Tilting a
+    cell models a **defect**, not a detached grain: the tilted cell rotates
+    about its own centre, and because its corner/face atoms are *shared*
+    with the neighbouring cells, those neighbours are dragged along and
+    deform to keep the lattice connected — no atom is duplicated. Atoms are
+    laid out on a single de-duplicated node table keyed by the *untilted*
+    position; each node's displacement is the average of the rotations of
+    the tilted cells that own it (untilted owners contribute nothing), so an
+    isolated tilted cell stays rigid while its neighbours shear to follow.
+    *owners* (a list, filled in place) records the ``"i,j,k"`` cell that
+    first created each output atom, for cell picking in the builder."""
     edges = edges or []
     bonds = bonds or []
     pts = [p for e in edges for p in (e[0], e[1])] or \
@@ -1104,35 +1117,79 @@ def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None, tilts=None,
     def key(x, y, z):
         return (round(x, 3), round(y, 3), round(z, 3))
 
+    rots = {ck: lattices.rotation(*t)
+            for ck, t in (tilts or {}).items() if any(t)}
+
+    def base(x, y, z, i, j, k):
+        """Untilted position of local coord (x,y,z) in cell (i,j,k)."""
+        return (x + i * va[0] + j * vb[0] + k * vc[0],
+                y + i * va[1] + j * vb[1] + k * vc[1],
+                z + i * va[2] + j * vb[2] + k * vc[2])
+
+    # ---- pass 1: build the shared node table + tilt displacement field.
+    # A "node" is any atom position or edge endpoint. Shared corners map to
+    # one node; its displacement accumulates only the *tilted* owners, so a
+    # corner shared with an untilted neighbour still follows the tilt (the
+    # neighbour deforms) while a corner between two tilted cells averages.
+    node = {}          # nkey -> untilted (x, y, z)
+    disp = {}          # nkey -> [Σdx, Σdy, Σdz] over tilted owners
+    ndisp = {}         # nkey -> number of tilted owners
+    owner = {}         # nkey -> first "i,j,k" that touched the node
+    counted = set()    # (nkey, ck) already folded into the average
+
+    def touch(x, y, z, i, j, k, ck, rot):
+        bx, by, bz = base(x, y, z, i, j, k)
+        nk = key(bx, by, bz)
+        if nk not in node:
+            node[nk] = (bx, by, bz)
+            disp[nk] = [0.0, 0.0, 0.0]
+            ndisp[nk] = 0
+            owner[nk] = ck
+        if rot is not None and (nk, ck) not in counted:
+            counted.add((nk, ck))
+            rx, ry, rz = rot((x - centre[0], y - centre[1], z - centre[2]))
+            tx, ty, tz = base(rx + centre[0], ry + centre[1], rz + centre[2],
+                              i, j, k)
+            disp[nk][0] += tx - bx
+            disp[nk][1] += ty - by
+            disp[nk][2] += tz - bz
+            ndisp[nk] += 1
+        return nk
+
+    for i in range(nx):
+        for j in range(ny):
+            for k in range(nz):
+                ck = "%d,%d,%d" % (i, j, k)
+                rot = rots.get(ck)
+                for atom in atoms:
+                    touch(atom[1], atom[2], atom[3], i, j, k, ck, rot)
+                for e in edges:
+                    touch(e[0][0], e[0][1], e[0][2], i, j, k, ck, rot)
+                    touch(e[1][0], e[1][1], e[1][2], i, j, k, ck, rot)
+
+    def final(nk):
+        p, d, n = node[nk], disp[nk], ndisp[nk]
+        if not n:
+            return p
+        return (p[0] + d[0] / n, p[1] + d[1] / n, p[2] + d[2] / n)
+
+    # ---- pass 2: emit atoms/bonds/edges from the deformed node positions.
     new_atoms, new_bonds, new_edges = [], [], []
     seen_atom, seen_bond, seen_edge = {}, set(), set()
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
-                ox = i * va[0] + j * vb[0] + k * vc[0]
-                oy = i * va[1] + j * vb[1] + k * vc[1]
-                oz = i * va[2] + j * vb[2] + k * vc[2]
-                ck = "%d,%d,%d" % (i, j, k)
-                tilt = (tilts or {}).get(ck)
-                rot = lattices.rotation(*tilt) if tilt and any(tilt) else None
-
-                def place(x, y, z):
-                    if rot is not None:          # spin about the cell centre
-                        x, y, z = rot((x - centre[0], y - centre[1],
-                                       z - centre[2]))
-                        x, y, z = x + centre[0], y + centre[1], z + centre[2]
-                    return x + ox, y + oy, z + oz
-
                 remap = {}
                 for oi, atom in enumerate(atoms):
-                    x, y, z = place(atom[1], atom[2], atom[3])
-                    ak = key(x, y, z)
-                    if ak not in seen_atom:
-                        seen_atom[ak] = len(new_atoms)
-                        new_atoms.append((atom[0], x, y, z) + tuple(atom[4:]))
+                    nk = key(*base(atom[1], atom[2], atom[3], i, j, k))
+                    if nk not in seen_atom:
+                        seen_atom[nk] = len(new_atoms)
+                        fx, fy, fz = final(nk)
+                        new_atoms.append((atom[0], fx, fy, fz)
+                                         + tuple(atom[4:]))
                         if owners is not None:
-                            owners.append(ck)
-                    remap[oi] = seen_atom[ak]
+                            owners.append(owner[nk])
+                    remap[oi] = seen_atom[nk]
                 for bi, bj, bo in bonds:
                     a, b = remap[bi], remap[bj]
                     bk = (min(a, b), max(a, b), bo)
@@ -1141,12 +1198,12 @@ def _supercell(atoms, bonds, edges, nx, ny, nz, vectors=None, tilts=None,
                         new_bonds.append((a, b, bo))
                 for e in edges:
                     style = e[2] if len(e) > 2 else "solid"
-                    p1 = place(*e[0])
-                    p2 = place(*e[1])
-                    ek = (frozenset((key(*p1), key(*p2))), style)
+                    n1 = key(*base(e[0][0], e[0][1], e[0][2], i, j, k))
+                    n2 = key(*base(e[1][0], e[1][1], e[1][2], i, j, k))
+                    ek = (frozenset((n1, n2)), style)
                     if ek not in seen_edge:
                         seen_edge.add(ek)
-                        new_edges.append((p1, p2, style))
+                        new_edges.append((final(n1), final(n2), style))
     return new_atoms, new_bonds, new_edges
 
 

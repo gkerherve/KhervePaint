@@ -39,8 +39,8 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, PROTRACTOR,
                      RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      LineItem, PaintScene, PaintView)
-from . import (chemistry, electrical, floorplan, flowchart, labware, optics,
-               vacuum, network, pid, arrows, biology, maths, molecules,
+from . import (chemistry, crystals, electrical, floorplan, flowchart, labware,
+               optics, vacuum, network, pid, arrows, biology, maths, molecules,
                scheme3d)
 from .style import THEMES, apply_style, current_theme
 
@@ -135,8 +135,11 @@ SHAPE_GROUPS = [
 #: and the Library menu, so the two never drift apart.
 SYMBOL_LIBRARIES = [
     ("Molecules", "mdi.molecule",
-     "Molecules — 3D ball-and-stick models & crystal cells",
+     "Molecules — 3D ball-and-stick models",
      molecules, "mol_element", MOL_PLACE),
+    ("Crystals", "mdi.cube-outline",
+     "Crystals — unit cells & lattice systems (stackable, tiltable)",
+     crystals, "mol_element", MOL_PLACE),
     ("3D scheme", "mdi.layers-triple-outline",
      "3D scheme — slabs, particle beds, glows (device schematics)",
      scheme3d, "s3d_element", S3D_PLACE),
@@ -1259,7 +1262,7 @@ class MainWindow(QMainWindow):
 
     def _insert_library_item(self, module, name, scene_pos):
         """Drop a symbol-library element at *scene_pos* on the canvas."""
-        if module is molecules:
+        if module is molecules or module is crystals:
             self.scene.place_mol_element(name, scene_pos)
         else:
             self.scene._place_symbol(module, name, scene_pos)

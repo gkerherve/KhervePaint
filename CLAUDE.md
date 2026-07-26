@@ -191,6 +191,24 @@ into a new module and import.
                        ride on the model tag as `mol_cells` and round-trip
                        through document.py (`model_cells`) / svgio.py
                        (`kp:model-cells`); `reorient_model(cells=…)` re-tiles.
+                       Per-cell **tilts** (`mol_tilts`, `"i,j,k"→(rx,ry,rz)°`)
+                       model a **defect, not a detached grain**: `_supercell`
+                       lays atoms on ONE de-duplicated node table keyed by the
+                       *untilted* position, then displaces each node by the
+                       average rotation of the *tilted* cells that own it
+                       (untilted owners contribute 0). So a tilted cell drags
+                       the corner/face atoms it shares with its neighbours —
+                       they deform to follow, no atom is duplicated — while an
+                       isolated tilt stays rigid. (Earlier design detached the
+                       cell; the tilt tests in `test_lattices.py` were rewritten
+                       for the defect behaviour.)
+                       The **cubic + lattice crystals** are surfaced through a
+                       separate **Crystals** palette (`crystals.py` — just the
+                       menu grouping `molecules.CRYSTAL_CATEGORIES`; all model/
+                       placement machinery stays in `molecules`), split out of
+                       the Molecules dropdown. `mainwindow._insert_library_item`
+                       routes both `molecules` and `crystals` to
+                       `place_mol_element`.
   - `molview.py`     — `MoleculeViewer` = the **Molecule builder** dialog
                        (right-click a placed model ▸ Molecule builder…).
                        Horizontal **view toolbar** of 3D cube-face icons

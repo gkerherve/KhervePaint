@@ -372,9 +372,11 @@ vector, angle, right angle, and ready-to-place symbol glyphs
 lit spheres in standard element colours (H white, C grey, O red, N
 blue, S yellow, Cl green…) with single/double/triple bonds. Simple
 molecules (H₂, O₂, N₂, water, methane, CO₂), alcohols &amp; acids (methanol,
-ethanol, glucose), hydrocarbons (benzene, cyclohexane…), <b>polymers</b>
-up to <b>PET</b>, and <b>crystal cells</b> as open wireframe unit cells
-(simple cubic, BCC, FCC, HCP, diamond, NaCl, CsCl). Same-element atoms
+ethanol, glucose), hydrocarbons (benzene, cyclohexane…) and <b>polymers</b>
+up to <b>PET</b>.</li>
+<li><b>Crystals</b> — its own palette (split out from Molecules):
+<b>unit cells</b> as open wireframe cells (simple cubic, BCC, FCC, HCP,
+diamond, NaCl, CsCl, perovskite, zinc blende, fluorite). Same-element atoms
 on a hidden lattice site (a BCC body-centre, the FCC/diamond face-centres,
 the diamond interior) are <b>colour-coded</b> so they don't disappear
 against identical corners. A <b>Lattice systems</b> category adds the
@@ -395,9 +397,11 @@ atom on at the chosen order, drag a sphere to bend a bond angle, or drag
 the background to rotate. Chains build straight, not into rings.
 For a crystal the builder instead shows a <b>Supercell</b> row (a×b×c
 repeats, previewed live) and <b>Tilt cell</b> controls: click an atom to
-select its unit cell, then set that cell's x/y/z rotation — it spins
-rigidly about its own centre, like a misoriented grain in the lattice
-(<b>Reset tilts</b> clears them; tilts are saved with the drawing).
+select its unit cell, then set that cell's x/y/z rotation. Tilting models a
+<b>defect</b> — the cell rotates and <i>drags the atoms it shares</i> with
+its neighbours, so the surrounding cells deform to stay connected rather
+than a duplicate cell appearing (<b>Reset tilts</b> clears them; tilts are
+saved with the drawing).
 Bonded crystals (perovskite, diamond, zinc blende) also offer
 <b>Polyhedra</b> (builder checkbox or right-click ▸ <b>Show
 polyhedra</b>): translucent coordination faces around each centre atom —

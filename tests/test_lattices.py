@@ -45,7 +45,7 @@ def test_lattice_systems_are_registered():
         assert name in molecules.LABELS and name in molecules.SIZES
         assert molecules.is_crystal(name)          # _xtal_* builder name
         assert molecules.can_stack(name)           # tiles by lattice vectors
-    cat = dict(molecules.CATEGORIES)
+    cat = dict(molecules.CRYSTAL_CATEGORIES)      # split into the Crystals menu
     assert set(cat["Lattice systems"]) == set(lattices.PARAMS)
 
 
@@ -113,56 +113,58 @@ def test_supercell_owners_track_home_cells():
     assert set(owners) == {"0,0,0"}
 
 
-def test_tilted_cell_detaches_from_its_neighbours():
+def test_tilt_deforms_neighbours_without_duplicating():
+    # A tilt is a *defect*, not a detached grain: shared corners are dragged
+    # with the tilt (the neighbour deforms) and no atom or edge is duplicated.
     base, _, be, _ = molecules.model_data("simple_cubic", (2, 1, 1))
     tilted, _, te, _ = molecules.model_data(
         "simple_cubic", (2, 1, 1), tilts={"1,0,0": [0, 0, 30]})
-    # the shared face un-merges: 12 shared atoms become 8 + 8
-    assert len(base) == 12 and len(tilted) == 16
-    assert len(te) > len(be)                    # shared edges split too
+    assert len(base) == 12 and len(tilted) == 12    # no duplication
+    assert len(te) == len(be)                        # edges dragged, not split
+    # atoms are in a stable order, so equal indices are the same node
+    moved = sum(1 for a, b in zip(base, tilted)
+                if (round(a[1], 3), round(a[2], 3), round(a[3], 3))
+                != (round(b[1], 3), round(b[2], 3), round(b[3], 3)))
+    assert moved > 0                                 # the defect actually moves
     # a zero tilt changes nothing
     same, _, _, _ = molecules.model_data(
         "simple_cubic", (2, 1, 1), tilts={"1,0,0": [0, 0, 0]})
     assert len(same) == 12
 
 
-def test_tilt_rotates_about_the_cell_centre():
-    # tilting must not translate the cell: its centroid stays put
-    def centroid(atoms, owners, cell):
-        pts = [(a[1], a[2], a[3]) for a, o in zip(atoms, owners) if o == cell]
-        n = len(pts)
-        return tuple(sum(p[d] for p in pts) / n for d in range(3))
-    o1, o2 = [], []
-    a1, _, _, _ = molecules.model_data("simple_cubic", (2, 1, 1), owners=o1,
-                                       tilts={"1,0,0": [0, 0, 1]})
-    a2, _, _, _ = molecules.model_data("simple_cubic", (2, 1, 1), owners=o2,
-                                       tilts={"1,0,0": [25, 15, 40]})
-    assert centroid(a1, o1, "1,0,0") == pytest.approx(
-        centroid(a2, o2, "1,0,0"), abs=1e-6)
+def test_tilt_rotates_the_cell_rigidly_about_its_centre():
+    # An isolated tilted cell is a rigid rotation about its own centre, so
+    # the centroid of its atoms is unchanged whatever the tilt angle.
+    base, _, _, _ = molecules.model_data("simple_cubic", (2, 1, 1))
+    xs = sorted({round(a[1], 3) for a in base})
+    cut = (xs[0] + xs[-1]) / 2.0
+    idx = [n for n, a in enumerate(base) if a[1] > cut - 1e-6]  # cell (1,0,0)
+
+    def centroid(atoms):
+        pts = [atoms[n] for n in idx]
+        return tuple(sum(p[d + 1] for p in pts) / len(pts) for d in range(3))
+    c0 = centroid(base)
+    for tilt in ([0, 0, 30], [25, 15, 40]):
+        a, _, _, _ = molecules.model_data("simple_cubic", (2, 1, 1),
+                                          tilts={"1,0,0": tilt})
+        assert centroid(a) == pytest.approx(c0, abs=1e-6)
 
 
-def test_tilting_one_cell_leaves_neighbours_untouched():
-    # The user-visible guarantee: tilt cell (1,0,0) and every atom of cell
-    # (0,0,0) keeps its exact drawn position AND size. (Regression: the
-    # fit-to-box followed the tilted cell's protruding corners, so tilting
-    # one cell rescaled and shifted all the others.)
-    def cell0_spheres(specs):
-        # cell (0,0,0) is tiled first, so its 8 corners are atoms 0..7
-        return {s["_atom"]: (round(s["x"], 3), round(s["y"], 3),
-                             round(s["w"], 3))
-                for s in specs if s.get("shape") == "circle"
-                and s.get("_atom", 99) < 8}
-    plain = molecules.build_specs_oriented(
-        "simple_cubic", 300, 300, cells=(2, 1, 1), tag_atoms=True)
-    tilted = molecules.build_specs_oriented(
+def test_tilting_one_cell_deforms_only_around_the_defect():
+    # The user-visible guarantee: tilting cell (1,0,0) drags the face it
+    # shares with cell (0,0,0) — so the neighbour deforms — while cell 0's
+    # far face stays put. The defect is localised, not a global rescale.
+    def spheres(specs):
+        return {s["_atom"]: (round(s["x"], 2), round(s["y"], 2))
+                for s in specs if s.get("shape") == "circle"}
+    plain = spheres(molecules.build_specs_oriented(
+        "simple_cubic", 300, 300, cells=(2, 1, 1), tag_atoms=True))
+    tilted = spheres(molecules.build_specs_oriented(
         "simple_cubic", 300, 300, cells=(2, 1, 1), tag_atoms=True,
-        tilts={"1,0,0": [20, 10, 30]})
-    assert cell0_spheres(plain) == cell0_spheres(tilted)
-    # …while the tilted cell itself really did move
-    others = lambda specs: {s["_atom"]: (round(s["x"], 2), round(s["y"], 2))
-                            for s in specs if s.get("shape") == "circle"
-                            and s.get("_atom", 0) >= 8}
-    assert others(plain) != others(tilted)
+        tilts={"1,0,0": [20, 10, 30]}))
+    moved = {i for i in plain if plain[i] != tilted[i]}
+    unmoved = {i for i in plain if plain[i] == tilted[i]}
+    assert moved and unmoved             # some atoms deform, some are untouched
 
 
 def test_tilts_round_trip_json_and_svg(scene, tmp_path):
@@ -210,7 +212,7 @@ def test_builder_supercell_and_tilt_controls(app):
     dlg._on_atom_clicked(dlg._owners.index("1,0,0"))
     dlg.tilt_spins[2].setValue(30)                    # fires _on_tilt
     assert dlg.tilts == {"1,0,0": [0, 0, 30]}
-    assert len(dlg.atoms) == 16                       # cell detached
+    assert len(dlg.atoms) == 12                       # defect, no duplication
     # the selection follows the cell through the renumbering
     assert dlg.selected is not None
     assert dlg._owners[dlg.selected] == "1,0,0"

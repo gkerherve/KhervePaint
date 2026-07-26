@@ -39,7 +39,11 @@ def scene(app):
 def test_registry_is_consistent():
     names = set(molecules._MODELS) | set(molecules._POLYMERS)
     assert names == set(molecules.LABELS)
-    cat_names = [n for _title, ns in molecules.CATEGORIES for n in ns]
+    # molecule categories + the crystal categories (now their own palette)
+    # together cover every registered model, with no duplicates.
+    cat_names = [n for _title, ns in
+                 molecules.CATEGORIES + molecules.CRYSTAL_CATEGORIES
+                 for n in ns]
     assert set(cat_names) == names
     assert len(cat_names) == len(names)          # no duplicates
 
