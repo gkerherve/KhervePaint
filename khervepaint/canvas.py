@@ -1648,62 +1648,62 @@ class PaintScene(QGraphicsScene):
         """Drop a top-view room-layout element (walls/furniture/fittings),
         grouped and editable, centred on *center*."""
         from . import floorplan
-        self._place_symbol(floorplan, name, center)
+        return self._place_symbol(floorplan, name, center)
 
     def place_elec_element(self, name: str, center: QPointF):
         """Drop an electrical symbol (component or installation marker)."""
         from . import electrical
-        self._place_symbol(electrical, name, center)
+        return self._place_symbol(electrical, name, center)
 
     def place_optics_element(self, name: str, center: QPointF):
         """Drop an optics / photonics symbol (beam-path diagrams)."""
         from . import optics
-        self._place_symbol(optics, name, center)
+        return self._place_symbol(optics, name, center)
 
     def place_vacuum_element(self, name: str, center: QPointF):
         """Drop a vacuum / surface-science symbol (UHV systems)."""
         from . import vacuum
-        self._place_symbol(vacuum, name, center)
+        return self._place_symbol(vacuum, name, center)
 
     def place_labware_element(self, name: str, center: QPointF):
         """Drop a lab-glassware / apparatus symbol."""
         from . import labware
-        self._place_symbol(labware, name, center)
+        return self._place_symbol(labware, name, center)
 
     def place_flow_element(self, name: str, center: QPointF):
         """Drop a flowchart node symbol."""
         from . import flowchart
-        self._place_symbol(flowchart, name, center)
+        return self._place_symbol(flowchart, name, center)
 
     def place_net_element(self, name: str, center: QPointF):
         """Drop a network / IT architecture symbol."""
         from . import network
-        self._place_symbol(network, name, center)
+        return self._place_symbol(network, name, center)
 
     def place_pid_element(self, name: str, center: QPointF):
         """Drop a P&ID / process-flow symbol."""
         from . import pid
-        self._place_symbol(pid, name, center)
+        return self._place_symbol(pid, name, center)
 
     def place_arrow_element(self, name: str, center: QPointF):
         """Drop an annotation arrow / callout / banner."""
         from . import arrows
-        self._place_symbol(arrows, name, center)
+        return self._place_symbol(arrows, name, center)
 
     def place_bio_element(self, name: str, center: QPointF):
         """Drop a biology / life-science symbol."""
         from . import biology
-        self._place_symbol(biology, name, center)
+        return self._place_symbol(biology, name, center)
 
     def place_math_element(self, name: str, center: QPointF):
         """Drop a math / graph / vector symbol."""
         from . import maths
-        self._place_symbol(maths, name, center)
+        return self._place_symbol(maths, name, center)
 
     def place_s3d_element(self, name: str, center: QPointF):
         """Drop a 3D-schematic block (slab, particle bed, glow, trail…)."""
         from . import scheme3d
-        self._place_symbol(scheme3d, name, center)
+        return self._place_symbol(scheme3d, name, center)
 
     def place_mol_element(self, name: str, center: QPointF):
         """Drop a molecule / crystal ball-and-stick model."""
@@ -1717,6 +1717,7 @@ class PaintScene(QGraphicsScene):
             self._tag_model(top, name, molecules.DEFAULT_AZ,
                             molecules.DEFAULT_EL, molecules.default_bond(name),
                             box=box)
+        return top
 
     def place_built_molecule(self, atoms, bonds, center, az=None, el=None,
                              bond=None, mode="3d", name="custom", commit=True):

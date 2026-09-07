@@ -826,6 +826,13 @@ class MainWindow(QMainWindow):
         self._build_measure_menu(m)
         self._build_examples_menu(m)
 
+        tools_menu = m.addMenu("&Tools")
+        mcp_act = tools_menu.addAction("&MCP Server\u2026",
+                                       self._open_mcp_dialog)
+        mcp_act.setIcon(icons.icon("mdi.lan-connect"))
+        mcp_act.setToolTip("Let Claude and other MCP assistants draw in "
+                           "this document")
+
         help_menu = m.addMenu("&Help")
         help_menu.addAction("&User Guide", self._user_guide, "F1")
         help_menu.addSeparator()
@@ -1547,6 +1554,32 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.warning(self, APP_NAME, f"Could not export:\n{exc}")
 
+    # ------------------------------------------------------------ MCP
+    def mcp_bridge(self):
+        """The MCP bridge for this window, created on first use."""
+        if getattr(self, "_mcp_bridge", None) is None:
+            from .mcp_bridge import ACCESS_LEVELS, DEFAULT_ACCESS, McpBridge
+            self._mcp_bridge = McpBridge(self)
+            level = QSettings(*SETTINGS).value("mcp/access", DEFAULT_ACCESS)
+            self._mcp_bridge.set_access(
+                level if level in ACCESS_LEVELS else DEFAULT_ACCESS)
+            self._mcp_bridge.tool_invoked.connect(
+                lambda name, _s: self.statusBar().showMessage(
+                    f"MCP: {name}", 3000))
+        return self._mcp_bridge
+
+    def start_mcp_if_enabled(self):
+        """Re-open the bridge when the user left it on last session."""
+        if QSettings(*SETTINGS).value("mcp/enabled", False, type=bool):
+            self.mcp_bridge().start()
+
+    def _open_mcp_dialog(self):
+        """Open the MCP server control panel (non-modal)."""
+        from .mcp_dialog import McpServerDialog
+        dlg = McpServerDialog(self.mcp_bridge(), self)
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+        dlg.show()
+
     # ------------------------------------------------------------ history
     def _capture_change(self):
         """Snapshot the document after a user change and push an undo
@@ -1589,6 +1622,10 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self._confirm_discard():
+            # The bridge holds a listening socket and an endpoint file
+            # naming this process; both have to go with the window.
+            if getattr(self, "_mcp_bridge", None) is not None:
+                self._mcp_bridge.stop()
             if self in MainWindow._windows:
                 MainWindow._windows.remove(self)
             event.accept()
