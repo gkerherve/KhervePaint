@@ -28,7 +28,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt5.QtCore import QSettings
 
-from khervepaint import ai_assistant, mainwindow, style
+from khervepaint import ai_assistant, mainwindow, mcp_dialog, style
 
 _TEST_SETTINGS_FILE = os.path.join(
     tempfile.mkdtemp(prefix="khervepaint-test-settings-"), "settings.ini")
@@ -40,5 +40,42 @@ def _isolated_settings(*_args, **_kwargs):
 
 
 # Redirect every app module's QSettings to the temp file.
-for _module in (ai_assistant, mainwindow, style):
+for _module in (ai_assistant, mainwindow, mcp_dialog, style):
     _module.QSettings = _isolated_settings
+
+
+import pytest
+from PyQt5.QtWidgets import QApplication
+
+
+@pytest.fixture(scope="session")
+def qapp():
+    return QApplication.instance() or QApplication([])
+
+
+@pytest.fixture(scope="session")
+def paint_window(qapp):
+    """ONE MainWindow for the whole session.
+
+    A window per test churns through QMainWindows, and one collected
+    while its scene or undo stack still has signals in flight raises
+    inside a Qt slot — which PyQt turns into an abort of the whole run,
+    not a test failure. Tests that need a window share this one and
+    reset it (see the `win` fixture).
+    """
+    from khervepaint.mainwindow import MainWindow
+    return MainWindow()
+
+
+@pytest.fixture
+def win(paint_window):
+    """The shared window, reset to a blank document for this test."""
+    from khervepaint import canvassize
+    w, h, dpi = canvassize.default_size()
+    paint_window.scene.new_document(w, h)
+    paint_window.scene.dpi = dpi
+    paint_window.scene.snap_enabled = True
+    paint_window.scene.grid_mm = 1.0
+    paint_window._path = None
+    paint_window._reset_history()
+    return paint_window
