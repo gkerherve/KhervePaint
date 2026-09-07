@@ -31,6 +31,24 @@ circle below"). The reply's shape specs become real, editable, undoable
 items on the canvas. Keys are stored locally via QSettings; no extra
 dependencies (it uses `urllib`).
 
+## Any AI assistant (MCP)
+
+**Tools ▸ MCP Server…** lets *any* MCP-compatible assistant that runs on
+your machine — Claude Desktop, Claude Code, Cursor, Cline, VS Code,
+LM Studio — drive KhervePaint directly. Where the built-in chat replies
+with shapes, an MCP client gets the whole app as **26 tools**: draw and
+restyle items, align and group them, place symbols from all fourteen
+palettes, build molecules and crystals, resize the page, save and
+export — and `render_canvas`, which hands the model a **picture of the
+drawing** so it can see what it made.
+
+Everything it does is one undoable step, so **Ctrl+Z takes your drawing
+back**. The bridge is off until you switch it on, listens on 127.0.0.1
+only, and needs a per-session token. KhervePaint writes its own entry
+into the host's config — no JSON to edit by hand.
+
+See [docs/MCP.md](docs/MCP.md).
+
 ## Examples
 
 The **Examples** menu loads ready-made, fully labelled instrument

@@ -482,6 +482,29 @@ locally on your machine. You can <b>paste a screenshot</b> into the chat
 box (<b>Ctrl+V</b>) to send it with your message (use a vision-capable
 model such as Claude or GPT-4o); click <b>✕</b> to drop the attachment.</p>
 
+<h2>15a · Any AI assistant (MCP Server)</h2>
+<p>The chat is not the only way to get help drawing.
+<b>Tools ▸ MCP Server…</b> opens KhervePaint to any assistant on your
+machine that speaks the Model Context Protocol — <b>Claude Desktop,
+Claude Code, Cursor, Cline, VS Code, LM Studio</b> and others.</p>
+<p>Tick <b>Enable MCP server</b> (remembered next time you start),
+choose what connected assistants may do — <b>Read only</b> (look and
+point), <b>Edit</b> (draw, restyle, arrange, save over the open file)
+or <b>Full</b> (also open, save and export files it picks itself) —
+then select your assistant under <b>Connect a host</b> and press
+<b>Connect</b>. KhervePaint writes the entry into that application's
+own settings, so there is no config file to edit by hand; restart it
+afterwards.</p>
+<p>A connected assistant gets far more than the chat: it draws shapes,
+moves and restyles them, aligns and groups them, places symbols from
+every palette, builds molecules and crystals, resizes the page and
+exports — and it can <b>look at the canvas</b>, so it spots overlaps and
+fixes its own spacing. Everything it does is a single undoable step, so
+<b>Ctrl+Z</b> takes your drawing back exactly as it does for your own
+edits. The connection is local only (127.0.0.1), needs a token that
+changes every session, and is off until you tick the box; the dialog
+shows a live log of what has been called.</p>
+
 <h2>16 · Examples</h2>
 <p>The <b>Examples</b> menu loads ready-made, fully labelled instrument
 schematics onto an A4 page — each with the instrument cross-section, a

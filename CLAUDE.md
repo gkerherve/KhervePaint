@@ -344,7 +344,70 @@ into a new module and import.
                        LEED, TEM, SEM, AFM, STM, TGA, DSC, BET, HPLC …)
                        and the `SKETCHES` list. Split from the toolkit so
                        neither file outgrows ~1500 lines.
+  - `mcp_schema.py`  — the **MCP tool table**: 26 JSON-Schema tool
+                       definitions and `LIBRARY_KEYS`. Qt-free and
+                       import-free — it is the contract, so it can be
+                       inspected and tested without a window, and the
+                       stdio server never drags PyQt5 into the host's
+                       subprocess.
+  - `mcp_tools.py`   — `McpToolExecutor`: runs one named tool against
+                       the live `MainWindow`. Items are addressed by an
+                       int id stamped on the item (`_mcp_id`) and
+                       validated against the current scene, so a stale
+                       id says "call list_items again" instead of
+                       crashing — ids cannot survive undo, which
+                       rebuilds every item from a snapshot. Drawing goes
+                       through `ai_assistant.apply_specs` (same spec
+                       format as the chat and the examples), symbols
+                       through `PaintScene._place_symbol`, models through
+                       `place_mol_element`/`place_built_molecule`/
+                       `reorient_model`. Programmatic moves run with grid
+                       snapping off (`_unsnapped`) — a client asks for
+                       exact coordinates — and a placed symbol is
+                       `_recentre`d on its REAL bounding box (the app
+                       centres on the nominal design box, which is right
+                       for click-to-place because the user then drags it).
+  - `mcp_bridge.py`  — `McpBridge`: loopback JSON server on 127.0.0.1
+                       exposing those tools, token-authenticated from the
+                       endpoint file, off until Tools ▸ MCP Server. Wraps
+                       every mutating call in ONE undo macro (`MCP: <tool>`)
+                       so a remote figure is one Ctrl+Z;
+                       `_NO_MACRO_TOOLS` are the ones that touch the
+                       stack themselves (Qt refuses `clear()`/`setClean()`
+                       mid-macro). Access levels read/edit/full — the
+                       edit→full line is the **filesystem**
+                       (`_names_a_path`: `save_document` with no path is
+                       Ctrl+S and stays at edit).
+  - `mcp_server.py`  — the half an MCP host launches: JSON-RPC over
+                       stdio, no Qt, no third-party imports. Forwards
+                       each `tools/call` over the bridge socket and
+                       reconnects on its own, so either side may restart.
+                       `tool_content` turns a result carrying
+                       `IMAGE_KEY` into a real MCP **image block** — a
+                       drawing app that could only describe itself in
+                       prose would be half blind.
+  - `mcp_http.py`    — the same bridge over Streamable HTTP at
+                       `http://127.0.0.1:<port>/mcp`, for clients that
+                       only take a URL. Same token, same access level,
+                       same macros; validates `Origin` (a local server
+                       needs no CORS preflight, so a web page could
+                       otherwise drive the drawing).
+  - `mcp_hosts.py`   — writes KhervePaint's entry into an MCP host's own
+                       config (Claude Desktop, Claude Code via its CLI,
+                       Cursor, Windsurf, VS Code, Cline, LM Studio). Backs
+                       up, writes atomically, touches no other key; Zed is
+                       refused because its settings hold comments.
+  - `mcp_dialog.py`  — Tools ▸ MCP Server…: enable/disable, access level,
+                       one-click host connect, hand-config snippets and a
+                       live activity log.
+- `docs/MCP.md` — how to connect an assistant, what the 26 tools do,
+  access levels, security, troubleshooting.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
+  `conftest.py` isolates QSettings and owns the **single session-wide
+  `MainWindow`** (`paint_window` / `win`): a window per test churns
+  through QMainWindows, and one collected while its scene still has
+  signals in flight raises inside a Qt slot — which PyQt turns into an
+  abort of the whole run, not a test failure.
 - `requirements.txt`, `LICENSE` (GPL-3.0).
 
 ## Architecture
@@ -547,6 +610,55 @@ position, geometry, pen/brush, opacity, rotation; groups nest
   signal that keeps the slider/label in sync with wheel and menu zoom.
 - **Window style**: Fusion as default; themes shared with the family
   (View > Theme).
+
+## MCP (Model Context Protocol)
+
+KhervePaint is drivable by **any local MCP assistant** — Claude
+Desktop, Claude Code, Cursor, Cline, VS Code, LM Studio — not just the
+built-in chat. The chat replies with shape specs; an MCP client gets
+the whole app as **26 tools**: the canvas, `draw`, item editing,
+alignment, all fourteen symbol palettes, the molecule/crystal builders,
+the document, and `render_canvas`, which hands back a **PNG the model
+can actually look at** (overlaps and off-page shapes are obvious in the
+picture and invisible in JSON).
+
+Two halves, because they run in different processes:
+
+```
+ host ──stdio──▶ khervepaint.mcp_server ──loopback TCP──▶ McpBridge ──▶ window
+ host ──HTTP POST────────────────────────────────────────▶ McpHttpServer ──┘
+```
+
+The stdio server is the subprocess the host owns (no Qt, no deps, so it
+starts instantly and works from any Python); the bridge lives in the
+app, where the tools can touch live Qt items on the GUI thread. Either
+side may restart without the other noticing. `--mcp-server` on the
+frozen executable takes the same path, checked **before** any GUI work.
+
+Load-bearing details:
+
+- **One undo macro per call**, so a remote assistant's whole figure is
+  one Ctrl+Z. Tools that manipulate the stack themselves (save/open/
+  new/load_example) run outside the macro — Qt refuses `clear()` and
+  `setClean()` mid-macro, which would silently leave a saved document
+  flagged as modified.
+- **Every mutating tool still emits `changed_by_user`**, including the
+  post-placement `_recentre` nudge; the snapshot policy below applies
+  to MCP exactly as it does to a mouse gesture.
+- **Access levels** (Tools ▸ MCP Server, persisted in QSettings):
+  read / edit / full. The edit→full line is the filesystem, not the
+  drawing — at *edit* a client can do anything to the open document
+  (worst case: you undo it), while naming a path to read or write waits
+  for *full*.
+- **127.0.0.1 only**, random per-session token in the endpoint file
+  (`mcp-bridge.json` in the platform state dir), bridge off until the
+  user turns it on, endpoint removed when the window closes.
+
+Adding a tool: define it in `mcp_schema.TOOLS`, implement `_t_<name>`
+on `McpToolExecutor`, and decide whether it belongs in
+`_READ_ONLY_TOOLS` / `_NO_MACRO_TOOLS` / `_FILE_TOOLS`. The two test
+modules assert the schema and the implementations stay in step, so a
+half-added tool fails the suite.
 
 ## Roadmap
 

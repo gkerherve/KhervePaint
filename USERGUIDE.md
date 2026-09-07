@@ -525,6 +525,35 @@ send it with your message — handy for *"recreate this diagram"*. The
 image goes to the model with your next prompt (use a vision-capable model
 such as Claude or GPT-4o); click **✕** to drop the attachment.
 
+## 15a. Any AI assistant (MCP Server)
+
+The AI chat is not the only way to get help drawing. **Tools ▸ MCP
+Server…** opens KhervePaint to any assistant on your machine that
+speaks the Model Context Protocol — **Claude Desktop, Claude Code,
+Cursor, Cline, VS Code, LM Studio** and others.
+
+1. Tick **Enable MCP server** (it is remembered next time you start).
+2. Choose what connected assistants may do:
+   - **Read only** — look at the drawing and point at items.
+   - **Edit** (recommended) — draw, restyle, arrange, place models and
+     symbols, and save over the file you already have open.
+   - **Full** — also open, save and export files it chooses itself.
+3. Pick your assistant under **Connect a host** and press **Connect**.
+   KhervePaint writes the entry into that application's own settings —
+   there is no config file to edit by hand — then restart it.
+
+The assistant can then do far more than the chat: it draws shapes,
+moves and restyles them, aligns and groups them, places symbols from
+every palette, builds molecules and crystals, resizes the page and
+exports — and it can **look at the canvas**, so it notices overlaps and
+fixes its own spacing.
+
+Everything it does is a single undoable step: **Ctrl+Z** takes your
+drawing back exactly as it does for your own edits. The connection is
+local only (127.0.0.1), needs a token that changes every session, and
+is off until you tick the box. The dialog shows a live log of what the
+assistant has actually called.
+
 ## 16. Examples
 
 The **Examples** menu loads ready-made, fully labelled instrument
