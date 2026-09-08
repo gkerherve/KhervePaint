@@ -1,0 +1,150 @@
+name: macOS build
+
+# PyInstaller cannot cross-compile, so the .app has to be produced on a
+# Mac. Both architectures are built: macos-14 is Apple Silicon (arm64),
+# macos-13 the last Intel (x86_64) runner. Nothing about KhervePaint
+# forces a choice between them -- it is pure PyQt5 with no bundled engine
+# -- so both get a native DMG rather than making Intel users run Rosetta.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish a GitHub release with the DMGs"
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "macos-v*"
+
+permissions:
+  contents: write          # needed to create the release
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false     # an Intel failure should not hide a good arm64 build
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The version is `git rev-list --count HEAD`, so a shallow
+          # clone would silently ship the wrong build number.
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pytest
+
+      - name: Run the test suite
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest tests/ -q
+
+      - name: Build the .app and the DMG
+        run: python packaging/build_macos.py
+
+      - name: Read the version back
+        # Read from the file the spec stamped, not from git again, so the
+        # artifact name cannot disagree with the app's own About box.
+        run: echo "VERSION=$(cut -d+ -f1 khervepaint/VERSION)" >> "$GITHUB_ENV"
+
+      - name: Check the bundle
+        # Not a launch test -- a GUI app on a headless runner would hang.
+        # These are the things that can actually be wrong in a finished
+        # bundle: no Info.plist, a broken signature, a version that fell
+        # back to the 0.1.0 placeholder, or a binary built for the other
+        # architecture, which users meet as "the app is damaged".
+        run: |
+          set -euo pipefail
+          APP=dist/KhervePaint.app
+          test -x "$APP/Contents/MacOS/KhervePaint"
+          plutil -p "$APP/Contents/Info.plist" \
+            | grep -E 'CFBundleIdentifier|CFBundleShortVersionString'
+          test "$VERSION" != "0.1.0"
+          codesign --verify --deep --strict "$APP"
+          file -b "$APP/Contents/MacOS/KhervePaint" | grep -q '${{ matrix.arch }}'
+
+      - name: Upload the DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: KhervePaint-${{ env.VERSION }}-macOS-${{ matrix.arch }}
+          path: dist/KhervePaint-*-macOS-${{ matrix.arch }}.dmg
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event_name == 'push' || inputs.release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # again: the version is the commit count
+
+      - name: Resolve the version
+        run: echo "VERSION=0.1.$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="macos-v${VERSION}"
+          ls -lh artifacts
+
+          # sed strips the YAML block indentation; without it every line of
+          # the release notes would arrive with ten leading spaces and
+          # render as a code block.
+          sed 's/^          //' > notes.md <<'EOF'
+          The macOS build of KhervePaint. Two native disk images:
+
+          - `KhervePaint-*-macOS-arm64.dmg` — Apple Silicon (M1 and later)
+          - `KhervePaint-*-macOS-x86_64.dmg` — Intel
+
+          Open the DMG and drag KhervePaint to Applications. The app is *ad-hoc
+          signed, not notarized*: macOS quarantines anything downloaded through
+          a browser, so on first launch right-click the app and choose **Open**,
+          then **Open** again — or run
+
+              xattr -dr com.apple.quarantine /Applications/KhervePaint.app
+
+          Everything in the matching Windows release is here — the Crystals
+          palette, supercells, coordination polyhedra, and the MCP server that
+          lets an assistant drive the app.
+
+          Double-clicking a `.kpaint` or `.svg` file will not open it in
+          KhervePaint yet: macOS delivers a double-clicked file as an event
+          rather than on the command line, and the app has no handler for that
+          one, so the extensions are deliberately not claimed. Use File ▸ Open.
+
+          Windows builds are released separately, under the `v*` tags.
+          EOF
+
+          # --latest=false keeps `releases/latest` pointing at the Windows
+          # release: the website's download button is
+          # releases/latest/download/KhervePaint-Setup.exe, and a macOS-only
+          # release taking over "latest" would 404 that link.
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
+            --latest=false \
+            --title "KhervePaint v${VERSION} — macOS" \
+            --notes-file notes.md
+          gh release upload "$TAG" artifacts/*.dmg --clobber

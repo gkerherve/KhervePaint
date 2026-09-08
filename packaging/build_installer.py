@@ -32,13 +32,50 @@ _DIST = os.path.join(_ROOT, "dist")
 _APPDIR = os.path.join(_DIST, "KhervePaint")
 
 
-def _version() -> str:
-    """The numeric app version (``0.1.N``), dropping the +sha suffix
-    that would be illegal in a filename / VIProductVersion."""
+def write_version() -> str:
+    """Write ``khervepaint/VERSION`` from git; return the numeric part.
+
+    The file holds the full ``0.1.N+sha`` string (what the title bar and
+    the About box show); the number alone names the artifacts and the tag.
+
+    The previous build's ``VERSION`` is deleted before resolving, because
+    ``get_version()`` reads that file *first* — it has to, so the frozen
+    app can report a version with no ``.git`` beside it. Left in place it
+    answers with the version it was written for, and every later build
+    ships the first one's number. That is not hypothetical: v0.1.139 was
+    published from a tree at commit ~150 and labelled 139 because this
+    file was stale.
+
+    Called from ``KhervePaint.spec`` rather than from ``main()`` here, so
+    the stamp is correct whichever way the freeze is started — the
+    documented flow runs PyInstaller *before* this module.
+    """
     if _ROOT not in sys.path:
         sys.path.insert(0, _ROOT)
     from khervepaint._version import get_version
-    return re.match(r"[0-9.]+", get_version()).group(0)
+
+    version_file = os.path.join(_ROOT, "khervepaint", "VERSION")
+    if os.path.exists(version_file):
+        os.remove(version_file)
+    get_version.cache_clear()
+    full = get_version()
+    if full == "0.1.0":
+        raise SystemExit(
+            "refusing to build: version resolved to the 0.1.0 placeholder — "
+            "is this a git checkout with git on PATH?")
+    with open(version_file, "w", encoding="utf-8") as fh:
+        fh.write(full + "\n")
+    return re.match(r"[0-9.]+", full).group(0)
+
+
+def _version() -> str:
+    """The numeric app version (``0.1.N``), dropping the +sha suffix
+    that would be illegal in a filename / VIProductVersion.
+
+    Re-resolves rather than reading the file the spec just wrote: the git
+    state cannot have moved between the freeze and here, so the answer is
+    the same, and a stale file can never leak into an artifact name."""
+    return write_version()
 
 
 def _find_makensis():
