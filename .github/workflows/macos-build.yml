@@ -2,9 +2,14 @@ name: macOS build
 
 # PyInstaller cannot cross-compile, so the .app has to be produced on a
 # Mac. Both architectures are built: macos-14 is Apple Silicon (arm64),
-# macos-13 the last Intel (x86_64) runner. Nothing about KhervePaint
-# forces a choice between them -- it is pure PyQt5 with no bundled engine
-# -- so both get a native DMG rather than making Intel users run Rosetta.
+# macos-15-intel the x86_64 image. Nothing about KhervePaint forces a
+# choice between them -- it is pure PyQt5 with no bundled engine -- so
+# both get a native DMG rather than making Intel users run Rosetta.
+#
+# Not macos-13: that image was retired in December 2025 and the label no
+# longer resolves to anything, so a job asking for it queues for ever
+# rather than failing. macos-15-intel is GitHub's last x86_64 image and
+# goes away in August 2027, after which this matrix is arm64 only.
 
 on:
   workflow_dispatch:
@@ -28,7 +33,7 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-          - runner: macos-13
+          - runner: macos-15-intel
             arch: x86_64
     runs-on: ${{ matrix.runner }}
 
