@@ -91,11 +91,14 @@ Practical consequences:
 
 ## Turning it on
 
-1. **Tools ▸ MCP Server…**
-2. Tick **Enable MCP server**. The setting is remembered, so the
-   bridge comes back automatically next launch.
-3. Choose what clients may do (see **Access levels** below).
-4. Pick your host under **Connect a host** and press **Connect**.
+1. **AI ▸ Connect to Claude (Simple)…**
+2. Tick **Let assistants connect to this document**. The setting is
+   remembered, so the bridge comes back automatically next launch.
+3. Leave the access level on **Full** — the recommended setting (see
+   **Access levels** below).
+4. Pick your application under **Connect an application** and press
+   **Connect**.
+5. Restart it, then **mention KhervePaint in the chat**.
 
 KhervePaint writes the entry into the host's own settings, so there is
 no config file to edit by hand — it knows its own executable path,
@@ -123,15 +126,38 @@ actually called.
 | Level | A connected client can |
 | --- | --- |
 | **Read only** | Look at the drawing (including `render_canvas`) and highlight items. No changes. |
-| **Edit** (default) | Draw, restyle, arrange, place models and symbols, resize the page — and save over the file already open. |
-| **Full** | Everything, including opening, saving and exporting to paths of its own choosing. |
+| **Edit** | Draw, restyle, arrange, place models and symbols, resize the page — and save over the file already open. |
+| **Full** (default, recommended) | Everything, including opening, saving and exporting to paths of its own choosing. |
 
 The line between **Edit** and **Full** is the filesystem. At **Edit** a
 client can do anything to the drawing in the window, and the worst case
 is a figure you undo. `save_document` with no path is the same act as
 Ctrl+S, so it stays there too. Naming a path is different: it reads or
-writes a file outside the open document, with your permissions, so it
-waits for **Full**.
+writes a file outside the open document, with your permissions.
+
+**Full is the default**, because the levels below it break the workflow
+people came for. An assistant that cannot open the drawing you are
+talking about, or write out the diagram it just drew, sends you back to
+the File menu between every step — and the trust decision has
+already been made by the time a tool runs: the connection is loopback
+only, token-authenticated, off until you turn it on, and connected to
+one application you chose by name. **Read only** and **Edit** stay for
+anyone who wants a narrower grant.
+
+## Then say "KhervePaint" in the chat
+
+This is the step with no visible cue, and the one that makes a correct
+setup look broken. Claude does not go looking for a drawing on its own
+— the tools are there, but nothing points at them until the
+conversation does:
+
+> in KhervePaint, draw a flowchart of the login process
+
+From that first mention it keeps working in the document you have open,
+so the rest of the conversation is ordinary — *"move the decision
+box down"*, *"show me what it looks like"*. If it answers with a
+description instead of drawing anything, it has not connected: check
+the box above is ticked and that the host was restarted.
 
 Tools above the current level are withheld from `tools/list` and
 refused if called anyway, with an error naming the setting. Hosts cache

@@ -96,7 +96,7 @@ _NOT_RUNNING = (
     "The MCP server drives a live KhervePaint window, so the "
     "application must be running with its bridge enabled:\n"
     "  1. Start KhervePaint.\n"
-    "  2. Enable Tools ▸ MCP Server.\n"
+    "  2. Enable AI ▸ Connect to Claude (Simple).\n"
     "Then retry — no need to restart this MCP connection."
 )
 
@@ -131,7 +131,7 @@ spacing are obvious in the image and invisible in the JSON.
 drawing back with a single Ctrl+Z. Their unsaved work is real, so \
 new_document and open_document refuse to discard it unless you pass \
 discard_unsaved_changes — offer to save instead.
-- The user controls what you may do (Tools > MCP Server). A refusal \
+- The user controls what you may do (AI > Connect to Claude). A refusal \
 naming an access level is their setting, not a bug — tell them what you \
 needed rather than working around it.
 

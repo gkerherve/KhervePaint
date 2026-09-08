@@ -13,7 +13,7 @@ already-running window.  The socket is the seam between the two.
 Security posture: the listener binds to 127.0.0.1 only, and every
 request must carry the random token from the endpoint file, which is
 written user-readable only.  The bridge is off unless the user turns
-it on in Tools ▸ MCP Server.
+it on in AI ▸ Connect to Claude (Simple).
 
 Copyright (C) 2026 Gwilherm Kerherve
 
@@ -85,12 +85,16 @@ def _names_a_path(name: str, tool_input: dict) -> bool:
     return name in _FILE_TOOLS and bool((tool_input or {}).get("path"))
 
 
-#: What a connected client is allowed to do, weakest first.  "edit" is
-#: the default: an MCP client can draw, restyle and rearrange, but
-#: reaching the filesystem at a path of its own choosing is a separate,
-#: explicit decision the user makes in Tools ▸ MCP Server.
+#: What a connected client is allowed to do, weakest first.  "full" is
+#: the default, because the levels below it break the workflow people
+#: actually came for: an assistant that cannot open the drawing you are
+#: talking about, or write out the diagram it just drew, sends you back
+#: to the File menu between every step.  The connection is loopback
+#: only, token-authenticated and off until the user turns it on, so the
+#: trust decision has already been made by the time a tool runs; "read"
+#: and "edit" stay for anyone who wants a narrower grant.
 ACCESS_LEVELS = ("read", "edit", "full")
-DEFAULT_ACCESS = "edit"
+DEFAULT_ACCESS = "full"
 
 #: How many recent calls the dialog's activity log shows.
 _LOG_LEN = 200
@@ -313,7 +317,7 @@ class McpBridge(QObject):
     def _refuse(self, name: str, reason: str) -> dict:
         self._record(str(name), "refused")
         return {"error": f"Refused: {reason} The user can change this in "
-                         f"Tools ▸ MCP Server."}
+                         f"AI ▸ Connect to Claude (Simple)."}
 
     def _call_tool(self, params: dict) -> dict:
         name = params.get("name")

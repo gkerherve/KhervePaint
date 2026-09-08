@@ -582,6 +582,9 @@ class MainWindow(QMainWindow):
         from .ai_assistant import AiDock
         self.ai_dock = AiDock(self.scene, self)
         self.addDockWidget(Qt.RightDockWidgetArea, self.ai_dock)
+        # Hidden by default: the ChatBox needs the user's own API key,
+        # so it stays folded away until they ask for it (AI > ChatBox).
+        self.ai_dock.hide()
 
     def _build_options_bar(self):
         bar = QToolBar("Options")
@@ -808,10 +811,6 @@ class MainWindow(QMainWindow):
                             QKeySequence.ZoomOut)
         view_menu.addAction("&Reset Zoom", self.view.zoom_reset, "Ctrl+0")
         view_menu.addSeparator()
-        ai_action = self.ai_dock.toggleViewAction()
-        ai_action.setText("AI &Chat")
-        view_menu.addAction(ai_action)
-        view_menu.addSeparator()
         theme_menu = view_menu.addMenu("&Theme")
         theme_group = QActionGroup(self)
         for name in THEMES:
@@ -826,12 +825,19 @@ class MainWindow(QMainWindow):
         self._build_measure_menu(m)
         self._build_examples_menu(m)
 
-        tools_menu = m.addMenu("&Tools")
-        mcp_act = tools_menu.addAction("&MCP Server\u2026",
-                                       self._open_mcp_dialog)
+        ai_menu = m.addMenu("&AI")
+        mcp_act = ai_menu.addAction("&Connect to Claude (Simple)\u2026",
+                                    self._open_mcp_dialog)
         mcp_act.setIcon(icons.icon("mdi.lan-connect"))
-        mcp_act.setToolTip("Let Claude and other MCP assistants draw in "
-                           "this document")
+        mcp_act.setToolTip("Let Claude Desktop, Claude Code or another "
+                           "assistant draw in this document \u2014 no "
+                           "API key, it uses the login you already have")
+        ai_action = self.ai_dock.toggleViewAction()
+        ai_action.setText("Chat&Box (requires API key)")
+        ai_action.setIcon(icons.icon("mdi.robot-outline"))
+        ai_action.setToolTip("A chat box docked in the window; it needs "
+                             "your own Claude, OpenAI or Mistral key")
+        ai_menu.addAction(ai_action)
 
         help_menu = m.addMenu("&Help")
         help_menu.addAction("&User Guide", self._user_guide, "F1")

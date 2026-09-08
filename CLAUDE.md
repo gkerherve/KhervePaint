@@ -369,7 +369,8 @@ into a new module and import.
                        for click-to-place because the user then drags it).
   - `mcp_bridge.py`  — `McpBridge`: loopback JSON server on 127.0.0.1
                        exposing those tools, token-authenticated from the
-                       endpoint file, off until Tools ▸ MCP Server. Wraps
+                       endpoint file, off until AI ▸ Connect to
+                       Claude (Simple). Wraps
                        every mutating call in ONE undo macro (`MCP: <tool>`)
                        so a remote figure is one Ctrl+Z;
                        `_NO_MACRO_TOOLS` are the ones that touch the
@@ -397,7 +398,8 @@ into a new module and import.
                        Cursor, Windsurf, VS Code, Cline, LM Studio). Backs
                        up, writes atomically, touches no other key; Zed is
                        refused because its settings hold comments.
-  - `mcp_dialog.py`  — Tools ▸ MCP Server…: enable/disable, access level,
+  - `mcp_dialog.py`  — AI ▸ Connect to Claude (Simple)…:
+                       enable/disable, access level,
                        one-click host connect, hand-config snippets and a
                        live activity log.
 - `docs/MCP.md` — how to connect an assistant, what the 26 tools do,
@@ -645,7 +647,8 @@ Load-bearing details:
 - **Every mutating tool still emits `changed_by_user`**, including the
   post-placement `_recentre` nudge; the snapshot policy below applies
   to MCP exactly as it does to a mouse gesture.
-- **Access levels** (Tools ▸ MCP Server, persisted in QSettings):
+- **Access levels** (AI ▸ Connect to Claude (Simple), persisted in
+  QSettings, defaulting to **full**):
   read / edit / full. The edit→full line is the filesystem, not the
   drawing — at *edit* a client can do anything to the open document
   (worst case: you undo it), while naming a path to read or write waits

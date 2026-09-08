@@ -525,22 +525,28 @@ send it with your message — handy for *"recreate this diagram"*. The
 image goes to the model with your next prompt (use a vision-capable model
 such as Claude or GPT-4o); click **✕** to drop the attachment.
 
-## 15a. Any AI assistant (MCP Server)
+## 15a. Connect to Claude — no API key
 
-The AI chat is not the only way to get help drawing. **Tools ▸ MCP
-Server…** opens KhervePaint to any assistant on your machine that
-speaks the Model Context Protocol — **Claude Desktop, Claude Code,
-Cursor, Cline, VS Code, LM Studio** and others.
+The AI chat is not the only way to get help drawing, and it is not the
+easy one. **AI ▸ Connect to Claude (Simple)…** hands this drawing to
+**Claude Desktop** or **Claude Code**, using the login you already
+have. Cursor, Cline, VS Code and LM Studio work the same way.
 
-1. Tick **Enable MCP server** (it is remembered next time you start).
-2. Choose what connected assistants may do:
-   - **Read only** — look at the drawing and point at items.
-   - **Edit** (recommended) — draw, restyle, arrange, place models and
-     symbols, and save over the file you already have open.
-   - **Full** — also open, save and export files it chooses itself.
-3. Pick your assistant under **Connect a host** and press **Connect**.
-   KhervePaint writes the entry into that application's own settings —
-   there is no config file to edit by hand — then restart it.
+1. Tick **Let assistants connect to this document** (it is remembered
+   next time you start).
+2. Leave what the assistant may do on **Full** — the recommended
+   setting, and the one where it can open the drawing you are talking
+   about and write out the diagram it just drew. **Edit** keeps it
+   inside the open file; **Read only** lets it look and say nothing
+   back.
+3. Pick your assistant under **Connect an application** and press
+   **Connect**. KhervePaint writes itself into that application's own
+   settings — there is no config file to edit by hand — then
+   restart it.
+4. **Mention KhervePaint in the chat.** This is the step people miss:
+   Claude only reaches for this drawing when you point it here. Say
+   *"in KhervePaint, draw a flowchart of the login process"* and it
+   carries on in the open document from there.
 
 The assistant can then do far more than the chat: it draws shapes,
 moves and restyles them, aligns and groups them, places symbols from

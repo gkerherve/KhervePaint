@@ -31,21 +31,27 @@ circle below"). The reply's shape specs become real, editable, undoable
 items on the canvas. Keys are stored locally via QSettings; no extra
 dependencies (it uses `urllib`).
 
-## Any AI assistant (MCP)
+## Connect to Claude — no API key
 
-**Tools ▸ MCP Server…** lets *any* MCP-compatible assistant that runs on
-your machine — Claude Desktop, Claude Code, Cursor, Cline, VS Code,
-LM Studio — drive KhervePaint directly. Where the built-in chat replies
-with shapes, an MCP client gets the whole app as **26 tools**: draw and
-restyle items, align and group them, place symbols from all fourteen
-palettes, build molecules and crystals, resize the page, save and
-export — and `render_canvas`, which hands the model a **picture of the
-drawing** so it can see what it made.
+**AI ▸ Connect to Claude (Simple)…** hands this drawing to **Claude
+Desktop** or **Claude Code**, using the login you already have. Cursor,
+Cline, VS Code and LM Studio work the same way.
+
+Where the built-in chat replies with shapes, Claude gets the whole app
+as **26 tools**: draw and restyle items, align and group them, place
+symbols from all fourteen palettes, build molecules and crystals,
+resize the page, save and export — and `render_canvas`, which hands
+it a **picture of the drawing** so it can see what it made.
+
+Press **Connect** and KhervePaint writes itself into that application's
+own settings — no JSON to edit by hand. Restart it, then **mention
+KhervePaint in the chat** (*"in KhervePaint, draw a flowchart of the
+login process"*); that is the one step with no visible cue, and Claude
+will not touch the drawing without it.
 
 Everything it does is one undoable step, so **Ctrl+Z takes your drawing
-back**. The bridge is off until you switch it on, listens on 127.0.0.1
-only, and needs a per-session token. KhervePaint writes its own entry
-into the host's config — no JSON to edit by hand.
+back**. The connection is off until you switch it on, never leaves
+127.0.0.1, and needs a per-session token.
 
 See [docs/MCP.md](docs/MCP.md).
 
