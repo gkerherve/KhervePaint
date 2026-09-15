@@ -494,21 +494,27 @@ def _mol_cyclohexane():
 
 
 def _mol_glucose():
-    """Pyranose ring (5 C + 1 O) with OH groups — a recognisable sugar."""
+    """β-D-glucopyranose, C₆H₁₂O₆: the chair ring (5 C + ring O), OH on
+    C1–C4, CH₂OH on C5, and every remaining valence filled with H — so
+    the formula is right (a reaction scheme balances with it)."""
     atoms, bonds = [], []
     ring = _chair_ring(6, 1.45, 0.30)
     els = ["O", "C", "C", "C", "C", "C"]
     idx = [_add(atoms, els[k], ring[k]) for k in range(6)]
     for k in range(6):
-        bonds.append((idx[k], idx[(k + 1) % 6], 1))
-    # OH / CH2OH decorations on the carbons
+        bonds.append([idx[k], idx[(k + 1) % 6], 1])
     for k in range(1, 6):
         p = ring[k]
         d = math.hypot(p[0], p[1]) or 1.0
-        op = (p[0] * (d + 1.4) / d, p[1] * (d + 1.4) / d, p[2] - 0.4)
-        i_o = _add(atoms, "O", op)
-        bonds.append((idx[k], i_o, 1))
-        bonds.append((i_o, _add(atoms, "H", _plus(op, (0.4, 0.4, 0.6))), 1))
+        out = (p[0] * (d + 1.4) / d, p[1] * (d + 1.4) / d, p[2] - 0.4)
+        if k < 5:                                    # C1–C4: OH
+            bonds.append([idx[k], _add(atoms, "O", out), 1])
+        else:                                        # C5: CH2OH
+            i_c = _add(atoms, "C", out)
+            bonds.append([idx[k], i_c, 1])
+            o6 = _plus(out, (p[0] / d * 1.1, p[1] / d * 1.1, 0.7))
+            bonds.append([i_c, _add(atoms, "O", o6), 1])
+    add_hydrogens(atoms, bonds)
     return atoms, bonds, None
 
 
