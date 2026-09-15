@@ -236,6 +236,8 @@ steps**, so structures stay tidy — you just click the direction.
   click to place it; it **snaps onto a nearby bond end**, so building a
   **C=O** is just *draw a double bond, then drop an O on its tip* — and
   any element drops cleanly at a bond terminus.
+- **Reaction builder…** — write a reaction scheme from real molecules,
+  balanced for you (see *Reaction builder* under Molecules below).
 
 Everything is a normal item — restyle, move, group and save like any
 other shape.
@@ -457,12 +459,40 @@ Five further dropdowns cover general diagrams and more science:
   ordinary editable group — double-click a label to reword it, move or
   restyle it like anything else.
 
-  **Representations.** A molecule can be drawn four ways (as in a textbook
+  **Representations.** A molecule can be drawn six ways (as in a textbook
   figure): pick from right-click ▸ **Show as**, or the **Insert as** combo
-  in the builder — **3D ball-and-stick**, **Structural formula** (element
-  letters joined by bond lines), **Lewis structure** (adds lone-pair
-  dots), or the **Condensed formula** (e.g. C₂H₆O). Each is a normal
+  in the builder — **3D ball-and-stick**, **Skeletal** (line-angle: bare
+  carbon vertices on a 120° zig-zag, heteroatoms labelled OH / NH₂, ring
+  double bonds drawn inside the ring), **Structural formula** (every atom
+  and bond, hydrogens included), **Lewis structure** (adds lone-pair
+  dots), **Condensed formula** (CH₃CH₂OH, CH₃COOH, C₆H₅CH₃) or the
+  **Molecular formula** (C₂H₆O). The 2D drawings use a real depiction
+  layout — regular rings, zig-zag chains, substituents fanned into the
+  free space — so atoms never pile on top of each other. Each is a normal
   editable drawing; the choice is saved with the file.
+
+  **Reaction builder.** Chemistry ▸ **Reaction builder…** (also in the
+  Molecules dropdown under *Build*) writes a whole reaction scheme. Type
+  an equation — `CH4 + 2 O2 -> CO2 + 2 H2O`, or
+  `N2 + 3 H2 <=>[Fe][450 °C] 2 NH3` — and press Enter, or fill the
+  **Reactants** / **Products** tables (*Add ▾* offers the molecule
+  library, a typed name or formula, or the 3D Molecule builder for a new
+  structure). Names and formulas that match a library molecule (water,
+  H2O, CH3COOH, C2H5OH…) are drawn as real structures; anything else —
+  ions (Na+, SO4^2-, Fe^3+), salts, Fe2O3 — is typeset with proper
+  sub/superscripts. Pick the **arrow** (reaction →, equilibrium ⇌,
+  reversible ⇄, resonance ↔, retrosynthesis ⇒, no reaction ↛), text
+  **above** and **below** it (reagent, catalyst, Δ, hν, temperature — the
+  Ω button inserts symbols), **state symbols** (s)/(l)/(g)/(aq), optional
+  **name labels**, and how molecules are drawn (skeletal by default; each
+  species can override it under *Draw as*). The status line checks that
+  atoms **and charge** balance and says what is off; **Balance** sets the
+  smallest whole-number coefficients. Molecule models selected on the
+  canvas when you open the builder become the reactants. The scheme drops
+  as one editable group with every molecule at the same bond length;
+  **double-click** it (or right-click ▸ **Edit reaction…**) to reopen it
+  in the builder. It is saved with the file and undoable like anything
+  else, and the AI Chat and MCP assistants can draw reactions too.
 
   The **AI Chat** can build these too — ask it for a molecule (by name, or
   describe one) or a crystal, and it places a **real 3D model** you can

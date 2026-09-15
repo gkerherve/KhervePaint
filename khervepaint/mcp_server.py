@@ -161,14 +161,21 @@ Hydrogens and correct 3D geometry are added for you. Give a name too \
 when the molecule is a common one, so a curated model is used instead.
 - configure_model changes a model already on the canvas without \
 rebuilding it: the view angles (az/el), the bond spread, the \
-representation ("3d" ball-and-stick, "structural", "lewis", \
-"condensed" 2-D formulas), per-element colours, and for crystals the \
+representation ("3d" ball-and-stick, or the 2-D "skeletal", \
+"structural", "lewis", "condensed" and "formula" drawings), \
+per-element colours, and for crystals the \
 supercell size (cells) and coordination polyhedra.
 - A unit cell becomes a supercell with configure_model cells=[nx,ny,nz], \
 and individual cells inside it can be tilted with tilts to show a \
 defect — {"0,0,0": [rx, ry, rz]} in degrees.
 - These models stay live: the user can still rotate them in 3D by \
 double-clicking, and edit them in the molecule builder.
+- draw_reaction writes a whole reaction scheme from an equation \
+("CH4 + 2 O2 -> CO2 + 2 H2O", "N2 + 3 H2 <=>[Fe][450 °C] 2 NH3"): \
+molecules are drawn as real structures, ions and salts as typeset \
+formulas, with the arrow, conditions and state symbols. balance=true \
+fixes the coefficients; the reply says whether it balances. Never \
+assemble a reaction from separate molecules, text and arrows.
 
 Symbol libraries:
 - place_symbol drops any symbol from the app's palettes (optics, \

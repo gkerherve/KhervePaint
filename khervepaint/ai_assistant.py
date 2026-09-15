@@ -72,10 +72,21 @@ include the heavy-atom skeleton so it works even for an unusual name:
 - "name" is optional (used to fetch a curated model for common
   molecules/crystals like water, methane, ethanol, benzene, glucose, pet,
   bcc, fcc, perovskite — but ALWAYS also give atoms/bonds as a fallback).
-- Optional "as":"structural"|"lewis"|"condensed" draws the 2D formula.
+- Optional "as":"skeletal"|"structural"|"lewis"|"condensed"|"formula"
+  draws a 2D formula instead of the 3D model.
 For a ring molecule (benzene, cyclohexane…) prefer a library "name"; the
 skeleton builder is best for chains and branched molecules.
 Use "molecule" whenever the user asks for a molecule or crystal.
+
+For a chemical reaction or equation use the high-level "reaction" shape —
+one re-editable scheme with real structures, never hand-drawn arrows:
+  {"shape":"reaction","equation":"CH4 + 2 O2 -> CO2 + 2 H2O","x":cx,"y":cy}
+- Arrows: -> (reaction), <=> (equilibrium), <-> (resonance),
+  => (retrosynthesis), -/-> (no reaction).
+- Conditions in brackets right after the arrow: "A + B ->[H2SO4][reflux] C".
+- States H2O(l), NaCl(aq); charges Na+, SO4^2-, Fe^3+.
+- Optional "style":"skeletal"|"structural"|"lewis"|"condensed"|"formula"|"3d"
+  and "balance":true to have the coefficients worked out.
 
 Two low-level shapes also exist for flat, non-rotatable sketches only:
 {"shape":"atom","element":"C","x":cx,"y":cy,"r":radius} (a lit sphere,
@@ -287,6 +298,28 @@ def _place_ai_molecule(scene, spec):
                                       name=name or "custom", commit=False)
 
 
+def _place_ai_reaction(scene, spec):
+    """Place a high-level `reaction` spec ({"equation": "A + B -> C", …})
+    as a re-editable reaction scheme (one undo step with the batch)."""
+    from PyQt5.QtCore import QPointF
+    from . import reaction, reactionview
+    rxn = reaction.parse_equation(spec.get("equation") or spec.get("text")
+                                  or "")
+    for key in ("arrow", "above", "below", "style"):
+        if spec.get(key):
+            rxn[key] = spec[key]
+    for key in ("states", "labels"):
+        if key in spec:
+            rxn[key] = bool(spec[key])
+    rxn = reaction.normalise(rxn)
+    if spec.get("balance"):
+        reaction.auto_balance(rxn)
+    centre = None
+    if "x" in spec and "y" in spec:
+        centre = QPointF(float(spec["x"]), float(spec["y"]))
+    return reactionview.place_reaction(scene, rxn, centre, commit=False)
+
+
 def apply_specs(scene, specs):
     """Create items from *specs* and add them (selected) to the scene.
 
@@ -298,13 +331,21 @@ def apply_specs(scene, specs):
     created = []
     flat = []
     for spec in specs:
-        if str(spec.get("shape", "")).lower() in ("molecule", "molecule3d"):
+        shape = str(spec.get("shape", "")).lower()
+        if shape in ("molecule", "molecule3d"):
             try:
                 mol = _place_ai_molecule(scene, spec)
             except Exception:
                 mol = None
             if mol is not None:
                 created.append(mol)
+        elif shape in ("reaction", "equation"):
+            try:
+                rx = _place_ai_reaction(scene, spec)
+            except Exception:
+                rx = None
+            if rx is not None:
+                created.append(rx)
         else:
             flat.append(spec)
     flat = molecules.expand_specs(flat)       # atom/bond -> spheres + sticks

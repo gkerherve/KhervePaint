@@ -30,7 +30,7 @@ from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 10     # 10: coordination polyhedra flag ("model_poly")
+FORMAT_VERSION = 11     # 11: re-editable reaction schemes ("reaction")
 
 
 # ---------------------------------------------------------------- pens
@@ -225,6 +225,9 @@ def item_to_dict(item) -> dict:
             if getattr(item, "mol_atoms", None):   # hand-built structure
                 d["model_atoms"] = item.mol_atoms
                 d["model_bonds"] = item.mol_bonds
+        if getattr(item, "rxn_data", None):   # re-editable reaction scheme
+            import copy
+            d["reaction"] = copy.deepcopy(item.rxn_data)
         return d
     raise ValueError(f"unserialisable item: {type(item).__name__}")
 
@@ -300,6 +303,9 @@ def item_from_dict(d: dict):
             item.mol_poly = bool(d.get("model_poly", False))
             item.mol_atoms = d.get("model_atoms")
             item.mol_bonds = d.get("model_bonds")
+        if isinstance(d.get("reaction"), dict):   # reaction scheme tag
+            import copy
+            item.rxn_data = copy.deepcopy(d["reaction"])
     else:
         raise ValueError(f"unknown item type: {kind!r}")
     _apply_label(item, d)

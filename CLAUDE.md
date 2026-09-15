@@ -248,14 +248,51 @@ into a new module and import.
                        / `reorient_model(mode=…)` switch the drawing between
                        3D and the 2D formulas.
   - `molrepr.py`     — 2D chemical **representations** of a molecule graph:
-                       `structural_specs` (element letters + bond lines),
-                       `structural_specs(lewis=True)` (adds lone-pair dots
-                       from `_VALENCE_E`), `condensed_specs`/
-                       `molecular_formula` (Hill notation). `MODES`/
-                       `MODE_LABELS` drive the right-click **Show as** menu
-                       and the builder's **Insert as** combo. 2D coords come
-                       from the orthographic view that spreads the atoms most
-                       (`_best_view`).
+                       `skeletal` (line-angle: bare C vertices, OH/NH₂
+                       labels with the H on the free side, ring double bonds
+                       inside the ring), `structural` (every atom incl. H),
+                       `lewis` (+ lone-pair dots from `_VALENCE_E`),
+                       `condensed` (`condensed_formula`: CH₃CH₂OH, CH₃COOH,
+                       CH₃CH(OH)CH₃, C₆H₅R; molecular formula for other
+                       rings) and `formula` (`molecular_formula`, Hill).
+                       `MODES`/`MODE_LABELS` drive the right-click **Show
+                       as** menu and the builder's **Insert as** combo. 2D
+                       coords are a real **depiction** (`layout_2d`, bond
+                       units): SSSR rings (`_rings`, GF(2)-independent) as
+                       regular polygons (fused across a shared edge), chains
+                       as a 120° zig-zag from a diameter end, sp centres
+                       linear, substituents/H's into the widest free gaps
+                       (`_fill_gaps`); bond-less structures (crystals) fall
+                       back to the old best orthographic projection.
+                       `depict(mode, atoms, bonds, unit)` draws at a FIXED
+                       bond length (reaction schemes share one);
+                       `representation_specs` fits a box. Also the generic
+                       spec helpers `spec_bounds`/`shift_specs`/`normalize`
+                       and `pt_for_height` (text items take points, layout
+                       needs px — measured with QFontMetricsF).
+  - `reaction.py`    — Qt-light reaction model: a JSON-able dict
+                       (`reactants`/`products` species + `arrow`/`above`/
+                       `below`/`style`/`states`/`labels`/`unit`); a species
+                       is a library `name`, a hand-built `atoms`/`bonds`, or
+                       a `formula` (typeset, e.g. ions). `parse_formula`
+                       (brackets, hydrates, charges NH4+/SO4^2-/Fe³⁺),
+                       `pretty_formula`, `resolve_species` (name → condensed
+                       → unambiguous Hill match, else formula),
+                       `parse_equation`/`to_equation` (arrows -> <=> <-> =>
+                       -/->, `->[above][below]`, states `(aq)`),
+                       `balance_report` (atoms + charge) and `auto_balance`
+                       (exact Fraction null space → smallest integers).
+                       `reaction_specs(rxn, unit)` lays the scheme out on one
+                       axis; coefficients are strings so "1/2" survives JSON.
+  - `reactionview.py`— `ReactionBuilder` dialog (equation line, reactant/
+                       product tables, arrow/conditions/style, balance status
+                       + Balance, live preview) and `place_reaction(scene,
+                       rxn, center, replace=)` — ONE group tagged `rxn_data`
+                       (round-trips as `"reaction"` in document.py and
+                       `kp:reaction` JSON in svgio.py; FORMAT_VERSION 11).
+                       Double-click / right-click ▸ Edit reaction… reopens
+                       it (`open_reaction_builder`); a redraw keeps centre,
+                       rotation, z and scale (unit × group transform).
   - `properties.py`  — right-click context menu (edit/duplicate/delete/
                        order/group) + `PropertiesDialog`: edit every
                        property of one item (transform, stroke, fill,
@@ -344,7 +381,7 @@ into a new module and import.
                        LEED, TEM, SEM, AFM, STM, TGA, DSC, BET, HPLC …)
                        and the `SKETCHES` list. Split from the toolkit so
                        neither file outgrows ~1500 lines.
-  - `mcp_schema.py`  — the **MCP tool table**: 26 JSON-Schema tool
+  - `mcp_schema.py`  — the **MCP tool table**: 27 JSON-Schema tool
                        definitions and `LIBRARY_KEYS`. Qt-free and
                        import-free — it is the contract, so it can be
                        inspected and tested without a window, and the
@@ -402,7 +439,7 @@ into a new module and import.
                        enable/disable, access level,
                        one-click host connect, hand-config snippets and a
                        live activity log.
-- `docs/MCP.md` — how to connect an assistant, what the 26 tools do,
+- `docs/MCP.md` — how to connect an assistant, what the 27 tools do,
   access levels, security, troubleshooting.
 - `tests/` — pytest suite (offscreen Qt; run `python -m pytest tests/`).
   `conftest.py` isolates QSettings and owns the **single session-wide
@@ -618,9 +655,10 @@ position, geometry, pen/brush, opacity, rotation; groups nest
 KhervePaint is drivable by **any local MCP assistant** — Claude
 Desktop, Claude Code, Cursor, Cline, VS Code, LM Studio — not just the
 built-in chat. The chat replies with shape specs; an MCP client gets
-the whole app as **26 tools**: the canvas, `draw`, item editing,
+the whole app as **27 tools**: the canvas, `draw`, item editing,
 alignment, all fourteen symbol palettes, the molecule/crystal builders,
-the document, and `render_canvas`, which hands back a **PNG the model
+balanced reaction schemes (`draw_reaction`), the document, and
+`render_canvas`, which hands back a **PNG the model
 can actually look at** (overlaps and off-page shapes are obvious in the
 picture and invisible in JSON).
 

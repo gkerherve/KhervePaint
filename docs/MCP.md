@@ -6,8 +6,9 @@ Code, Cursor, Zed, Continue, or anything else that speaks the Model
 Context Protocol — can draw in an open document directly.
 
 The built-in chat replies with a block of shape specs. An MCP client
-gets the **whole application** instead: 26 tools covering the canvas,
-the symbol palettes, the molecule and crystal builders, the document,
+gets the **whole application** instead: 27 tools covering the canvas,
+the symbol palettes, the molecule and crystal builders, reaction
+schemes, the document,
 and — the one that changes how well the rest work — a **picture of the
 drawing**.
 
@@ -37,10 +38,18 @@ drawing**.
   catalogue; `build_molecule` builds any structure from a heavy-atom
   skeleton (hydrogens and correct geometry filled in);
   `configure_model` changes the view angles, bond spread,
-  representation (ball-and-stick, structural, Lewis, condensed),
-  per-element colours, supercell size and per-cell tilts. The result
-  is an ordinary KhervePaint model: the user can still spin it by
-  double-clicking and edit it in the molecule builder.
+  representation (ball-and-stick, skeletal, structural, Lewis,
+  condensed, molecular formula), per-element colours, supercell size
+  and per-cell tilts. The result is an ordinary KhervePaint model: the
+  user can still spin it by double-clicking and edit it in the
+  molecule builder. `draw_reaction` writes a whole reaction scheme
+  from an equation (`CH4 + 2 O2 -> CO2 + 2 H2O`,
+  `N2 + 3 H2 <=>[Fe][450 °C] 2 NH3`): library molecules become real
+  structures, ions and salts typeset formulas, with the arrow,
+  conditions and state symbols. `balance: true` sets the
+  coefficients and the reply says whether atoms and charge balance;
+  `id` redraws a scheme in place. The user reopens it in the
+  Reaction builder by double-clicking.
 - **Documents** — `set_canvas`, `new_document`, `open_document`,
   `save_document`, `export_document` (PNG/PDF/SVG at the page's own
   dpi), plus `load_example` and `insert_object` for the built-in

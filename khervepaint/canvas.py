@@ -2423,6 +2423,10 @@ class PaintView(QGraphicsView):
             return
         if self.scene().tool == POINTER:
             item = self._pick_item(event.pos())
+            if item is not None and getattr(item, "rxn_data", None):
+                from .reactionview import open_reaction_builder
+                open_reaction_builder(self, item)      # re-edit the scheme
+                return
             if item is not None and getattr(item, "mol_name", None):
                 # 3D model: rotate in place on the canvas (no popup).
                 # 2D formula: open the builder (where you can switch back).

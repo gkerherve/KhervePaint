@@ -287,7 +287,8 @@ an <b>atom/group label</b> (C, H, O, N, P, OH, CH₃…) and click to place
 it — it snaps onto a nearby bond end, so a <b>C=O</b> is just a double
 bond with an O dropped on its tip.
 Bonds snap to a uniform length and 30° angles, so you just click the
-direction.</p>
+direction. <b>Reaction builder…</b> at the bottom of the dropdown writes
+whole, balanced reaction schemes (see Molecules below).</p>
 
 <h2>10b · Room layout (floor plans)</h2>
 <p>Start with <b>Room</b> (top of the dropdown): drag it out and it's
@@ -415,10 +416,24 @@ colour beside it.
 For a crystal the bond slider becomes <b>Atom spacing</b> and runs to
 <b>0</b> — the lattice contracts until the spheres touch (a close-packed
 particle look) and finally coincide.
-Right-click ▸ <b>Show as</b> redraws a molecule as a 3D model, a 2D
-<b>structural</b> or <b>Lewis</b> formula, or the <b>condensed</b>
-molecular formula. The AI Chat can build molecules and 3D structures on
-request too.</li>
+Right-click ▸ <b>Show as</b> redraws a molecule as a 3D model or in 2D:
+<b>skeletal</b> (line-angle), <b>structural</b> (every atom),
+<b>Lewis</b> (with lone pairs), <b>condensed</b> (CH₃CH₂OH) or the
+<b>molecular formula</b> (C₂H₆O) — laid out with regular rings and
+zig-zag chains, so nothing overlaps. The AI Chat can build molecules and
+3D structures on request too.</li>
+<li><b>Reaction builder…</b> (Chemistry dropdown, or Molecules ▸ Build) —
+write a reaction scheme: type an equation such as
+<code>CH4 + 2 O2 -&gt; CO2 + 2 H2O</code> or
+<code>N2 + 3 H2 &lt;=&gt;[Fe][450 °C] 2 NH3</code>, or fill the
+Reactants / Products tables from the molecule library, a typed formula or
+the Molecule builder. Library molecules are drawn as structures (skeletal
+by default, per-species override); ions and salts are typeset
+(Na⁺, SO₄²⁻, Fe₂O₃). Choose the arrow (→ ⇌ ⇄ ↔ ⇒ ↛), reagents above and
+conditions below it, state symbols and name labels. The status line
+checks atoms <b>and charge</b>; <b>Balance</b> sets the smallest whole
+coefficients. Selected molecule models seed the reactants. Double-click
+the placed scheme (or right-click ▸ Edit reaction…) to reopen it.</li>
 <li><b>3D scheme</b> — layered-device schematic blocks (fuel cells,
 batteries, membranes): shaded <b>3D slabs</b> and a <b>3D disk</b> for
 electrolyte/substrate layers, close-packed <b>particle beds</b> and

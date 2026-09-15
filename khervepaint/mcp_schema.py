@@ -29,7 +29,14 @@ LIBRARY_KEYS = [
 ]
 
 #: Representations a placed molecule/crystal can be drawn in.
-REPR_MODES = ["3d", "structural", "lewis", "condensed"]
+REPR_MODES = ["3d", "skeletal", "structural", "lewis", "condensed",
+              "formula"]
+#: Reaction-scheme drawing styles and arrow kinds (reaction.STYLES /
+#: reaction.ARROWS — repeated here so the schema stays import-free).
+REACTION_STYLES = ["skeletal", "structural", "lewis", "condensed",
+                   "formula", "3d"]
+REACTION_ARROWS = ["forward", "equilibrium", "reversible", "resonance",
+                   "retro", "none"]
 
 
 def _obj(properties: dict, required=()) -> dict:
@@ -422,6 +429,48 @@ TOOLS = [
                           "description": "Draw translucent coordination "
                                          "polyhedra (crystals)."},
         }, ["id"]),
+    },
+    {
+        "name": "draw_reaction",
+        "description": (
+            "Draw a chemical reaction scheme from an equation such as "
+            "'CH4 + 2 O2 -> CO2 + 2 H2O'. Common molecules are recognised "
+            "by name or formula and drawn as real structures (skeletal by "
+            "default); anything else — ions, salts, 'Fe2O3' — is typeset "
+            "as a formula. Arrows: -> <=> <-> => -/->. Conditions go in "
+            "brackets straight after the arrow: 'A + B ->[H2SO4][reflux] "
+            "C'. States: H2O(l), NaCl(aq); charges: Na+, SO4^2-. The "
+            "result is ONE editable group the user can reopen in the "
+            "Reaction builder. balance=true sets the coefficients; the "
+            "reply says whether the equation balances. Pass id to redraw "
+            "a reaction already on the canvas."
+        ),
+        "input_schema": _obj({
+            "equation": {"type": "string",
+                         "description": "The reaction, e.g. "
+                                        "'N2 + 3 H2 <=>[Fe][450 °C] 2 NH3'."},
+            "style": {"type": "string", "enum": REACTION_STYLES,
+                      "description": "How molecules are drawn."},
+            "arrow": {"type": "string", "enum": REACTION_ARROWS,
+                      "description": "Overrides the arrow in the equation."},
+            "above": {"type": "string",
+                      "description": "Text over the arrow (reagent, "
+                                     "catalyst)."},
+            "below": {"type": "string",
+                      "description": "Text under the arrow (conditions)."},
+            "balance": {"type": "boolean",
+                        "description": "Set the smallest whole-number "
+                                       "coefficients."},
+            "states": {"type": "boolean",
+                       "description": "Show (s)/(l)/(g)/(aq) symbols "
+                                      "(default true)."},
+            "labels": {"type": "boolean",
+                       "description": "Caption library molecules with "
+                                      "their names."},
+            "id": {"type": "integer",
+                   "description": "Redraw this reaction item in place."},
+            **_POINT,
+        }),
     },
     {
         "name": "insert_object",

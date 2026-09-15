@@ -444,6 +444,9 @@ class MainWindow(QMainWindow):
         atoms = menu.addMenu("Atom / group label")
         for sym in chemistry.ATOMS:
             atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
+        menu.addSection("Reactions")
+        menu.addAction(icons.icon("mdi.flask-outline"), "Reaction builder…",
+                       self.open_reaction_builder)
 
     def _add_grouped_tool(self, menu, tool, label):
         """A checkable tool action in the shared tool group (so it lights up
@@ -512,8 +515,16 @@ class MainWindow(QMainWindow):
                               lambda: self._activate_placement_tool(ROOM))])
         if module is molecules:
             return ("Build", [("Molecule builder…",
-                               self.open_new_molecule_builder)])
+                               self.open_new_molecule_builder),
+                              ("Reaction builder…",
+                               self.open_reaction_builder)])
         return None
+
+    def open_reaction_builder(self):
+        """Compose a reaction scheme (selected molecule models seed the
+        reactants) and drop it at the centre of the view."""
+        from .reactionview import open_reaction_builder
+        open_reaction_builder(self.view)
 
     def open_new_molecule_builder(self):
         """Open the 3D molecule builder on a fresh atom, then place whatever
@@ -1254,6 +1265,8 @@ class MainWindow(QMainWindow):
         atoms = chem.addMenu("Atom / group label")
         for sym in chemistry.ATOMS:
             atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
+        chem.addAction(icons.icon("mdi.flask-outline"), "Reaction builder…",
+                       self.open_reaction_builder)
 
         menu.addSeparator()
         for title, glyph, _tip, module, _attr, _tool in SYMBOL_LIBRARIES:

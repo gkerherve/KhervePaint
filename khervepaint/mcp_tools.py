@@ -262,6 +262,9 @@ class McpToolExecutor:
                     info["cells"] = list(item.mol_cells)
                 if getattr(item, "mol_tilts", None):
                     info["tilts"] = dict(item.mol_tilts)
+            if getattr(item, "rxn_data", None):
+                from . import reaction
+                info["reaction"] = reaction.to_equation(item.rxn_data)
             if depth > 0:
                 info["items"] = [self._describe(c, depth - 1)
                                  for c in children]
@@ -717,6 +720,58 @@ class McpToolExecutor:
         item = self._reconfigure(item, params)
         return {"model": getattr(item, "mol_name", None),
                 "item": self._describe(item, 0)}
+
+    def _t_draw_reaction(self, params) -> dict:
+        from . import reaction, reactionview
+        replace = None
+        if params.get("id") is not None:
+            replace = self._item(params["id"])
+            if not getattr(replace, "rxn_data", None):
+                raise ToolError("That item is not a reaction — draw_reaction "
+                                "only redraws one it drew.")
+        if params.get("equation"):
+            try:
+                rxn = reaction.parse_equation(params["equation"])
+            except ValueError as exc:
+                raise ToolError(str(exc))
+            if replace is not None:            # keep the look it had
+                for key in ("style", "states", "labels", "unit"):
+                    if key in replace.rxn_data:
+                        rxn[key] = replace.rxn_data[key]
+        elif replace is not None:
+            rxn = reaction.normalise(replace.rxn_data)
+        else:
+            raise ToolError("Give an equation, e.g. "
+                            "'CH4 + 2 O2 -> CO2 + 2 H2O'.")
+        for key in ("arrow", "above", "below", "style"):
+            if params.get(key) is not None:
+                rxn[key] = params[key]
+        for key in ("states", "labels"):
+            if key in params:
+                rxn[key] = bool(params[key])
+        rxn = reaction.normalise(rxn)
+        note = reaction.auto_balance(rxn) if params.get("balance") else None
+        centre = None
+        if replace is None or ("x" in params and "y" in params):
+            centre = self._centre(params)
+        item = self._unsnapped(lambda: reactionview.place_reaction(
+            self._scene, rxn, centre, replace=replace))
+        if centre is not None:
+            self._recentre(item, centre)
+        report = reaction.balance_report(item.rxn_data)
+        out = {"equation": reaction.to_equation(item.rxn_data),
+               "balanced": report["balanced"],
+               "balance": reaction.balance_text(report),
+               "item": self._describe(item, 0)}
+        typeset = [reaction.species_text(sp)
+                   for side in ("reactants", "products")
+                   for sp in item.rxn_data[side]
+                   if reaction.species_atoms(sp)[0] is None]
+        if typeset:
+            out["typeset_as_formula"] = typeset
+        if note:
+            out["balance_note"] = note
+        return out
 
     def _t_insert_object(self, params) -> dict:
         name = str(params.get("name", ""))

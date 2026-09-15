@@ -444,6 +444,10 @@ def build_context_menu(window, item) -> QMenu:
     menu = QMenu(window)
     menu.addAction(icons.icon("mdi.pencil-box-outline"), "Edit properties…",
                    lambda: window.edit_item(item))
+    if getattr(item, "rxn_data", None):        # reaction scheme
+        from .reactionview import open_reaction_builder
+        menu.addAction(icons.icon("mdi.flask-outline"), "Edit reaction…",
+                       lambda: open_reaction_builder(window.view, item))
     if getattr(item, "mol_name", None):        # molecule / crystal model
         menu.addAction(icons.icon("mdi.molecule"), "Molecule builder…",
                        lambda: window.view.open_molecule_builder(item))
