@@ -36,8 +36,15 @@ def main():
     from .style import apply_style
     apply_style(app)
 
+    # the start-up picture: the window's modules take a moment to load
+    from .splash import Splash
+    splash = Splash()
+    splash.show()
+    splash.step("Loading the canvas")
     from .mainwindow import MainWindow
+    splash.step("Building the window")
     win = MainWindow()
+    splash.step("Opening the workspace")
     win.show()
 
     # A file path on the command line (e.g. from KherveBook's "Open in
@@ -48,5 +55,7 @@ def main():
             break
 
     win.start_mcp_if_enabled()
+    splash.step("Ready")
+    splash.finish(win)
 
     sys.exit(app.exec_())
