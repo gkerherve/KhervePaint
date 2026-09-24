@@ -9,6 +9,26 @@ exporting a publication-ready figure.
 
 ---
 
+## 0. Welcome screen & updates
+
+When KhervePaint starts, a **welcome screen** lies over the canvas: start
+a **new drawing**, **open** a file, reopen a **recent** one, jump into a
+**3D drawing** (arms the 3D solids tool), browse the **examples**, open the
+**molecule builder** or this guide. **Start drawing** (or Esc) lifts it.
+Untick *Show this screen at start-up* to skip it; bring it back any time
+from **Help ▸ Welcome Screen**. It never touches your document.
+
+KhervePaint **checks for updates** quietly once a day, a few seconds after
+start-up, and only speaks up when a new version is out. **Update now**
+downloads the new Windows installer (the app closes so it can replace
+itself — you are asked first if there is unsaved work) or opens the new
+macOS DMG to drag onto Applications; in a **git checkout** it
+fast-forwards the branch (`git pull --ff-only`, so local changes are
+never overwritten) and you restart. **Skip this version** stops the
+reminder for that version. **Help ▸ Check for Updates…** checks now;
+untick **Help ▸ Automatically check for updates** to turn the daily check
+off.
+
 ## 1. The canvas
 
 A drawing has two layers in one canvas:

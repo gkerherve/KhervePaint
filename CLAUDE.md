@@ -358,6 +358,26 @@ into a new module and import.
                        width with px viewBox).
   - `undo.py`        — `SnapshotCommand`: whole-document snapshot
                        undo/redo (see Undo / redo policy).
+  - `welcome.py`     — the **start-up wallpaper**: `WelcomeScreen`, an
+                       overlay widget on the view (not a dialog, never a
+                       document change) painted by `paint_wallpaper` —
+                       splash slate + grid + real faded `solids` — with
+                       new/open/recent/3D/examples/molecule/guide tiles.
+                       `app.main` shows it unless a file was opened or
+                       QSettings `welcome/show` is off; Help ▸ Welcome
+                       Screen reopens it (`MainWindow.show_welcome`).
+  - `updater.py`     — **auto-update**, Qt-free: frozen builds scan the
+                       GitHub releases for the newest asset for THIS
+                       platform (Windows `v*` / macOS `macos-v*` releases
+                       are separate, so not /releases/latest) and compare
+                       build numbers; source checkouts `git fetch` +
+                       `pull --ff-only`. `ssl_context()` (certifi or
+                       /etc/ssl/cert.pem) — python.org/frozen macOS
+                       Pythons ship no CA bundle; ai_providers uses it too.
+  - `updater_ui.py`  — `UpdateManager` (owned by `MainWindow.updates`):
+                       QThread check/download, `UpdateDialog` (update /
+                       skip version / later), daily quiet start-up check,
+                       Help-menu actions; QSettings `updates/*`.
   - `help.py`        — rich About dialog + in-app User Guide
                        (`Help ▸ User Guide`, F1). Keep the guide and the
                        repo `USERGUIDE.md` in sync when features change.

@@ -109,6 +109,19 @@ def user_guide_html() -> str:
 <p><i>A hybrid raster + vector drawing app. This guide covers everything
 from drawing your first shape to exporting a publication-ready figure.</i></p>
 
+<h2>0 · Welcome screen &amp; updates</h2>
+<p>At start-up a <b>welcome screen</b> covers the canvas: new drawing, open,
+recent files, a <b>3D drawing</b> shortcut, examples, the molecule builder
+and this guide. <b>Start drawing</b> (or Esc) lifts it; untick <i>Show this
+screen at start-up</i> to skip it, and reopen it from <b>Help ▸ Welcome
+Screen</b>.</p>
+<p>KhervePaint <b>checks for updates</b> once a day and tells you only when a
+new version exists. <b>Update now</b> downloads and starts the Windows
+installer (asking first about unsaved work), opens the macOS DMG, or in a
+git checkout fast-forwards the branch. <b>Help ▸ Check for Updates…</b>
+checks now; <b>Help ▸ Automatically check for updates</b> turns the daily
+check off.</p>
+
 <h2>1 · The canvas</h2>
 <p>A drawing has two layers in one canvas:</p>
 <ul>

@@ -862,6 +862,11 @@ class MainWindow(QMainWindow):
 
         help_menu = m.addMenu("&Help")
         help_menu.addAction("&User Guide", self._user_guide, "F1")
+        help_menu.addAction("&Welcome Screen", self.show_welcome)
+        help_menu.addSeparator()
+        from .updater_ui import UpdateManager
+        self.updates = UpdateManager(self)
+        self.updates.add_menu_actions(help_menu)
         help_menu.addSeparator()
         help_menu.addAction("&About", self._about)
 
@@ -939,6 +944,7 @@ class MainWindow(QMainWindow):
         """Examples ▸ <category> ▸ <technique>: labelled A4 schematics."""
         from . import examples
         menu = menubar.addMenu("E&xamples")
+        menu.setObjectName("examplesMenu")   # the welcome screen pops it
         submenus = {}
         for category, name, builder in examples.EXAMPLES:
             sub = submenus.get(category)
@@ -1647,6 +1653,14 @@ class MainWindow(QMainWindow):
         name = Path(self._path).name if self._path else "Untitled"
         star = "" if self._undo_stack.isClean() else "*"
         self.setWindowTitle(f"{star}{name} — {APP_NAME} v{__version__}")
+
+    def show_welcome(self):
+        """Lay the welcome wallpaper over the canvas (Help ▸ Welcome)."""
+        from .welcome import WelcomeScreen
+        if getattr(self, "_welcome", None) is None:
+            self._welcome = WelcomeScreen(self)
+        self._welcome.show()
+        self._welcome.setFocus()
 
     def _confirm_discard(self) -> bool:
         if self._undo_stack.isClean():

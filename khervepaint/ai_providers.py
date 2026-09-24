@@ -115,7 +115,11 @@ def _base(provider, base_url=""):
 def _send(req, timeout):
     """Run a request, turning an HTTP error into the API's own message."""
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        # verifying TLS that also works on CA-less Pythons (frozen/macOS)
+        from .updater import ssl_context
+        ctx = ssl_context() if req.full_url.startswith("https:") else None
+        with urllib.request.urlopen(req, timeout=timeout,
+                                    context=ctx) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as err:
         detail = err.read().decode("utf-8", "replace")

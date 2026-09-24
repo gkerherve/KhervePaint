@@ -49,12 +49,19 @@ def main():
 
     # A file path on the command line (e.g. from KherveBook's "Open in
     # KhervePaint") opens straight away, so the drawing is ready to edit.
+    opened = False
     for arg in app.arguments()[1:]:
         if not arg.startswith("-") and Path(arg).exists():
-            win.open_path(arg)
+            opened = win.open_path(arg)
             break
 
+    # the start-up wallpaper, unless a file is already open
+    from .welcome import show_at_startup
+    if not opened and show_at_startup():
+        win.show_welcome()
+
     win.start_mcp_if_enabled()
+    win.updates.schedule_startup_check()
     splash.step("Ready")
     splash.finish(win)
 
