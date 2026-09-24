@@ -242,6 +242,8 @@ class McpToolExecutor:
             info["text"] = item.toPlainText()
             info["size"] = item.font().pointSize()
             info["stroke"] = item.defaultTextColor().name()
+        if getattr(item, "symbol", None):     # "scheme3d:slab_grey"
+            info["symbol"] = item.symbol
         label = getattr(item, "label", None)
         if callable(label) and label():
             info["label"] = label()
@@ -269,6 +271,7 @@ class McpToolExecutor:
                 info["solid_az"] = round(math.degrees(tag.get("az", 0)), 2)
                 info["solid_el"] = round(math.degrees(tag.get("el", 0)), 2)
                 info["color"] = tag.get("color")
+                info["solid_box"] = round(tag.get("box") or 0, 2)
             if getattr(item, "rxn_data", None):
                 from . import reaction
                 info["reaction"] = reaction.to_equation(item.rxn_data)

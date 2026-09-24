@@ -378,6 +378,20 @@ into a new module and import.
                        QThread check/download, `UpdateDialog` (update /
                        skip version / later), daily quiet start-up check,
                        Help-menu actions; QSettings `updates/*`.
+  - `itemtree.py`    — the **Items panel** (`MainWindow.items_dock`, top
+                       toolbar "Items", View ▸ Ctrl+Shift+I): a tree of
+                       every canvas item, front first, plain groups/symbols
+                       expandable (models/reactions/solids are one row),
+                       X/Y/rotation editable in place, click ↔ canvas
+                       selection sync, Delete. Rows hold INT keys, never
+                       items (a QGraphicsItem in a QVariant dangles after
+                       undo rebuilds the scene → segfault); liveness is
+                       checked against `scene.items()`, not sip.
+                       Names come from `describe()`, which reads the
+                       persisted `item.symbol = "<module>:<name>"` tag that
+                       `_place_symbol` stamps (JSON `"symbol"`, SVG
+                       `kp:symbol`, FORMAT_VERSION 13; also in MCP
+                       list_items).
   - `help.py`        — rich About dialog + in-app User Guide
                        (`Help ▸ User Guide`, F1). Keep the guide and the
                        repo `USERGUIDE.md` in sync when features change.

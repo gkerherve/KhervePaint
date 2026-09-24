@@ -1805,6 +1805,9 @@ class PaintScene(QGraphicsScene):
         if not items:
             return None
         top = self._drop_items(items, center, w, h)
+        # remember what it is ("scheme3d:slab_grey") for list_items and the
+        # Items panel — persisted, so it survives undo and save
+        top.symbol = f"{module.__name__.rsplit('.', 1)[-1]}:{name}"
         self.changed_by_user.emit()
         return top
 

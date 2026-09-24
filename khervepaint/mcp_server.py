@@ -112,7 +112,8 @@ _INSTRUCTIONS = """\
 These tools drive a LIVE KhervePaint window — a vector + raster drawing \
 app for scientific figures, with molecule and crystal builders, symbol \
 libraries (optics, vacuum, electrical, lab glassware, P&ID, flowchart, \
-biology, room layout) and millimetre-accurate measurement. Everything \
+biology, room layout), rotatable 3D solids and millimetre-accurate \
+measurement. Everything \
 you do appears immediately in the document open in front of the user.
 
 Working rules:
@@ -177,10 +178,31 @@ formulas, with the arrow, conditions and state symbols. balance=true \
 fixes the coefficients; the reply says whether it balances. Never \
 assemble a reaction from separate molecules, text and arrows.
 
+3D drawing — shaded solids, not hand-drawn polygons:
+- place_solid drops a real 3D solid: cube, cuboid, plate, stairs, \
+cylinder, disc, tube, cone, frustum, sphere, hemisphere, torus, pyramid, \
+tri_prism, hex_prism, tetrahedron, octahedron, icosahedron, \
+dodecahedron, arrow_3d. "x","y" is its CENTRE, "size" the box edge in \
+px, "az"/"el" the view in degrees (default 35/25; el 90 = top view), \
+"color" a hex or name (blue, red, green, orange, yellow, purple, grey, \
+gold, copper, glass, white, black).
+- list_items reports a solid with "solid", "solid_az", "solid_el", \
+"color" and "solid_box"; configure_solid turns or recolours it in \
+place (it gets a NEW id — use the one returned). update_items still \
+moves, scales, rotates in-plane or fades it like any item.
+- For a 3D scene use one az/el for every solid so they share a camera, \
+place far objects first (later ones draw in front), then render_canvas \
+to check. The "draw" tool also accepts {"shape":"solid",…} specs.
+- For layered device schematics (fuel cells, batteries, thin films) \
+the scheme3d symbol library has 3D slabs, particle beds and glows; \
+molecules and crystals are 3D too (place_model, configure_model).
+- Placed palette symbols report "symbol":"<library>:<name>" in \
+list_items, so you can tell a 3D slab from any other group.
+
 Symbol libraries:
 - place_symbol drops any symbol from the app's palettes (optics, \
 vacuum, electrical, labware, flowchart, network, P&ID, arrows, biology, \
-maths, room layout, 3D scheme blocks). Call list_symbols for a \
+maths, room layout, 3D scheme blocks, 3D solids). Call list_symbols for a \
 library's exact element names — guessing wastes a call.
 - Symbols are scaled relative to the page, so they stay in proportion \
 with each other whatever the canvas size.

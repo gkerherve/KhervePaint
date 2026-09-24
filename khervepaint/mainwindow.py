@@ -606,6 +606,11 @@ class MainWindow(QMainWindow):
         # Hidden by default: the ChatBox needs the user's own API key,
         # so it stays folded away until they ask for it (AI > ChatBox).
         self.ai_dock.hide()
+        # the Items panel: a tree of everything on the canvas
+        from .itemtree import ItemTreePanel
+        self.items_dock = ItemTreePanel(self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.items_dock)
+        self.items_dock.hide()
 
     def _build_options_bar(self):
         bar = QToolBar("Options")
@@ -754,6 +759,15 @@ class MainWindow(QMainWindow):
         ai_toggle.setText("AI Chat")
         ai_toggle.setToolTip("Show / hide the AI Assistant panel")
         bar.addAction(ai_toggle)
+        items_toggle = self.items_dock.toggleViewAction()
+        items_toggle.setIcon(icons.icon("mdi.file-tree-outline"))
+        items_toggle.setText("Items")
+        items_toggle.setToolTip("Show / hide the Items panel — a tree of "
+                                "everything on the canvas")
+        bar.addAction(items_toggle)
+        items_btn = bar.widgetForAction(items_toggle)
+        if items_btn is not None:
+            items_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         ai_btn = bar.widgetForAction(ai_toggle)       # label it so it's clear
         if ai_btn is not None:
             ai_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -825,6 +839,10 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self._grid_act)
         view_menu.addAction(self._snap_act)
         view_menu.addAction(self._infinite_act)
+        view_menu.addSeparator()
+        panel = self.items_dock.toggleViewAction()
+        panel.setShortcut("Ctrl+Shift+I")
+        view_menu.addAction(panel)
         view_menu.addSeparator()
         view_menu.addAction("Zoom &In", lambda: self.view.zoom(1.25),
                             QKeySequence.ZoomIn)

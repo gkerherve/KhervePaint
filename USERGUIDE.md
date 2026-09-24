@@ -29,6 +29,17 @@ reminder for that version. **Help ▸ Check for Updates…** checks now;
 untick **Help ▸ Automatically check for updates** to turn the daily check
 off.
 
+## 0a. Items panel
+
+Click **Items** on the top toolbar (or **View ▸ Items**, Ctrl+Shift+I) for
+a tree of everything on the canvas, front-most first: "Rectangle",
+"3D solid: Cube", "Molecule: benzene", "Room layout: Double bed"…
+Groups and placed symbols expand to show their parts. Each row shows the
+item's **X**, **Y** and **rotation** — double-click a value to type a new
+one. Click a row to select the item on the canvas (and selecting on the
+canvas highlights its row); **Delete** (or the Del key) removes the
+selected rows. Everything done here is undoable.
+
 ## 1. The canvas
 
 A drawing has two layers in one canvas:

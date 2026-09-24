@@ -254,6 +254,8 @@ def _item_to_element(parent, item, ctx=None):
                 import json as _json
                 g.set(_kp("model-atoms"), _json.dumps(item.mol_atoms))
                 g.set(_kp("model-bonds"), _json.dumps(item.mol_bonds or []))
+        if getattr(item, "symbol", None):          # palette symbol identity
+            g.set(_kp("symbol"), item.symbol)
         if getattr(item, "solid", None):           # rotatable 3D solid
             import json as _json
             g.set(_kp("solid"), _json.dumps(item.solid))
@@ -834,6 +836,8 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
             group.mol_poly = el.get(_kp("model-poly")) == "1"
             group.mol_atoms = _json_or_none(el.get(_kp("model-atoms")))
             group.mol_bonds = _json_or_none(el.get(_kp("model-bonds")))
+        if el.get(_kp("symbol")):
+            group.symbol = el.get(_kp("symbol"))
         solid = _json_or_none(el.get(_kp("solid")))
         if isinstance(solid, dict):              # rotatable 3D solid tag
             group.solid = solid

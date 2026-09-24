@@ -30,7 +30,8 @@ from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 12     # 12: rotatable 3D solids ("solid")
+FORMAT_VERSION = 13     # 13: palette-symbol identity ("symbol")
+                        # 12: rotatable 3D solids ("solid")
                         # 11: re-editable reaction schemes ("reaction")
 
 
@@ -139,6 +140,8 @@ def item_to_dict(item) -> dict:
     common = {"pos": pos, "opacity": item.opacity(),
               "rotation": item.rotation(), "z": item.zValue(),
               "scale": item.scale()}
+    if getattr(item, "symbol", None):      # palette symbol identity
+        common["symbol"] = item.symbol
     if isinstance(item, DimensionItem):
         ln = item.line()
         return {"type": "dimension", "pen": _pen_to_dict(item.pen()),
@@ -314,6 +317,8 @@ def item_from_dict(d: dict):
     else:
         raise ValueError(f"unknown item type: {kind!r}")
     _apply_label(item, d)
+    if d.get("symbol"):
+        item.symbol = str(d["symbol"])
     item.setOpacity(d.get("opacity", 1.0))
     item.setZValue(d.get("z", 0.0))
     if kind == "image" and "matrix" in d:

@@ -122,6 +122,13 @@ git checkout fast-forwards the branch. <b>Help ▸ Check for Updates…</b>
 checks now; <b>Help ▸ Automatically check for updates</b> turns the daily
 check off.</p>
 
+<h2>0a · Items panel</h2>
+<p><b>Items</b> on the top toolbar (View ▸ Items, Ctrl+Shift+I) opens a tree
+of everything on the canvas, front-most first, with each item's X, Y and
+rotation. Double-click a value to edit it, click a row to select the item,
+expand groups and symbols to see their parts, and press <b>Delete</b> to
+remove the selected rows. All undoable.</p>
+
 <h2>1 · The canvas</h2>
 <p>A drawing has two layers in one canvas:</p>
 <ul>
