@@ -356,12 +356,24 @@ def solid_specs(name, w, h, az=DEFAULT_AZ, el=DEFAULT_EL,
     near so later polygons correctly cover earlier ones."""
     if name not in _MESHES:
         raise KeyError(name)
-    verts, faces, smooth = _MESHES[name]()
     color = resolve_color(color)
+    if name == "sphere":
+        # A sphere looks the same from everywhere: one smooth lit-sphere
+        # gradient disc beats any facetted mesh (and matches the atoms).
+        d = min(w, h)
+        return [{"shape": "circle", "x": (w - d) / 2, "y": (h - d) / 2,
+                 "w": d, "h": d, "stroke": _shade(color, 0.45),
+                 "width": 1.0, "fill": {"kind": "sun",
+                                        "c1": _shade(color, 0.8),
+                                        "c2": _shade(color, 1.75)}}]
+    verts, faces, smooth = _MESHES[name]()
     view = [_rotate(p, az, el) for p in verts]
     light = _unit(_LIGHT)
-    # the mesh fits a unit cube, whose view-space extent is ≤ √3
-    scale = min(w, h) / math.sqrt(3.0)
+    # Scale by the mesh's own bounding sphere: it projects to the same
+    # circle from every angle, so the solid fills its box without ever
+    # spilling out as it turns.
+    radius = max(math.sqrt(_dot(p, p)) for p in verts) or 0.5
+    scale = min(w, h) / (2.0 * radius)
     cx, cy = w / 2.0, h / 2.0
     drawn = []
     for face in faces:
@@ -450,8 +462,12 @@ def _bbox_offset(tag, box):
     specs = solid_specs(tag["name"], box, box,
                         tag.get("az", DEFAULT_AZ), tag.get("el", DEFAULT_EL),
                         tag.get("color", DEFAULT_COLOR))
-    xs = [p[0] for s in specs for p in s["points"]]
-    ys = [p[1] for s in specs for p in s["points"]]
+    xs, ys = [], []
+    for s in specs:
+        pts = s.get("points") or [[s["x"], s["y"]],
+                                  [s["x"] + s["w"], s["y"] + s["h"]]]
+        xs += [p[0] for p in pts]
+        ys += [p[1] for p in pts]
     if not xs:
         return 0.0, 0.0
     return ((min(xs) + max(xs)) / 2 - box / 2,

@@ -24,10 +24,10 @@ from pathlib import Path
 
 from PyQt5.QtCore import QEvent, QPointF, QRectF, QSettings, Qt
 from PyQt5.QtGui import (QColor, QLinearGradient, QPainter,
-                         QPainterPath, QPen, QPixmap, QPolygonF,
-                         QRadialGradient)
+                         QPainterPath, QPen, QPixmap, QRadialGradient)
 from PyQt5.QtWidgets import (QCheckBox, QFrame, QGridLayout, QHBoxLayout,
-                             QLabel, QPushButton, QVBoxLayout, QWidget)
+                             QLabel, QPushButton, QStyleOptionGraphicsItem,
+                             QVBoxLayout, QWidget)
 
 SETTINGS = ("Kherve", "KhervePaint")
 KEY_SHOW = "welcome/show"
@@ -107,12 +107,15 @@ def paint_wallpaper(p: QPainter, rect: QRectF):
         layer.fill(Qt.transparent)
         lp = QPainter(layer)
         lp.setRenderHint(QPainter.Antialiasing)
+        from .ai_assistant import _spec_to_item
+        lp.translate(1, 1)
         for spec in solids.solid_specs(name, size, size, math.radians(az),
                                        math.radians(el), color):
-            lp.setBrush(QColor(spec["fill"]))
-            lp.setPen(QPen(QColor(spec["stroke"]), spec["width"]))
-            lp.drawPolygon(QPolygonF([QPointF(x + 1, y + 1)
-                                      for x, y in spec["points"]]))
+            item = _spec_to_item(spec)          # the canvas's own drawing
+            lp.save()
+            lp.translate(item.pos())
+            item.paint(lp, QStyleOptionGraphicsItem(), None)
+            lp.restore()
         lp.end()
         p.setOpacity(0.6)
         p.drawPixmap(QPointF(w * fx - size / 2, h * fy - size / 2), layer)
@@ -128,6 +131,10 @@ class WelcomeScreen(QWidget):
         self.setAttribute(Qt.WA_StyledBackground, False)
         self.setFocusPolicy(Qt.StrongFocus)
         window.view.installEventFilter(self)
+        # Anything that changes the drawing — an MCP client, the AI chat,
+        # a file dropped on the window — lifts the wallpaper, so the user
+        # is never left looking at it while a figure appears underneath.
+        window.scene.changed_by_user.connect(self._on_document_changed)
         self._build()
         self._fit()
 
@@ -250,7 +257,16 @@ class WelcomeScreen(QWidget):
         pass                         # clicks on the wallpaper do nothing
 
     # ── actions ───────────────────────────────────────────────
+    def _on_document_changed(self):
+        if not self.isHidden():
+            self.dismiss()
+
     def dismiss(self):
+        try:
+            self._win.scene.changed_by_user.disconnect(
+                self._on_document_changed)
+        except TypeError:
+            pass
         self._win.view.removeEventFilter(self)
         self.hide()
         self.deleteLater()

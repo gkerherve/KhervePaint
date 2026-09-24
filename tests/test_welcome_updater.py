@@ -57,6 +57,13 @@ def test_welcome_3d_tile_arms_the_solid_tool(win):
     assert win.scene.solid_element == "cube"
 
 
+def test_welcome_lifts_when_the_document_changes(win):
+    """An MCP client or the AI chat drawing must not happen unseen."""
+    win.show_welcome()
+    win.scene.changed_by_user.emit()
+    assert win._welcome is None
+
+
 def test_show_at_startup_setting_round_trips(qapp):
     welcome.set_show_at_startup(False)
     assert welcome.show_at_startup() is False

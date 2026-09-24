@@ -1458,6 +1458,8 @@ class MainWindow(QMainWindow):
         straight back to that file, where KherveBook reloads it."""
         if not Path(path).exists():
             return False
+        if getattr(self, "_welcome", None) is not None:
+            self._welcome.dismiss()          # show what was opened
         return self._load_document(str(path))
 
     def _load_document(self, path: str) -> bool:

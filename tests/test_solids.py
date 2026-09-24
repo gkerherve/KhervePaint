@@ -51,9 +51,11 @@ def test_registry_is_consistent():
 @pytest.mark.parametrize("name", sorted(solids._MESHES))
 def test_every_solid_draws_several_visible_faces(app, name):
     specs = solids.solid_specs(name, 200, 200)
-    assert len(specs) >= 2, name
+    assert len(specs) >= (1 if name == "sphere" else 2), name
     for s in specs:
-        for x, y in s["points"]:
+        pts = s.get("points") or [[s["x"], s["y"]],
+                                  [s["x"] + s["w"], s["y"] + s["h"]]]
+        for x, y in pts:
             assert -1 <= x <= 201 and -1 <= y <= 201, name  # fits the box
     assert all(ai_assistant._spec_to_item(s) is not None for s in specs)
 
