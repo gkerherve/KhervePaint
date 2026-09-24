@@ -448,6 +448,8 @@ def build_context_menu(window, item) -> QMenu:
         from .reactionview import open_reaction_builder
         menu.addAction(icons.icon("mdi.flask-outline"), "Edit reaction…",
                        lambda: open_reaction_builder(window.view, item))
+    if getattr(item, "solid", None):           # rotatable 3D solid
+        _solid_menu(menu, window, item)
     if getattr(item, "mol_name", None):        # molecule / crystal model
         menu.addAction(icons.icon("mdi.molecule"), "Molecule builder…",
                        lambda: window.view.open_molecule_builder(item))
@@ -508,3 +510,23 @@ def build_context_menu(window, item) -> QMenu:
         menu.addAction(icons.icon("mdi.arrow-expand-all"),
                        "Explode shape", window.scene.explode_selection)
     return menu
+
+
+def _solid_menu(menu, window, item):
+    """Rotate / recolour / standard-view entries for a placed 3D solid."""
+    import math
+    from . import solids
+    scene = window.scene
+    menu.addAction(icons.icon("mdi.rotate-3d-variant"), "Rotate in 3D",
+                   lambda: scene.enter_orbit_mode(item))
+    views = menu.addMenu(icons.icon("mdi.cube-scan"), "View from")
+    for label, az, el in (("Isometric", 45, 35.264), ("Front", 0, 0),
+                          ("Side", 90, 0), ("Top", 0, 90),
+                          ("Default", math.degrees(solids.DEFAULT_AZ),
+                           math.degrees(solids.DEFAULT_EL))):
+        views.addAction(label, lambda a=az, e=el: solids.reorient_solid(
+            scene, item, math.radians(a), math.radians(e)))
+    colours = menu.addMenu(icons.icon("mdi.palette-outline"), "Solid colour")
+    for name, hex_color in solids.COLORS.items():
+        colours.addAction(name.capitalize(), lambda c=hex_color:
+                          solids.reorient_solid(scene, item, color=c))

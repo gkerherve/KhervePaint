@@ -42,7 +42,7 @@ _LIBRARY_MODULES = {
     "electrical": "electrical", "optics": "optics", "vacuum": "vacuum",
     "labware": "labware", "flowchart": "flowchart", "network": "network",
     "pid": "pid", "arrows": "arrows", "biology": "biology",
-    "maths": "maths",
+    "maths": "maths", "solids": "solids",
 }
 
 #: Class -> the kind name reported by list_items.  Order matters:
@@ -262,6 +262,13 @@ class McpToolExecutor:
                     info["cells"] = list(item.mol_cells)
                 if getattr(item, "mol_tilts", None):
                     info["tilts"] = dict(item.mol_tilts)
+            if getattr(item, "solid", None):
+                import math
+                tag = item.solid
+                info["solid"] = tag.get("name")
+                info["solid_az"] = round(math.degrees(tag.get("az", 0)), 2)
+                info["solid_el"] = round(math.degrees(tag.get("el", 0)), 2)
+                info["color"] = tag.get("color")
             if getattr(item, "rxn_data", None):
                 from . import reaction
                 info["reaction"] = reaction.to_equation(item.rxn_data)
@@ -621,6 +628,9 @@ class McpToolExecutor:
         if key in ("molecules", "crystals"):
             item = self._unsnapped(
                 lambda: self._scene.place_mol_element(name, centre))
+        elif key == "solids":
+            item = self._unsnapped(
+                lambda: self._scene.place_solid_element(name, centre))
         else:
             item = self._unsnapped(
                 lambda: self._scene._place_symbol(module, name, centre))
@@ -719,6 +729,46 @@ class McpToolExecutor:
                 "or build_molecule.")
         item = self._reconfigure(item, params)
         return {"model": getattr(item, "mol_name", None),
+                "item": self._describe(item, 0)}
+
+    def _t_place_solid(self, params) -> dict:
+        import math
+        from . import solids
+        name = solids.resolve_name(params.get("name"))
+        if not name:
+            raise ToolError(
+                f"No solid called {params.get('name')!r}. Choose one of: "
+                f"{', '.join(solids.LABELS)}.")
+        centre = self._centre(params)
+        az = params.get("az")
+        el = params.get("el")
+        size = params.get("size")
+        if size is not None and not 1 <= float(size) <= 20000:
+            raise ToolError("'size' must be between 1 and 20000 px.")
+        item = self._unsnapped(lambda: solids.place_solid(
+            self._scene, name, centre, params.get("color"),
+            None if az is None else math.radians(float(az)),
+            None if el is None else math.radians(float(el)),
+            size=None if size is None else float(size)))
+        if item is None:
+            raise ToolError(f"Could not build the {name!r} solid.")
+        self._recentre(item, centre)
+        return {"placed": name, "item": self._describe(item, 0)}
+
+    def _t_configure_solid(self, params) -> dict:
+        import math
+        from . import solids
+        item = self._item(params.get("id"))
+        if not getattr(item, "solid", None):
+            raise ToolError("That item is not a 3-D solid — configure_solid "
+                            "only works on one placed by place_solid.")
+        az, el = params.get("az"), params.get("el")
+        item = self._unsnapped(lambda: solids.reorient_solid(
+            self._scene, item,
+            None if az is None else math.radians(float(az)),
+            None if el is None else math.radians(float(el)),
+            params.get("color"))) or item
+        return {"solid": item.solid.get("name"),
                 "item": self._describe(item, 0)}
 
     def _t_draw_reaction(self, params) -> dict:

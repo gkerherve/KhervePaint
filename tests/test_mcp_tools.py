@@ -329,3 +329,23 @@ def test_load_example_replaces_the_document(ex):
     name = call(ex, "list_examples")["examples"][0]["name"]
     out = call(ex, "load_example", name=name, discard_unsaved_changes=True)
     assert out["item_count"] > 0
+
+
+def test_place_and_configure_solid(ex):
+    res = ex.execute("place_solid", {"name": "icosahedron", "x": 200,
+                                     "y": 150, "color": "purple", "az": 20})
+    assert "error" not in res, res
+    item = res["item"]
+    assert item["solid"] == "icosahedron" and item["solid_az"] == 20
+    assert abs(item["x"] + item["w"] / 2 - 200) < 1
+    res2 = ex.execute("configure_solid", {"id": item["id"], "el": 60,
+                                          "color": "#ff0000"})
+    assert "error" not in res2, res2
+    assert res2["item"]["solid_el"] == 60
+    assert res2["item"]["color"] == "#ff0000"
+    bad = ex.execute("place_solid", {"name": "teapot", "x": 1, "y": 1})
+    assert "error" in bad
+    via_palette = ex.execute("place_symbol", {"library": "solids",
+                                              "name": "torus", "x": 50,
+                                              "y": 50})
+    assert via_palette["item"].get("solid") == "torus"

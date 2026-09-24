@@ -6,7 +6,7 @@ Code, Cursor, Zed, Continue, or anything else that speaks the Model
 Context Protocol — can draw in an open document directly.
 
 The built-in chat replies with a block of shape specs. An MCP client
-gets the **whole application** instead: 27 tools covering the canvas,
+gets the **whole application** instead: 29 tools covering the canvas,
 the symbol palettes, the molecule and crystal builders, reaction
 schemes, the document,
 and — the one that changes how well the rest work — a **picture of the
@@ -28,12 +28,17 @@ drawing**.
   `group_items` / `ungroup_items`, `order_items` (front/back),
   `align_items` (edges, centre lines, even spacing) and `select_items`,
   which highlights what the assistant is talking about in the window.
-- **Symbols** — `place_symbol` reaches all fourteen palettes: optics,
+- **Symbols** — `place_symbol` reaches all fifteen palettes: optics,
   vacuum, electrical, lab glassware, flowchart, network, P&ID, arrows
   and callouts, biology, maths, room layout, 3-D scheme blocks,
-  molecules and crystals. `list_symbols` gives the exact names, so a
+  3-D solids, molecules and crystals. `list_symbols` gives the exact names, so a
   client that has never seen KhervePaint looks them up instead of
   guessing.
+- **3-D solids** — `place_solid` drops a shaded, rotatable cube,
+  cylinder, cone, sphere, torus, prism, Platonic solid, stairs or 3-D
+  arrow at any view angle and colour; `configure_solid` turns or
+  recolours one in place. Combine several for 3-D scenes. The `draw`
+  tool also accepts a `{"shape": "solid", …}` spec.
 - **Chemistry** — `place_model` drops a real tagged 3-D model from the
   catalogue; `build_molecule` builds any structure from a heavy-atom
   skeleton (hydrogens and correct geometry filled in);

@@ -25,7 +25,16 @@ from __future__ import annotations
 LIBRARY_KEYS = [
     "molecules", "crystals", "scheme3d", "floorplan", "electrical",
     "optics", "vacuum", "labware", "flowchart", "network", "pid",
-    "arrows", "biology", "maths",
+    "arrows", "biology", "maths", "solids",
+]
+
+#: 3-D solids (solids.LABELS keys) and named colours (solids.COLORS),
+#: repeated here so the schema stays import-free.
+SOLID_NAMES = [
+    "cube", "cuboid", "plate", "stairs", "cylinder", "disc", "tube", "cone",
+    "frustum", "sphere", "hemisphere", "torus", "pyramid", "tri_prism",
+    "hex_prism", "tetrahedron", "octahedron", "icosahedron", "dodecahedron",
+    "arrow_3d",
 ]
 
 #: Representations a placed molecule/crystal can be drawn in.
@@ -428,6 +437,46 @@ TOOLS = [
             "polyhedra": {"type": "boolean",
                           "description": "Draw translucent coordination "
                                          "polyhedra (crystals)."},
+        }, ["id"]),
+    },
+    {
+        "name": "place_solid",
+        "description": (
+            "Place a shaded 3-D solid (cube, cylinder, cone, sphere, torus, "
+            "prisms, Platonic solids, stairs, 3-D arrow) as one rotatable "
+            "group. Use these to build 3-D scenes and diagrams: stack and "
+            "overlap several, then render_canvas to check. The user can "
+            "spin it by double-clicking."
+        ),
+        "input_schema": _obj({
+            "name": {"type": "string", "enum": SOLID_NAMES},
+            **_POINT,
+            "size": {"type": "number",
+                     "description": "Build-box edge in px (default ~ a "
+                                    "quarter of the page width)."},
+            "color": {"type": "string",
+                      "description": "'#rrggbb' or blue, red, green, "
+                                     "orange, yellow, purple, grey, gold, "
+                                     "copper, glass, white, black."},
+            "az": {"type": "number",
+                   "description": "Azimuth in degrees (default 35)."},
+            "el": {"type": "number",
+                   "description": "Elevation in degrees, -90..90 "
+                                  "(default 25; 90 looks straight down)."},
+        }, ["name", "x", "y"]),
+    },
+    {
+        "name": "configure_solid",
+        "description": (
+            "Turn or recolour a placed 3-D solid in place (keeps its "
+            "centre and size)."
+        ),
+        "input_schema": _obj({
+            "id": {"type": "integer",
+                   "description": "A solid's id from list_items."},
+            "az": {"type": "number", "description": "Azimuth in degrees."},
+            "el": {"type": "number", "description": "Elevation in degrees."},
+            "color": {"type": "string"},
         }, ["id"]),
     },
     {

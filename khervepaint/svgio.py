@@ -254,6 +254,9 @@ def _item_to_element(parent, item, ctx=None):
                 import json as _json
                 g.set(_kp("model-atoms"), _json.dumps(item.mol_atoms))
                 g.set(_kp("model-bonds"), _json.dumps(item.mol_bonds or []))
+        if getattr(item, "solid", None):           # rotatable 3D solid
+            import json as _json
+            g.set(_kp("solid"), _json.dumps(item.solid))
         if getattr(item, "rxn_data", None):        # re-editable reaction
             import json as _json
             g.set(_kp("reaction"), _json.dumps(item.rxn_data,
@@ -831,6 +834,9 @@ def _parse_element(el, parent_tf: QTransform, inherited: dict, scene,
             group.mol_poly = el.get(_kp("model-poly")) == "1"
             group.mol_atoms = _json_or_none(el.get(_kp("model-atoms")))
             group.mol_bonds = _json_or_none(el.get(_kp("model-bonds")))
+        solid = _json_or_none(el.get(_kp("solid")))
+        if isinstance(solid, dict):              # rotatable 3D solid tag
+            group.solid = solid
         rxn = _json_or_none(el.get(_kp("reaction")))
         if isinstance(rxn, dict):                # reaction scheme tag
             group.rxn_data = rxn

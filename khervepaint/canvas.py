@@ -74,10 +74,12 @@ BIO_PLACE = "bio_place"
 MATH_PLACE = "math_place"
 MOL_PLACE = "mol_place"
 S3D_PLACE = "s3d_place"
+SOLID_PLACE = "solid_place"
 #: All spec-library placement tools (drop a symbol on click).
 _PLACE_TOOLS = (PLAN_PLACE, ELEC_PLACE, OPTICS_PLACE, VACUUM_PLACE,
                 LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
-                ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE, S3D_PLACE)
+                ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE, S3D_PLACE,
+                SOLID_PLACE)
 
 #: Parametric polygons created by dragging a bounding rect — all of
 #: these are vertex polygons, so they explode into their edge lines.
@@ -744,6 +746,8 @@ class PaintScene(QGraphicsScene):
         self.math_element = "axes_2d"     # math/graph symbol to place
         self.mol_element = "methane"      # molecule/crystal model to place
         self.s3d_element = "slab_grey"    # 3D-schematic block to place
+        self.solid_element = "cube"       # 3D solid to place
+        self.solid_color = "#5b8fd9"      # its body colour
         self.chem_fixed = True            # ChemDraw-style fixed length + angle
         self.bond_length_mm = 6.0         # predefined bond length (mm)
         self._chain_pts = None            # vertices of an in-progress chain
@@ -1398,6 +1402,9 @@ class PaintScene(QGraphicsScene):
         elif self.tool == S3D_PLACE:                # 3D-schematic block
             self._drawing = False
             self.place_s3d_element(self.s3d_element, pos)
+        elif self.tool == SOLID_PLACE:              # rotatable 3D solid
+            self._drawing = False
+            self.place_solid_element(self.solid_element, pos)
 
     def mouseMoveEvent(self, event):
         if self._orbiting:
@@ -1705,6 +1712,11 @@ class PaintScene(QGraphicsScene):
         from . import scheme3d
         return self._place_symbol(scheme3d, name, center)
 
+    def place_solid_element(self, name: str, center: QPointF):
+        """Drop a shaded, rotatable 3D solid (cube, cylinder, torus…)."""
+        from . import solids
+        return solids.place_solid(self, name, center, self.solid_color)
+
     def place_mol_element(self, name: str, center: QPointF):
         """Drop a molecule / crystal ball-and-stick model."""
         from . import molecules
@@ -1969,9 +1981,11 @@ class PaintScene(QGraphicsScene):
         """Start rotating a placed molecule/crystal *item* in 3D directly on
         the canvas: drag anywhere on it to spin; click off it (or press Esc,
         or switch tool) to finish. Returns True if *item* is a 3D model."""
-        if not getattr(item, "mol_name", None):
+        if getattr(item, "solid", None):
+            pass                                  # 3D solid: always spins
+        elif not getattr(item, "mol_name", None):
             return False
-        if (getattr(item, "mol_repr", None) or "3d") != "3d":
+        elif (getattr(item, "mol_repr", None) or "3d") != "3d":
             return False                          # 2D formulas don't rotate
         self.clear_handles()
         self.clearSelection()
@@ -2002,6 +2016,15 @@ class PaintScene(QGraphicsScene):
         item = self._orbit_item
         delta = scene_pos - self._orbit_last
         self._orbit_last = scene_pos
+        if getattr(item, "solid", None):          # 3D solid, not a molecule
+            from . import solids
+            new = solids.reorient_solid(
+                self, item, item.solid["az"] + delta.x() * 0.012,
+                item.solid["el"] + delta.y() * 0.012, commit=False)
+            if new is not None:
+                self._orbit_item = new
+                self._orbit_dirty = True
+            return
         az = (getattr(item, "mol_az", None) or molecules.DEFAULT_AZ) \
             + delta.x() * 0.012
         el = (getattr(item, "mol_el", None) or molecules.DEFAULT_EL) \
@@ -2426,6 +2449,9 @@ class PaintView(QGraphicsView):
             if item is not None and getattr(item, "rxn_data", None):
                 from .reactionview import open_reaction_builder
                 open_reaction_builder(self, item)      # re-edit the scheme
+                return
+            if item is not None and getattr(item, "solid", None):
+                self.scene().enter_orbit_mode(item)    # spin a 3D solid
                 return
             if item is not None and getattr(item, "mol_name", None):
                 # 3D model: rotate in place on the canvas (no popup).

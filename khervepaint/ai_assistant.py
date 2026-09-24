@@ -78,6 +78,16 @@ For a ring molecule (benzene, cyclohexane…) prefer a library "name"; the
 skeleton builder is best for chains and branched molecules.
 Use "molecule" whenever the user asks for a molecule or crystal.
 
+For 3D objects use the high-level "solid" shape — a shaded 3D primitive
+the user can spin (double-click):
+  {"shape":"solid","name":"cylinder","x":cx,"y":cy,"size":120,
+   "color":"#5b8fd9","az":35,"el":25}
+- "name": cube, cuboid, plate, stairs, cylinder, disc, tube, cone,
+  frustum, sphere, hemisphere, torus, pyramid, tri_prism, hex_prism,
+  tetrahedron, octahedron, icosahedron, dodecahedron, arrow_3d.
+- "size" = box edge in px; "az"/"el" = view angles in degrees (optional).
+Build 3D scenes by combining several solids (later ones draw in front).
+
 For a chemical reaction or equation use the high-level "reaction" shape —
 one re-editable scheme with real structures, never hand-drawn arrows:
   {"shape":"reaction","equation":"CH4 + 2 O2 -> CO2 + 2 H2O","x":cx,"y":cy}
@@ -298,6 +308,22 @@ def _place_ai_molecule(scene, spec):
                                       name=name or "custom", commit=False)
 
 
+def _place_ai_solid(scene, spec):
+    """Place a high-level `solid` spec as a tagged, rotatable 3D group."""
+    import math
+    from PyQt5.QtCore import QPointF
+    from . import solids
+    cx = float(spec.get("x", scene.sceneRect().center().x()))
+    cy = float(spec.get("y", scene.sceneRect().center().y()))
+    az, el = spec.get("az"), spec.get("el")
+    size = spec.get("size") or spec.get("w")
+    return solids.place_solid(
+        scene, spec.get("name"), QPointF(cx, cy), spec.get("color"),
+        None if az is None else math.radians(float(az)),
+        None if el is None else math.radians(float(el)),
+        size=float(size) if size else None, commit=False)
+
+
 def _place_ai_reaction(scene, spec):
     """Place a high-level `reaction` spec ({"equation": "A + B -> C", …})
     as a re-editable reaction scheme (one undo step with the batch)."""
@@ -339,6 +365,13 @@ def apply_specs(scene, specs):
                 mol = None
             if mol is not None:
                 created.append(mol)
+        elif shape in ("solid", "solid3d"):
+            try:
+                solid = _place_ai_solid(scene, spec)
+            except Exception:
+                solid = None
+            if solid is not None:
+                created.append(solid)
         elif shape in ("reaction", "equation"):
             try:
                 rx = _place_ai_reaction(scene, spec)

@@ -30,7 +30,8 @@ from .canvas import (ArcShapeItem, ArrowItem, DimensionItem, EllipseItem,
                      PathItem, PolygonItem, RectItem, RoundedRectItem,
                      TextItem, center_origin)
 
-FORMAT_VERSION = 11     # 11: re-editable reaction schemes ("reaction")
+FORMAT_VERSION = 12     # 12: rotatable 3D solids ("solid")
+                        # 11: re-editable reaction schemes ("reaction")
 
 
 # ---------------------------------------------------------------- pens
@@ -225,6 +226,8 @@ def item_to_dict(item) -> dict:
             if getattr(item, "mol_atoms", None):   # hand-built structure
                 d["model_atoms"] = item.mol_atoms
                 d["model_bonds"] = item.mol_bonds
+        if getattr(item, "solid", None):      # rotatable 3D solid
+            d["solid"] = dict(item.solid)
         if getattr(item, "rxn_data", None):   # re-editable reaction scheme
             import copy
             d["reaction"] = copy.deepcopy(item.rxn_data)
@@ -303,6 +306,8 @@ def item_from_dict(d: dict):
             item.mol_poly = bool(d.get("model_poly", False))
             item.mol_atoms = d.get("model_atoms")
             item.mol_bonds = d.get("model_bonds")
+        if isinstance(d.get("solid"), dict):      # rotatable 3D solid tag
+            item.solid = dict(d["solid"])
         if isinstance(d.get("reaction"), dict):   # reaction scheme tag
             import copy
             item.rxn_data = copy.deepcopy(d["reaction"])

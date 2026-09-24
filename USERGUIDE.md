@@ -441,6 +441,15 @@ Five further dropdowns cover general diagrams and more science:
   cell reads as a **close-packed particle** (the touching-sphere electrode
   look in fuel-cell figures) rather than an open wireframe.
 
+- **3D solids** — shaded cubes, boxes, plates, cylinders, discs, tubes,
+  cones, spheres, hemispheres, tori, prisms, pyramids, the Platonic
+  solids, stairs and a 3D arrow. Choose the colour of new solids from the
+  same menu, click to place, then **double-click** one and drag to spin
+  it in 3D (Esc or click off to finish — one undo step). Right-click ▸
+  **View from** (isometric / front / side / top) and **Solid colour**.
+  Overlap several to build 3D scenes; they save and reload still
+  rotatable.
+
 - **3D scheme** — the building blocks of layered device schematics
   (fuel cells, batteries, membranes, thin-film stacks): shaded **3D
   slabs** (grey / orange / blue) and a **3D disk** for electrolyte and

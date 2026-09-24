@@ -36,12 +36,13 @@ from .canvas import (ARROW, ARROW_RIGHT, BUCKET, ERASER, PICKER, PROTRACTOR,
                      ELEC_PLACE, PLAN_PLACE, OPTICS_PLACE, VACUUM_PLACE,
                      LABWARE_PLACE, FLOW_PLACE, NET_PLACE, PID_PLACE,
                      ARROW_PLACE, BIO_PLACE, MATH_PLACE, MOL_PLACE, S3D_PLACE,
+                     SOLID_PLACE,
                      RIGHT_TRIANGLE, ROUNDRECT, STAR,
                      ROOM, STAR6, TEXT, TRAPEZOID, TRIANGLE, ImageItem,
                      LineItem, PaintScene, PaintView)
 from . import (chemistry, crystals, electrical, floorplan, flowchart, labware,
                optics, vacuum, network, pid, arrows, biology, maths, molecules,
-               scheme3d)
+               scheme3d, solids)
 from .style import THEMES, apply_style, current_theme
 
 ICON_SIZE = QSize(32, 32)
@@ -143,6 +144,10 @@ SYMBOL_LIBRARIES = [
     ("3D scheme", "mdi.layers-triple-outline",
      "3D scheme — slabs, particle beds, glows (device schematics)",
      scheme3d, "s3d_element", S3D_PLACE),
+    ("3D solids", "mdi.cube-scan",
+     "3D solids — shaded cubes, cylinders, spheres, tori… "
+     "(double-click one to spin it)",
+     solids, "solid_element", SOLID_PLACE),
     ("Room layout", "mdi.floor-plan",
      "Room layout — walls, doors, furniture (top view)",
      floorplan, "plan_element", PLAN_PLACE),
@@ -518,6 +523,11 @@ class MainWindow(QMainWindow):
                                self.open_new_molecule_builder),
                               ("Reaction builder…",
                                self.open_reaction_builder)])
+        if module is solids:
+            return ("Colour of new solids", [
+                (name.capitalize(), lambda _=False, c=hex_color:
+                 setattr(self.scene, "solid_color", c))
+                for name, hex_color in solids.COLORS.items()])
         return None
 
     def open_reaction_builder(self):
@@ -1290,6 +1300,8 @@ class MainWindow(QMainWindow):
         """Drop a symbol-library element at *scene_pos* on the canvas."""
         if module is molecules or module is crystals:
             self.scene.place_mol_element(name, scene_pos)
+        elif module is solids:
+            self.scene.place_solid_element(name, scene_pos)
         else:
             self.scene._place_symbol(module, name, scene_pos)
 
@@ -1627,6 +1639,11 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------ misc
     def _update_title(self):
+        from PyQt5 import sip
+        # cleanChanged can still fire while the window is being torn down,
+        # after Qt has already deleted the stack (or the window itself).
+        if sip.isdeleted(self) or sip.isdeleted(self._undo_stack):
+            return
         name = Path(self._path).name if self._path else "Untitled"
         star = "" if self._undo_stack.isClean() else "*"
         self.setWindowTitle(f"{star}{name} — {APP_NAME} v{__version__}")

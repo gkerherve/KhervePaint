@@ -434,6 +434,12 @@ conditions below it, state symbols and name labels. The status line
 checks atoms <b>and charge</b>; <b>Balance</b> sets the smallest whole
 coefficients. Selected molecule models seed the reactants. Double-click
 the placed scheme (or right-click ▸ Edit reaction…) to reopen it.</li>
+<li><b>3D solids</b> — shaded cubes, boxes, cylinders, discs, tubes,
+cones, spheres, tori, prisms, pyramids, the Platonic solids, stairs and a
+3D arrow. Pick a colour from the same menu, click to place, then
+<b>double-click</b> a solid and drag to spin it in 3D (Esc or click off to
+finish). Right-click ▸ <b>View from</b> snaps to isometric / front / side /
+top; <b>Solid colour</b> recolours it. Stack several to build 3D scenes.</li>
 <li><b>3D scheme</b> — layered-device schematic blocks (fuel cells,
 batteries, membranes): shaded <b>3D slabs</b> and a <b>3D disk</b> for
 electrolyte/substrate layers, close-packed <b>particle beds</b> and

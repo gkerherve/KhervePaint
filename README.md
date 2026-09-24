@@ -38,8 +38,8 @@ Desktop** or **Claude Code**, using the login you already have. Cursor,
 Cline, VS Code and LM Studio work the same way.
 
 Where the built-in chat replies with shapes, Claude gets the whole app
-as **27 tools**: draw and restyle items, align and group them, place
-symbols from all fourteen palettes, build molecules, crystals and
+as **29 tools**: draw and restyle items, align and group them, place
+symbols from all fifteen palettes (incl. 3-D solids), build molecules, crystals and
 balanced reaction schemes,
 resize the page, save and export — and `render_canvas`, which hands
 it a **picture of the drawing** so it can see what it made.
