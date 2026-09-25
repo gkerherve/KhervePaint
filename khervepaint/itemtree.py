@@ -22,7 +22,7 @@ the Free Software Foundation, either version 3 of the License, or
 import math
 
 from PyQt5 import sip
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtWidgets import (QAbstractItemView, QDockWidget, QHBoxLayout,
                              QHeaderView, QLabel, QPushButton, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget)
@@ -62,22 +62,27 @@ _PALETTES = {
 }
 
 
+def _tr(text):
+    return QCoreApplication.translate("ItemTreePanel", text)
+
+
 def describe(item):
     """(label, glyph) naming *item* the way a person would."""
     solid = getattr(item, "solid", None)
     if solid:
         from . import solids
         name = solids.LABELS.get(solid.get("name"), solid.get("name"))
-        return f"3D solid: {name}", "mdi.cube-outline"
+        name = QCoreApplication.translate("solids", name)
+        return _tr("3D solid: {}").format(name), "mdi.cube-outline"
     if getattr(item, "mol_name", None):
-        return f"Molecule: {item.mol_name}", "mdi.molecule"
+        return _tr("Molecule: {}").format(item.mol_name), "mdi.molecule"
     if getattr(item, "rxn_data", None):
         from . import reaction
         try:
             eq = reaction.to_equation(item.rxn_data)
         except Exception:
             eq = ""
-        return f"Reaction: {eq}".rstrip(": "), "mdi.flask-outline"
+        return _tr("Reaction: {}").format(eq).rstrip(": "), "mdi.flask-outline"
     symbol = getattr(item, "symbol", None)
     if symbol and ":" in symbol:
         mod, key = symbol.split(":", 1)
@@ -85,17 +90,19 @@ def describe(item):
         try:
             from importlib import import_module
             label = import_module(f".{mod}", __package__).LABELS.get(key, key)
+            label = QCoreApplication.translate(mod, label)
         except Exception:
             pass
-        return f"{_PALETTES.get(mod, mod)}: {label}", "mdi.shape-outline"
+        palette = _tr(_PALETTES.get(mod, mod))
+        return f"{palette}: {label}", "mdi.shape-outline"
     for cls, label, glyph in _KINDS:
         if isinstance(item, cls):
             if isinstance(item, TextItem):
                 text = item.toPlainText().strip().replace("\n", " ")
-                return f'Text "{text[:30]}"', glyph
+                return _tr('Text "{}"').format(text[:30]), glyph
             if isinstance(item, PolygonItem) and getattr(item, "kind", None):
                 return str(item.kind).replace("_", " ").capitalize(), glyph
-            return label, glyph
+            return _tr(label), glyph
     return type(item).__name__, "mdi.shape-outline"
 
 
@@ -103,7 +110,8 @@ class ItemTreePanel(QDockWidget):
     """Dock listing the canvas contents as an editable tree."""
 
     def __init__(self, window):
-        super().__init__("Items", window)
+        super().__init__(window)
+        self.setWindowTitle(self.tr("Items"))
         self.setObjectName("itemsDock")
         self._win = window
         self._syncing = False
@@ -115,7 +123,8 @@ class ItemTreePanel(QDockWidget):
         lay = QVBoxLayout(body)
         lay.setContentsMargins(4, 4, 4, 4)
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["Item", "X", "Y", "Rotation"])
+        self.tree.setHeaderLabels([self.tr("Item"), self.tr("X"),
+                                   self.tr("Y"), self.tr("Rotation")])
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tree.setEditTriggers(QAbstractItemView.DoubleClicked
                                   | QAbstractItemView.EditKeyPressed)
@@ -131,8 +140,8 @@ class ItemTreePanel(QDockWidget):
         row.addWidget(self.count)
         row.addStretch(1)
         self.delete_btn = QPushButton(icons.icon("mdi.delete-outline"),
-                                      "Delete")
-        self.delete_btn.setToolTip("Delete the selected items (Del)")
+                                      self.tr("Delete"))
+        self.delete_btn.setToolTip(self.tr("Delete the selected items (Del)"))
         self.delete_btn.clicked.connect(self.delete_selected)
         row.addWidget(self.delete_btn)
         lay.addLayout(row)
@@ -160,7 +169,7 @@ class ItemTreePanel(QDockWidget):
         tops = list(reversed(scene.vector_items()))      # front first
         for item in tops:
             self.tree.addTopLevelItem(self._row(item, expanded))
-        self.count.setText(f"{len(tops)} item(s)")
+        self.count.setText(self.tr("{} item(s)").format(len(tops)))
         self._syncing = False
         self._from_scene_selection()
 
@@ -179,10 +188,11 @@ class ItemTreePanel(QDockWidget):
         row.setText(COL_ROT, f"{item.rotation():.1f}°")
         solid = getattr(item, "solid", None)
         if solid:
-            row.setToolTip(COL_NAME, label + " — 3D view: az {:.0f}°, el {:.0f}° — "
-                           "double-click it on the canvas to spin".format(
-                               math.degrees(solid.get("az", 0)),
-                               math.degrees(solid.get("el", 0))))
+            row.setToolTip(COL_NAME, label + " — " + self.tr(
+                "3D view: az {:.0f}°, el {:.0f}° — "
+                "double-click it on the canvas to spin").format(
+                    math.degrees(solid.get("az", 0)),
+                    math.degrees(solid.get("el", 0))))
         flags = row.flags()
         if top:                                   # children move with it
             flags |= Qt.ItemIsEditable

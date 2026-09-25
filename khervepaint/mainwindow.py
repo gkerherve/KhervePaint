@@ -771,9 +771,10 @@ class MainWindow(QMainWindow):
         bar.addAction(ai_toggle)
         items_toggle = self.items_dock.toggleViewAction()
         items_toggle.setIcon(icons.icon("mdi.file-tree-outline"))
-        items_toggle.setText("Items")
-        items_toggle.setToolTip("Show / hide the Items panel — a tree of "
-                                "everything on the canvas")
+        items_toggle.setText(self.tr("Items"))
+        items_toggle.setToolTip(self.tr(
+            "Show / hide the Items panel — a tree of "
+            "everything on the canvas"))
         bar.addAction(items_toggle)
         items_btn = bar.widgetForAction(items_toggle)
         if items_btn is not None:
