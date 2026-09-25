@@ -29,7 +29,7 @@ from __future__ import annotations
 import json
 import sys
 
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import QCoreApplication, QSettings, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
@@ -48,17 +48,21 @@ SETTINGS = ("Kherve", "KhervePaint")
 #: Python 3.12, and the messages below quote what to type.
 DQ = '"'
 
-#: Access level → (label, what it means).  Order matches ACCESS_LEVELS.
-_ACCESS_LABELS = [
-    ("Read only",
-     "Look at the drawing and highlight items; no changes."),
-    ("Edit",
-     "Draw, restyle, arrange, place models — and save over the "
-     "open file, but not open or write another one."),
-    ("Full (recommended)",
-     "Everything, including opening and writing files it names itself, "
-     "so 'open my flowchart and add a step' works in one go."),
-]
+def _access_labels():
+    """Built lazily (not at import time) so QCoreApplication.translate
+    picks up the language installed at start-up."""
+    tr = lambda s: QCoreApplication.translate("McpServerDialog", s)
+    return [
+        (tr("Read only"),
+         tr("Look at the drawing and highlight items; no changes.")),
+        (tr("Edit"),
+         tr("Draw, restyle, arrange, place models — and save over the "
+            "open file, but not open or write another one.")),
+        (tr("Full (recommended)"),
+         tr("Everything, including opening and writing files it names "
+            "itself, so 'open my flowchart and add a step' works in one "
+            "go.")),
+    ]
 
 
 class McpServerDialog(QDialog):
@@ -67,7 +71,7 @@ class McpServerDialog(QDialog):
     def __init__(self, bridge, parent=None):
         super().__init__(parent)
         self._bridge = bridge
-        self.setWindowTitle("Connect to Claude")
+        self.setWindowTitle(self.tr("Connect to Claude"))
         self.setMinimumWidth(620)
         self._build_ui()
         self._refresh()
@@ -83,7 +87,7 @@ class McpServerDialog(QDialog):
     def _build_ui(self):
         lay = QVBoxLayout(self)
 
-        blurb = QLabel(
+        blurb = QLabel(self.tr(
             "Let Claude draw in this document directly — no API key, "
             "it uses the login you already have. Works with <b>Claude "
             "Desktop</b> and <b>Claude Code</b>, and with Cursor, "
@@ -91,11 +95,12 @@ class McpServerDialog(QDialog):
             "Claude gets the whole app rather than a chat reply: shapes, "
             "the symbol palettes, the molecule and crystal builders, and "
             "a look at the canvas to check its own work. Everything it "
-            "does is undoable with Ctrl+Z.")
+            "does is undoable with Ctrl+Z."))
         blurb.setWordWrap(True)
         lay.addWidget(blurb)
 
-        self._enable = QCheckBox("Let assistants connect to this document")
+        self._enable = QCheckBox(
+            self.tr("Let assistants connect to this document"))
         self._enable.toggled.connect(self._on_toggled)
         lay.addWidget(self._enable)
 
@@ -104,9 +109,9 @@ class McpServerDialog(QDialog):
         lay.addWidget(self._status)
 
         acc_row = QHBoxLayout()
-        acc_row.addWidget(QLabel("The assistant may:"))
+        acc_row.addWidget(QLabel(self.tr("The assistant may:")))
         self._access = QComboBox()
-        for label, tip in _ACCESS_LABELS:
+        for label, tip in _access_labels():
             self._access.addItem(label)
             self._access.setItemData(self._access.count() - 1, tip,
                                      Qt.ToolTipRole)
@@ -118,27 +123,27 @@ class McpServerDialog(QDialog):
         self._access_hint.setWordWrap(True)
         lay.addWidget(self._access_hint)
 
-        host_box = QGroupBox("Connect an application")
+        host_box = QGroupBox(self.tr("Connect an application"))
         host_lay = QVBoxLayout(host_box)
-        host_lay.addWidget(QLabel(
+        host_lay.addWidget(QLabel(self.tr(
             "Pick yours and press Connect — KhervePaint writes "
             "itself into that application's own settings, so there is "
-            "no config file to edit by hand."))
+            "no config file to edit by hand.")))
         self._hosts = QListWidget()
         self._hosts.setMaximumHeight(120)
         self._hosts.currentRowChanged.connect(self._refresh_host_buttons)
         host_lay.addWidget(self._hosts)
         hrow = QHBoxLayout()
-        self._connect_btn = QPushButton("Connect")
+        self._connect_btn = QPushButton(self.tr("Connect"))
         self._connect_btn.clicked.connect(self._on_connect)
-        self._disconnect_btn = QPushButton("Disconnect")
+        self._disconnect_btn = QPushButton(self.tr("Disconnect"))
         self._disconnect_btn.clicked.connect(self._on_disconnect)
         hrow.addWidget(self._connect_btn)
         hrow.addWidget(self._disconnect_btn)
-        other = QPushButton("Other application…")
-        other.setToolTip(
+        other = QPushButton(self.tr("Other application…"))
+        other.setToolTip(self.tr(
             "Point at another assistant's JSON config file and add "
-            "KhervePaint to it.")
+            "KhervePaint to it."))
         other.clicked.connect(self._on_other_host)
         hrow.addWidget(other)
         hrow.addStretch(1)
@@ -150,12 +155,12 @@ class McpServerDialog(QDialog):
         lay.addWidget(host_box)
 
         row = QHBoxLayout()
-        row.addWidget(QLabel("Or set it up by hand:"))
+        row.addWidget(QLabel(self.tr("Or set it up by hand:")))
         self._flavour = QComboBox()
         self._flavour.addItems([
-            "Claude Desktop / Cursor / Zed (JSON)",
-            "Claude Code (command line)",
-            "URL only (clients that take an HTTP endpoint)",
+            self.tr("Claude Desktop / Cursor / Zed (JSON)"),
+            self.tr("Claude Code (command line)"),
+            self.tr("URL only (clients that take an HTTP endpoint)"),
         ])
         self._flavour.currentIndexChanged.connect(self._refresh_snippet)
         row.addWidget(self._flavour, 1)
@@ -171,7 +176,7 @@ class McpServerDialog(QDialog):
         self._snippet.setMinimumHeight(150)
         lay.addWidget(self._snippet)
 
-        hint = QLabel(
+        hint = QLabel(self.tr(
             "<b>Then say &quot;KhervePaint&quot; in the chat.</b> Claude "
             "only reaches for this document when you point it here "
             "&mdash; <i>&quot;in KhervePaint, draw a flowchart of the "
@@ -179,11 +184,11 @@ class McpServerDialog(QDialog):
             "open document.<br><br>"
             "Restart the application after connecting &mdash; it reads "
             "its tool list once at startup &mdash; and leave KhervePaint "
-            "running with the box above ticked.")
+            "running with the box above ticked."))
         hint.setWordWrap(True)
         lay.addWidget(hint)
 
-        act_box = QGroupBox("Recent activity")
+        act_box = QGroupBox(self.tr("Recent activity"))
         act_lay = QVBoxLayout(act_box)
         self._activity = QListWidget()
         self._activity.setMaximumHeight(110)
@@ -191,7 +196,7 @@ class McpServerDialog(QDialog):
         lay.addWidget(act_box)
 
         btns = QDialogButtonBox(QDialogButtonBox.Close)
-        copy = QPushButton("Copy")
+        copy = QPushButton(self.tr("Copy"))
         copy.clicked.connect(self._copy)
         btns.addButton(copy, QDialogButtonBox.ActionRole)
         btns.rejected.connect(self.reject)
@@ -217,9 +222,9 @@ class McpServerDialog(QDialog):
         if on:
             if not self._bridge.start():
                 self._enable.setChecked(False)
-                self._status.setText(
+                self._status.setText(self.tr(
                     "<b>Could not open a local port.</b> Another "
-                    "process may be holding it.")
+                    "process may be holding it."))
                 return
         else:
             self._bridge.stop()
@@ -228,10 +233,11 @@ class McpServerDialog(QDialog):
 
     def _refresh_access_hint(self):
         idx = self._access.currentIndex()
-        text = _ACCESS_LABELS[idx][1]
+        text = _access_labels()[idx][1]
         if ACCESS_LEVELS[idx] == "full":
-            text += (" It can read and overwrite files anywhere you can, "
-                     "so connect only applications you trust.")
+            text += self.tr(
+                " It can read and overwrite files anywhere you can, "
+                "so connect only applications you trust.")
         self._access_hint.setText(text)
 
     def _refresh(self):
@@ -250,15 +256,16 @@ class McpServerDialog(QDialog):
                 f"{entry['time']}  {entry['tool']} — {entry['outcome']}")
         if running:
             http = self._bridge.http_url()
-            extra = f" &nbsp; HTTP: {http}" if http else ""
+            extra = (self.tr(" &nbsp; HTTP: {0}").format(http)
+                     if http else "")
             self._status.setText(
-                f"<b style='color:#2e7d32'>Listening</b> on "
-                f"127.0.0.1:{self._bridge.port()}{extra}<br>"
-                f"endpoint file: {endpoint_path()}")
+                self.tr("<b style='color:#2e7d32'>Listening</b> on "
+                        "127.0.0.1:{0}{1}<br>endpoint file: {2}").format(
+                    self._bridge.port(), extra, endpoint_path()))
         else:
-            self._status.setText(
+            self._status.setText(self.tr(
                 "<b style='color:#b71c1c'>Stopped</b> — no assistant "
-                "can reach this drawing.")
+                "can reach this drawing."))
         self._refresh_snippet()
         self._refresh_hosts()
 
@@ -295,12 +302,12 @@ class McpServerDialog(QDialog):
         connected = host.connected()
         self._connect_btn.setEnabled(not host.manual)
         self._connect_btn.setText(
-            "Update entry" if connected and not host.up_to_date()
-            else "Connect")
+            self.tr("Update entry") if connected and not host.up_to_date()
+            else self.tr("Connect"))
         self._disconnect_btn.setEnabled(connected and not host.manual)
         bits = []
         if host.manual:
-            bits.append("Cannot be edited automatically.")
+            bits.append(self.tr("Cannot be edited automatically."))
         bits.append(host.note)
         path = host.path()
         if path:
@@ -311,25 +318,29 @@ class McpServerDialog(QDialog):
         """Show what a connect/disconnect actually did."""
         host = result.get("host", "host")
         if not result.get("ok"):
-            QMessageBox.warning(self, "Connect to Claude", result.get(
-                "error", f"Could not configure {host}."))
+            QMessageBox.warning(self, self.tr("Connect to Claude"),
+                                result.get("error", self.tr(
+                                    "Could not configure {0}.").format(host)))
             self._refresh_hosts()
             return
-        lines = [f"{host}: KhervePaint {result.get('action', 'updated')}.",
-                 f"File: {result.get('path', '')}"]
+        lines = [self.tr("{0}: KhervePaint {1}.").format(
+                     host, result.get('action', 'updated')),
+                 self.tr("File: {0}").format(result.get('path', ''))]
         if result.get("backup"):
-            lines.append(f"Previous version saved as {result['backup']}")
+            lines.append(self.tr("Previous version saved as {0}").format(
+                result['backup']))
         if result.get("restart"):
-            lines.append(f"\nRestart {host} for it to take effect.")
+            lines.append(
+                self.tr("\nRestart {0} for it to take effect.").format(host))
         if result.get("action") != "removed":
             # The step with no visible cue: a correctly connected
             # assistant sits there doing nothing until a chat names
             # this application.
-            lines.append(
-                f"\nThen mention KhervePaint in your chat with {host} —"
-                f" say {DQ}in KhervePaint, draw a flowchart{DQ} —"
-                f" and it will draw in this document.")
-        QMessageBox.information(self, "Connect to Claude",
+            lines.append(self.tr(
+                "\nThen mention KhervePaint in your chat with {0} —"
+                " say {1}in KhervePaint, draw a flowchart{1} —"
+                " and it will draw in this document.").format(host, DQ))
+        QMessageBox.information(self, self.tr("Connect to Claude"),
                                 "\n".join(lines))
         self._refresh_hosts()
 
@@ -337,10 +348,10 @@ class McpServerDialog(QDialog):
         if self._bridge.is_running():
             return True
         QMessageBox.information(
-            self, "Connect to Claude",
+            self, self.tr("Connect to Claude"), self.tr(
             "Tick 'Let assistants connect to this document' "
             "first — the entry is only useful while KhervePaint "
-            "is listening.")
+            "is listening."))
         return False
 
     def _on_connect(self):
@@ -358,8 +369,8 @@ class McpServerDialog(QDialog):
         if not self._require_running():
             return
         path, _ = QFileDialog.getOpenFileName(
-            self, "Choose the client's MCP config file", "",
-            "JSON config (*.json);;All files (*)")
+            self, self.tr("Choose the client's MCP config file"), "",
+            self.tr("JSON config (*.json);;All files (*)"))
         if not path:
             return
         # Match the file's own convention rather than imposing ours:
@@ -384,9 +395,10 @@ class McpServerDialog(QDialog):
         if host is None:
             return
         if QMessageBox.question(
-                self, "Connect to Claude",
-                f"Remove KhervePaint from {host.label}'s configuration?\n"
-                "Other servers are left untouched.",
+                self, self.tr("Connect to Claude"),
+                self.tr("Remove KhervePaint from {0}'s configuration?\n"
+                        "Other servers are left untouched.").format(
+                    host.label),
                 QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
             return
         self._report(host.disconnect())
@@ -404,12 +416,12 @@ class McpServerDialog(QDialog):
         """Endpoint and token for a client that only takes a URL."""
         url = self._bridge.http_url()
         if not url:
-            return ("The HTTP endpoint is not listening.\n"
-                    "Tick the box above.")
-        return (
-            f"URL      {url}\n"
-            f"Transport  Streamable HTTP (POST JSON-RPC)\n"
-            f"Header   Authorization: Bearer {self._bridge.token()}\n"
+            return self.tr("The HTTP endpoint is not listening.\n"
+                           "Tick the box above.")
+        return self.tr(
+            "URL      {0}\n"
+            "Transport  Streamable HTTP (POST JSON-RPC)\n"
+            "Header   Authorization: Bearer {1}\n"
             "\n"
             "For clients that take an endpoint rather than a command —\n"
             "Open WebUI, n8n, and some IDE setups. The token changes\n"
@@ -417,7 +429,8 @@ class McpServerDialog(QDialog):
             "restarting KhervePaint.\n"
             "\n"
             "127.0.0.1 only: this is not reachable from another machine,\n"
-            "and cloud assistants (ChatGPT, Le Chat, Grok) cannot use it.")
+            "and cloud assistants (ChatGPT, Le Chat, Grok) cannot use it."
+        ).format(url, self._bridge.token())
 
     def _copy(self):
         QApplication.clipboard().setText(self._snippet.toPlainText())
