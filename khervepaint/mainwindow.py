@@ -12,8 +12,8 @@ import json
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import (QMimeData, QPointF, QRectF, QSettings, QSize, Qt,
-                          QUrl)
+from PyQt5.QtCore import (QCoreApplication, QMimeData, QPointF, QRectF,
+                          QSettings, QSize, Qt, QUrl)
 from PyQt5.QtGui import (QColor, QDesktopServices, QIcon, QImage, QKeySequence,
                          QPixmap)
 from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QComboBox,
@@ -495,14 +495,21 @@ class MainWindow(QMainWindow):
     def _populate_symbol_menu(self, menu, module, on_pick, extra=None):
         """Fill *menu* with a spec-library module's elements by category
         (shared between the toolbar dropdowns and the Library menu)."""
+        # Palette label dicts (LABELS/CATEGORIES) hold plain English source
+        # text; QCoreApplication.translate looks each one up at display
+        # time in the palette module's own name as context (e.g.
+        # "floorplan", "electrical" — see translations/<lang>.json), so
+        # translating this one seam covers every symbol-library dropdown.
+        context = module.__name__.rsplit(".", 1)[-1]
         if extra:
             menu.addSection(extra[0])
             for label, callback in extra[1]:
                 menu.addAction(label, callback)
         for title, names in module.CATEGORIES:
-            menu.addSection(title)
+            menu.addSection(QCoreApplication.translate(context, title))
             for name in names:
-                menu.addAction(module.LABELS[name],
+                label = module.LABELS[name]
+                menu.addAction(QCoreApplication.translate(context, label),
                                lambda _=False, n=name: on_pick(n))
 
     def _library_picker(self, attr, tool):
