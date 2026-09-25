@@ -1,4 +1,15 @@
 {
+  "CanvasSizeDialog": {
+    " dpi": " ppp",
+    "= {0} × {1} px": "= {0} × {1} px",
+    "Drawing size": "Taille du dessin",
+    "Fit canvas to the drawing instead": "Ajuster le canevas au dessin",
+    "Preset": "Préréglage",
+    "Resolution": "Résolution",
+    "Units": "Unités",
+    "Use selection only": "Utiliser uniquement la sélection",
+    "Width × Height": "Largeur × Hauteur"
+  },
   "MainWindow": {
     "&About": "À &propos",
     "&Arrange": "&Disposition",

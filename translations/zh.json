@@ -1,4 +1,15 @@
 {
+  "CanvasSizeDialog": {
+    " dpi": " dpi",
+    "= {0} × {1} px": "= {0} × {1} px",
+    "Drawing size": "画布大小",
+    "Fit canvas to the drawing instead": "改为将画布适配到绘图",
+    "Preset": "预设",
+    "Resolution": "分辨率",
+    "Units": "单位",
+    "Use selection only": "仅使用所选内容",
+    "Width × Height": "宽 × 高"
+  },
   "MainWindow": {
     "&About": "关于(&A)",
     "&Arrange": "排列(&A)",

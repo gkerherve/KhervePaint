@@ -101,7 +101,7 @@ class CanvasSizeDialog(QDialog):
     def __init__(self, parent=None, current=(800, 600), dpi=96,
                  has_selection=False):
         super().__init__(parent)
-        self.setWindowTitle("Drawing size")
+        self.setWindowTitle(self.tr("Drawing size"))
         self.setMinimumWidth(420)
         self._unit = "px"
         layout = QVBoxLayout(self)
@@ -111,17 +111,17 @@ class CanvasSizeDialog(QDialog):
         self.preset_combo = QComboBox()
         for label, data in PRESETS:
             self.preset_combo.addItem(label, data)
-        form.addRow("Preset", self.preset_combo)
+        form.addRow(self.tr("Preset"), self.preset_combo)
 
         self.unit_combo = QComboBox()
         self.unit_combo.addItems(_UNITS)
-        form.addRow("Units", self.unit_combo)
+        form.addRow(self.tr("Units"), self.unit_combo)
 
         self.dpi_spin = QSpinBox()
         self.dpi_spin.setRange(36, 2400)
         self.dpi_spin.setValue(int(dpi) or 96)
-        self.dpi_spin.setSuffix(" dpi")
-        form.addRow("Resolution", self.dpi_spin)
+        self.dpi_spin.setSuffix(self.tr(" dpi"))
+        form.addRow(self.tr("Resolution"), self.dpi_spin)
 
         self.width_spin = QDoubleSpinBox()
         self.height_spin = QDoubleSpinBox()
@@ -129,14 +129,14 @@ class CanvasSizeDialog(QDialog):
         size_row.addWidget(self.width_spin)
         size_row.addWidget(QLabel("×"))
         size_row.addWidget(self.height_spin)
-        form.addRow("Width × Height", size_row)
+        form.addRow(self.tr("Width × Height"), size_row)
 
         self._pixel_label = QLabel()
         form.addRow("", self._pixel_label)
 
-        self.fit_check = QCheckBox("Fit canvas to the drawing instead")
+        self.fit_check = QCheckBox(self.tr("Fit canvas to the drawing instead"))
         layout.addWidget(self.fit_check)
-        self.selection_only = QCheckBox("Use selection only")
+        self.selection_only = QCheckBox(self.tr("Use selection only"))
         self.selection_only.setEnabled(has_selection)
         self.selection_only.setChecked(has_selection)
         layout.addWidget(self.selection_only)
@@ -193,7 +193,8 @@ class CanvasSizeDialog(QDialog):
         dpi = self.dpi_spin.value()
         pw = max(1, round(_to_px(self.width_spin.value(), self._unit, dpi)))
         ph = max(1, round(_to_px(self.height_spin.value(), self._unit, dpi)))
-        self._pixel_label.setText(f"= {pw} × {ph} px")
+        self._pixel_label.setText(
+            self.tr("= {0} × {1} px").format(pw, ph))
 
     # ----------------------------------------------------------- slots
     def _apply_preset(self, index):
