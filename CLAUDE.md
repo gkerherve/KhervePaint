@@ -228,16 +228,34 @@ into a new module and import.
                        Horizontal **view toolbar** of 3D cube-face icons
                        (`icons.view_cube_icon`, the viewed face shaded), a
                        **bond-length** slider (spreads atoms via
-                       `_model`'s `bond_scale`), and an **atom palette** —
-                       the `_Preview` is a `QGraphicsView` so spheres
-                       hit-test (`tag_atoms` puts an `_atom` index on each
-                       sphere spec). Click a sphere to select it (status
-                       shows `free_valence` — the builder knows each
-                       element's `VALENCE` and refuses to over-bond), click
-                       an element to `add_bonded_atom` (single-neighbour
-                       anchors extend as a straight trans zig-zag, not a
-                       ring), **drag a sphere** to move that atom via
-                       `drag_atom` (layout `frozen` by `fit_params` mid-drag
+                       `_model`'s `bond_scale`), and an **atom palette**.
+                       The preview itself is real **OpenGL**
+                       (`glview.GLPreview`, PyOpenGL) when PyOpenGL is
+                       installed — GPU-lit `gluSphere`/`gluCylinder` atoms
+                       and bonds with a real depth buffer, a headlamp
+                       light, translucent polyhedra faces and a legacy
+                       2.1-**compatibility** GL context (forced via
+                       `QSurfaceFormat` — macOS's default Core Profile has
+                       no fixed-function/GLU) — falling back to the old
+                       flat `_Preview` `QGraphicsView` when it isn't.
+                       `MoleculeViewer.render_geometry()` hands the preview
+                       raw world-space `(atoms, bonds, edges, faces)`
+                       (`molecules.spread_atoms`/`centroid_of`, the same
+                       spread `_model` uses for the 2D specs, just left in
+                       3D); `glview._rotation_rows(az, el)` is the exact
+                       same rotation as `molecules._proj`, as basis
+                       vectors, so the GL camera, CPU atom-picking and
+                       atom-dragging (`_screen_delta_to_world`) all agree
+                       with each other and with the flat projection's
+                       "standard views". Only `az`/`el`/`bond`/`atoms`/
+                       `bonds` ever come back out of either preview, so
+                       nothing downstream cares which one drew them. Click
+                       a sphere to select it (status shows `free_valence`
+                       — the builder knows each element's `VALENCE` and
+                       refuses to over-bond), click an element to
+                       `add_bonded_atom` (single-neighbour anchors extend
+                       as a straight trans zig-zag, not a ring), **drag a
+                       sphere** to move that atom (frozen centroid mid-drag
                        so nothing else shifts), drag the background to
                        orbit, or delete. Crystals are not editable (fixed
                        lattice), just rotatable. OK hands
@@ -261,6 +279,15 @@ into a new module and import.
                        keeps a constant size). `PaintScene.set_representation`
                        / `reorient_model(mode=…)` switch the drawing between
                        3D and the 2D formulas.
+  - `glview.py`      — `GLPreview`: the Molecule builder's OpenGL preview
+                       widget (`QOpenGLWidget` + PyOpenGL), used by
+                       `molview.MoleculeViewer` in place of the flat
+                       `_Preview` whenever PyOpenGL is importable
+                       (`GL_AVAILABLE`). Qt-independent camera/picking math
+                       (`_rotation_rows`, `_build_camera`, `_project`) is
+                       plain functions so it's testable headless (no live
+                       GL context needed). See the `molview.py` entry above
+                       for how the two previews share one contract.
   - `molrepr.py`     — 2D chemical **representations** of a molecule graph:
                        `skeletal` (line-angle: bare C vertices, OH/NH₂
                        labels with the H on the free side, ring double bonds

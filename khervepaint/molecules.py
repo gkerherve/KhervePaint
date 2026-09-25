@@ -174,6 +174,12 @@ def _centroid(atoms):
             sum(a[3] for a in atoms) / n)
 
 
+def centroid_of(atoms):
+    """Public `_centroid` — the OpenGL preview needs it directly, not just
+    the 2D layout helpers that already wrap it."""
+    return _centroid(atoms)
+
+
 def _spread(atoms, edges, factor, centroid=None):
     """Move atoms (and cell edges) apart from their centroid by *factor*,
     lengthening the bonds relative to the spheres. rscale is unchanged, so
@@ -194,6 +200,12 @@ def _spread(atoms, edges, factor, centroid=None):
         ed = [(sc(e[0]), sc(e[1]), e[2] if len(e) > 2 else "solid")
               for e in edges]
     return at, ed
+
+
+def spread_atoms(atoms, edges, factor, centroid=None):
+    """Public `_spread` — world-space (atoms, edges) for a 3D consumer
+    (the OpenGL preview) that renders real geometry, not projected specs."""
+    return _spread(atoms, edges, factor, centroid)
 
 
 def _model(atoms, bonds, w, h, edges=None, rscale=1.0, labels=False,

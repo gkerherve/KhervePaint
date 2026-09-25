@@ -14,6 +14,13 @@ On OK the chosen orientation / bond length / edited structure is handed
 back to the canvas, which rebuilds the model as an ordinary editable,
 savable vector group.
 
+The preview itself is real OpenGL (`glview.GLPreview`) when PyOpenGL is
+installed — GPU-lit spheres/cylinders with a proper depth buffer, not the
+flat isometric projection used everywhere else — falling back to the
+old QGraphicsView `_Preview` otherwise. Either way only az/el/bond/atoms
+come back out, so nothing downstream (canvas, undo, SVG) knows or cares
+which preview drew them.
+
 Copyright (C) 2026 Gwilherm Kerherve
 
 This program is free software: you can redistribute it and/or modify
@@ -24,7 +31,7 @@ the Free Software Foundation, either version 3 of the License, or
 
 import math
 
-from PyQt5.QtCore import QRectF, Qt, pyqtSignal
+from PyQt5.QtCore import QCoreApplication, QRectF, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog,
                              QDialogButtonBox, QGraphicsEllipseItem,
@@ -32,7 +39,7 @@ from PyQt5.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog,
                              QLabel, QPushButton, QSlider, QToolButton,
                              QVBoxLayout, QWidget)
 
-from . import icons, molcolor, molecules
+from . import glview, icons, molcolor, molecules
 
 _HALF = math.pi / 2.0
 #: (label, azimuth, elevation) for the view toolbar (icons are 3D cubes).
@@ -200,14 +207,16 @@ class MoleculeViewer(QDialog):
         else:
             self._sync_crystal()
 
-        label = "new molecule" if name == "custom" \
-            else molecules.LABELS.get(name, name)
-        self.setWindowTitle(f"Molecule builder — {label}")
+        label = self.tr("new molecule") if name == "custom" \
+            else QCoreApplication.translate(
+                "molecules", molecules.LABELS.get(name, name))
+        self.setWindowTitle(self.tr("Molecule builder — {}").format(label))
         self.setMinimumSize(600, 540)
         layout = QVBoxLayout(self)
 
         layout.addLayout(self._view_toolbar())
-        self.preview = _Preview(self)
+        preview_cls = glview.GLPreview if glview.GL_AVAILABLE else _Preview
+        self.preview = preview_cls(self)
         self.preview.atom_clicked.connect(self._on_atom_clicked)
         self.preview.atom_moved.connect(self._update_status)
         layout.addWidget(self.preview, 1)
@@ -238,15 +247,16 @@ class MoleculeViewer(QDialog):
     def _view_toolbar(self):
         from PyQt5.QtCore import QSize
         row = QHBoxLayout()
-        row.addWidget(QLabel("View:"))
+        row.addWidget(QLabel(self.tr("View:")))
         for title, vaz, vel in STANDARD_VIEWS:
             btn = QToolButton()
             btn.setIcon(icons.view_cube_icon(title.lower()))
             btn.setIconSize(QSize(26, 26))
-            btn.setText(title)
+            label = self.tr(title)
+            btn.setText(label)
             btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             btn.setAutoRaise(True)
-            btn.setToolTip(f"View from {title.lower()}")
+            btn.setToolTip(self.tr("View from {}").format(label.lower()))
             btn.clicked.connect(lambda _=False, a=vaz, e=vel: self._set_view(a, e))
             row.addWidget(btn)
         row.addStretch(1)
@@ -254,8 +264,8 @@ class MoleculeViewer(QDialog):
 
     def _bond_row(self):
         row = QHBoxLayout()
-        self._bond_label = QLabel("Bond length:" if self.editable
-                                  else "Atom spacing:")
+        self._bond_label = QLabel(self.tr("Bond length:") if self.editable
+                                  else self.tr("Atom spacing:"))
         row.addWidget(self._bond_label)
         self.bond_slider = QSlider(Qt.Horizontal)
         # Crystals slide all the way to 0: the lattice contracts about its
@@ -265,15 +275,16 @@ class MoleculeViewer(QDialog):
         self.bond_slider.setValue(int(self.bond * 100))
         self.bond_slider.valueChanged.connect(self._on_bond)
         self.bond_slider.setToolTip(
-            "Spread the atoms apart (molecule bond length)" if self.editable
-            else "Contract or expand the lattice — near 0 the spheres "
-                 "touch and overlap")
+            self.tr("Spread the atoms apart (molecule bond length)")
+            if self.editable else self.tr(
+                "Contract or expand the lattice — near 0 the spheres "
+                "touch and overlap"))
         row.addWidget(self.bond_slider, 1)
         return row
 
     def _palette_row(self):
         row = QHBoxLayout()
-        row.addWidget(QLabel("Add atom:"))
+        row.addWidget(QLabel(self.tr("Add atom:")))
         for el in molecules.PALETTE:
             btn = QPushButton(el)
             btn.setFixedWidth(34)
@@ -281,17 +292,19 @@ class MoleculeViewer(QDialog):
             text = "#111" if QColor(color).lightnessF() > 0.5 else "#fff"
             btn.setStyleSheet(f"background:{color}; color:{text}; "
                               "font-weight:bold; border:1px solid #888;")
-            btn.setToolTip(f"Bond a {el} atom onto the selected atom")
+            btn.setToolTip(
+                self.tr("Bond a {} atom onto the selected atom").format(el))
             btn.clicked.connect(lambda _=False, e=el: self._add_atom(e))
             row.addWidget(btn)
         row.addSpacing(8)
-        row.addWidget(QLabel("Bond:"))
+        row.addWidget(QLabel(self.tr("Bond:")))
         self.order_combo = QComboBox()
-        self.order_combo.addItems(["single", "double", "triple"])
+        self.order_combo.addItems([self.tr("single"), self.tr("double"),
+                                   self.tr("triple")])
         self.order_combo.currentIndexChanged.connect(
             lambda i: setattr(self, "order", i + 1))
         row.addWidget(self.order_combo)
-        self.del_btn = QPushButton("Delete atom")
+        self.del_btn = QPushButton(self.tr("Delete atom"))
         self.del_btn.clicked.connect(self._delete_atom)
         row.addWidget(self.del_btn)
         row.addStretch(1)
@@ -299,23 +312,24 @@ class MoleculeViewer(QDialog):
 
     def _color_row(self):
         row = QHBoxLayout()
-        row.addWidget(QLabel("Atom colour:"))
-        pick = QPushButton("Colour…")
-        pick.setToolTip("Recolour the selected atom (a crystal recolours "
-                        "every atom of that element and site)")
+        row.addWidget(QLabel(self.tr("Atom colour:")))
+        pick = QPushButton(self.tr("Colour…"))
+        pick.setToolTip(self.tr(
+            "Recolour the selected atom (a crystal recolours "
+            "every atom of that element and site)"))
         pick.clicked.connect(self._pick_color)
         row.addWidget(pick)
-        reset = QPushButton("Reset colours")
-        reset.setToolTip("Restore the standard CPK / site colours")
+        reset = QPushButton(self.tr("Reset colours"))
+        reset.setToolTip(self.tr("Restore the standard CPK / site colours"))
         reset.clicked.connect(self._reset_colors)
         row.addWidget(reset)
         if not self.editable:
-            self.poly_check = QCheckBox("Polyhedra")
+            self.poly_check = QCheckBox(self.tr("Polyhedra"))
             self.poly_check.setChecked(self.poly)
             self.poly_check.setEnabled(molecules.has_polyhedra(self.name))
-            self.poly_check.setToolTip(
+            self.poly_check.setToolTip(self.tr(
                 "Draw translucent coordination polyhedra (the faces spanned "
-                "by each cation's bonded neighbours — VESTA style)")
+                "by each cation's bonded neighbours — VESTA style)"))
             self.poly_check.toggled.connect(self._on_poly)
             row.addWidget(self.poly_check)
         row.addStretch(1)
@@ -328,7 +342,7 @@ class MoleculeViewer(QDialog):
     def _supercell_row(self):
         from PyQt5.QtWidgets import QSpinBox
         row = QHBoxLayout()
-        row.addWidget(QLabel("Supercell:"))
+        row.addWidget(QLabel(self.tr("Supercell:")))
         self.cell_spins = []
         for axis in range(3):
             sp = QSpinBox()
@@ -340,18 +354,19 @@ class MoleculeViewer(QDialog):
             if axis < 2:
                 row.addWidget(QLabel("×"))
         row.addSpacing(14)
-        row.addWidget(QLabel("Tilt cell:"))
+        row.addWidget(QLabel(self.tr("Tilt cell:")))
         self.tilt_spins = []
         for axis in ("x", "y", "z"):
             sp = QSpinBox()
             sp.setRange(-180, 180)
             sp.setSingleStep(5)
             sp.setSuffix("°")
-            sp.setToolTip(f"Rotate the selected unit cell about {axis}")
+            sp.setToolTip(
+                self.tr("Rotate the selected unit cell about {}").format(axis))
             sp.valueChanged.connect(self._on_tilt)
             self.tilt_spins.append(sp)
             row.addWidget(sp)
-        reset = QPushButton("Reset tilts")
+        reset = QPushButton(self.tr("Reset tilts"))
         reset.clicked.connect(self._reset_tilts)
         row.addWidget(reset)
         row.addStretch(1)
@@ -360,16 +375,18 @@ class MoleculeViewer(QDialog):
     def _repr_row(self):
         from . import molrepr
         row = QHBoxLayout()
-        row.addWidget(QLabel("Insert as:"))
+        row.addWidget(QLabel(self.tr("Insert as:")))
         self.repr_combo = QComboBox()
         for mode in molrepr.MODES:
-            self.repr_combo.addItem(molrepr.MODE_LABELS[mode], mode)
+            self.repr_combo.addItem(QCoreApplication.translate(
+                "molrepr", molrepr.MODE_LABELS[mode]), mode)
         i = self.repr_combo.findData(self._repr)
         if i >= 0:
             self.repr_combo.setCurrentIndex(i)
-        self.repr_combo.setToolTip("How to draw the molecule on the canvas — "
-                                   "3D model or a 2D structural / Lewis / "
-                                   "condensed formula")
+        self.repr_combo.setToolTip(self.tr(
+            "How to draw the molecule on the canvas — "
+            "3D model or a 2D structural / Lewis / "
+            "condensed formula"))
         row.addWidget(self.repr_combo)
         row.addStretch(1)
         return row
@@ -394,6 +411,33 @@ class MoleculeViewer(QDialog):
         self.atoms, self.bonds = [list(a) for a in ma], []
         if self.selected is not None and self.selected >= len(self.atoms):
             self.selected = None
+
+    def render_geometry(self, frozen_centroid=None):
+        """Raw 3D geometry for the OpenGL preview: world-space atoms
+        ``(element, x, y, z, color)``, bonds, unit-cell edges and
+        coordination-polyhedron faces — the same data `render_specs`
+        projects into 2D shape specs, but left in 3D for a real camera."""
+        from . import molcolor
+        if self.editable:
+            atoms_raw, bonds, edges = self.atoms, self.bonds, None
+        else:
+            self._sync_crystal()
+            ma, bonds, edges, self.rscale = molecules.model_data(
+                self.name, self._crystal_cells(), tilts=self.tilts)
+            atoms_raw = molcolor.apply_colors(ma, self.colors) \
+                if self.colors else ma
+        centroid = frozen_centroid if frozen_centroid is not None \
+            else molecules.centroid_of(atoms_raw)
+        spread, edges = molecules.spread_atoms(atoms_raw, edges, self.bond,
+                                               centroid)
+        faces = []
+        if not self.editable and self.poly and \
+                molecules.has_polyhedra(self.name):
+            faces = molcolor.coordination_polyhedra(spread, bonds)
+        atoms = [(a[0], a[1], a[2], a[3], molcolor.atom_color(a))
+                 for a in spread]
+        return {"atoms": atoms, "bonds": [tuple(b) for b in bonds],
+                "edges": edges or [], "faces": faces, "rscale": self.rscale}
 
     def render_specs(self, w, h, frozen=None):
         if self.editable:
@@ -449,8 +493,8 @@ class MoleculeViewer(QDialog):
 
     def _on_tilt(self):
         if self.selected is None or self.selected >= len(self._owners):
-            self.status.setText("Click an atom of the cell you want to tilt "
-                                "first.")
+            self.status.setText(self.tr(
+                "Click an atom of the cell you want to tilt first."))
             return
         key = self._owners[self.selected]
         vals = [sp.value() for sp in self.tilt_spins]
@@ -489,13 +533,16 @@ class MoleculeViewer(QDialog):
             free = molecules.free_valence(self.atoms, self.bonds, anchor)
             if free < self.order:
                 el = self.atoms[anchor][0]
-                self.status.setText(
-                    f"{el} (atom {anchor}) has no room for that bond — "
-                    f"{molecules.valence(el)} bonds max, {free} free.")
+                self.status.setText(self.tr(
+                    "{} (atom {}) has no room for that bond — "
+                    "{} bonds max, {} free.").format(
+                        el, anchor, molecules.valence(el), free))
                 return
             if molecules.valence(element) < self.order:
-                self.status.setText(f"{element} can't take a "
-                                    f"{['', 'single', 'double', 'triple'][self.order]} bond.")
+                order_name = [self.tr("single"), self.tr("double"),
+                              self.tr("triple")][self.order - 1]
+                self.status.setText(self.tr(
+                    "{} can't take a {} bond.").format(element, order_name))
                 return
             self.selected = molecules.add_bonded_atom(
                 self.atoms, self.bonds, anchor, element, self.order)
