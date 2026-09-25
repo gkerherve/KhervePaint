@@ -157,8 +157,8 @@ class WelcomeScreen(QWidget):
         name = QLabel(APP_NAME)
         name.setStyleSheet("color:#f6f1e0; font-size:34px; font-weight:bold;"
                            "background:transparent;")
-        tag = QLabel("Hybrid raster + vector drawing — science, "
-                     "schematics and 3D")
+        tag = QLabel(self.tr("Hybrid raster + vector drawing — science, "
+                             "schematics and 3D"))
         tag.setStyleSheet("color:#a89f88; font-size:14px;"
                           "background:transparent;")
         ver = QLabel(f"v{__version__}")
@@ -174,18 +174,18 @@ class WelcomeScreen(QWidget):
         grid = QGridLayout()
         grid.setSpacing(12)
         tiles = [
-            ("mdi.file-outline", "New drawing", "A blank page",
-             self._new),
-            ("mdi.folder-open-outline", "Open…", "SVG, .kpaint or an image",
-             self._open),
-            ("mdi.cube-scan", "3D drawing", "Place solids, double-click to "
-             "spin", self._three_d),
-            ("mdi.image-multiple-outline", "Examples", "Instrument schematics",
-             self._examples),
-            ("mdi.molecule", "Molecule builder", "3D ball-and-stick models",
-             self._molecule),
-            ("mdi.book-open-variant", "User guide", "Every tool explained",
-             self._guide),
+            ("mdi.file-outline", self.tr("New drawing"),
+             self.tr("A blank page"), self._new),
+            ("mdi.folder-open-outline", self.tr("Open…"),
+             self.tr("SVG, .kpaint or an image"), self._open),
+            ("mdi.cube-scan", self.tr("3D drawing"),
+             self.tr("Place solids, double-click to spin"), self._three_d),
+            ("mdi.image-multiple-outline", self.tr("Examples"),
+             self.tr("Instrument schematics"), self._examples),
+            ("mdi.molecule", self.tr("Molecule builder"),
+             self.tr("3D ball-and-stick models"), self._molecule),
+            ("mdi.book-open-variant", self.tr("User guide"),
+             self.tr("Every tool explained"), self._guide),
         ]
         from . import icons
         for i, (glyph, title, sub, slot) in enumerate(tiles):
@@ -201,7 +201,7 @@ class WelcomeScreen(QWidget):
         recent = [p for p in self._win._recent_files() if Path(p).exists()]
         if recent:
             col.addSpacing(14)
-            lab = QLabel("RECENT")
+            lab = QLabel(self.tr("RECENT"))
             lab.setStyleSheet("color:#a89f88; font-size:11px; "
                               "letter-spacing:2px; background:transparent;")
             col.addWidget(lab)
@@ -219,13 +219,13 @@ class WelcomeScreen(QWidget):
         col.addStretch(1)
 
         foot = QHBoxLayout()
-        self.show_box = QCheckBox("Show this screen at start-up")
+        self.show_box = QCheckBox(self.tr("Show this screen at start-up"))
         self.show_box.setChecked(show_at_startup())
         self.show_box.setStyleSheet("color:#a89f88; background:transparent;")
         self.show_box.toggled.connect(set_show_at_startup)
         foot.addWidget(self.show_box)
         foot.addStretch(1)
-        start = QPushButton("Start drawing  ›")
+        start = QPushButton(self.tr("Start drawing  ›"))
         start.setStyleSheet(_BUTTON_CSS.replace("text-align: left",
                                                 "text-align: center"))
         start.setCursor(Qt.PointingHandCursor)
@@ -293,9 +293,9 @@ class WelcomeScreen(QWidget):
         self.dismiss()
         self._win._library_picker("solid_element", SOLID_PLACE)("cube")
         self._win.statusBar().showMessage(
-            "3D solids: click to place a cube (pick other solids and colours "
-            "from the 3D solids button); double-click a solid and drag to "
-            "spin it.", 12000)
+            self.tr("3D solids: click to place a cube (pick other solids "
+                    "and colours from the 3D solids button); double-click "
+                    "a solid and drag to spin it."), 12000)
 
     def _examples(self):
         from PyQt5.QtWidgets import QMenu

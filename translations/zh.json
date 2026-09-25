@@ -292,6 +292,25 @@
     "ticks": "刻度",
     "{0} vertices ({1})": "{0} 个顶点（{1}）"
   },
+  "WelcomeScreen": {
+    "Hybrid raster + vector drawing — science, schematics and 3D": "混合位图 + 矢量绘图 — 科学、示意图与三维",
+    "New drawing": "新建绘图",
+    "A blank page": "空白页面",
+    "Open…": "打开…",
+    "SVG, .kpaint or an image": "SVG、.kpaint 或图片",
+    "3D drawing": "三维绘图",
+    "Place solids, double-click to spin": "放置立体图形，双击可旋转",
+    "Examples": "示例",
+    "Instrument schematics": "仪器示意图",
+    "Molecule builder": "分子编辑器",
+    "3D ball-and-stick models": "三维球棍模型",
+    "User guide": "用户指南",
+    "Every tool explained": "详解所有工具",
+    "RECENT": "最近使用",
+    "Show this screen at start-up": "启动时显示此屏幕",
+    "Start drawing  ›": "开始绘图  ›",
+    "3D solids: click to place a cube (pick other solids and colours from the 3D solids button); double-click a solid and drag to spin it.": "三维立体图形：点击放置一个立方体（可从“三维立体图形”按钮选择其他立体图形和颜色）；双击某个立体图形并拖动即可旋转。"
+  },
   "arrows": {
     "Arrow down": "下箭头",
     "Arrow left": "左箭头",

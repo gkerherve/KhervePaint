@@ -292,6 +292,25 @@
     "ticks": "coches",
     "{0} vertices ({1})": "{0} sommets ({1})"
   },
+  "WelcomeScreen": {
+    "Hybrid raster + vector drawing — science, schematics and 3D": "Dessin hybride matriciel + vectoriel — science, schémas et 3D",
+    "New drawing": "Nouveau dessin",
+    "A blank page": "Une page vierge",
+    "Open…": "Ouvrir…",
+    "SVG, .kpaint or an image": "SVG, .kpaint ou une image",
+    "3D drawing": "Dessin 3D",
+    "Place solids, double-click to spin": "Placez des solides, double-cliquez pour les faire pivoter",
+    "Examples": "Exemples",
+    "Instrument schematics": "Schémas d'instruments",
+    "Molecule builder": "Éditeur de molécules",
+    "3D ball-and-stick models": "Modèles 3D boules et bâtonnets",
+    "User guide": "Guide d'utilisation",
+    "Every tool explained": "Tous les outils expliqués",
+    "RECENT": "RÉCENTS",
+    "Show this screen at start-up": "Afficher cet écran au démarrage",
+    "Start drawing  ›": "Commencer à dessiner  ›",
+    "3D solids: click to place a cube (pick other solids and colours from the 3D solids button); double-click a solid and drag to spin it.": "Solides 3D : cliquez pour placer un cube (choisissez d'autres solides et couleurs depuis le bouton Solides 3D) ; double-cliquez sur un solide et faites glisser pour le faire pivoter."
+  },
   "arrows": {
     "Arrow down": "Flèche bas",
     "Arrow left": "Flèche gauche",
