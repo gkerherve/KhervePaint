@@ -28,12 +28,13 @@ class TemplateExplorer(QDialog):
     def __init__(self, window):
         super().__init__(window)
         self.window = window
-        self.setWindowTitle("Template Explorer")
+        self.setWindowTitle(self.tr("Template Explorer"))
         self.setMinimumSize(440, 480)
         layout = QVBoxLayout(self)
 
-        info = QLabel("Organise your saved objects into folders. "
-                      "Double-click an object to insert it on the canvas.")
+        info = QLabel(self.tr(
+            "Organise your saved objects into folders. "
+            "Double-click an object to insert it on the canvas."))
         info.setWordWrap(True)
         layout.addWidget(info)
 
@@ -43,22 +44,22 @@ class TemplateExplorer(QDialog):
         layout.addWidget(self.tree, 1)
 
         row = QHBoxLayout()
-        for label, slot in (("New folder", self._new_folder),
-                            ("Rename", self._rename),
-                            ("Move to…", self._move),
-                            ("Delete", self._delete),
-                            ("Insert", self._insert)):
+        for label, slot in ((self.tr("New folder"), self._new_folder),
+                            (self.tr("Rename"), self._rename),
+                            (self.tr("Move to…"), self._move),
+                            (self.tr("Delete"), self._delete),
+                            (self.tr("Insert"), self._insert)):
             btn = QPushButton(label)
             btn.clicked.connect(slot)
             row.addWidget(btn)
         layout.addLayout(row)
 
         bottom = QHBoxLayout()
-        open_btn = QPushButton("Open folder on disk")
+        open_btn = QPushButton(self.tr("Open folder on disk"))
         open_btn.clicked.connect(self.window.open_objects_folder)
         bottom.addWidget(open_btn)
         bottom.addStretch(1)
-        close = QPushButton("Close")
+        close = QPushButton(self.tr("Close"))
         close.clicked.connect(self.accept)
         bottom.addWidget(close)
         layout.addLayout(bottom)
@@ -103,7 +104,8 @@ class TemplateExplorer(QDialog):
 
     # ------------------------------------------------------------ actions
     def _new_folder(self):
-        name, ok = QInputDialog.getText(self, "New folder", "Folder name:")
+        name, ok = QInputDialog.getText(self, self.tr("New folder"),
+                                        self.tr("Folder name:"))
         if ok and name.strip():
             library.create_folder(tuple(self._target_folder()) + (name,))
             self._reload()
@@ -114,7 +116,8 @@ class TemplateExplorer(QDialog):
             return
         kind, payload = sel
         old = payload[-1] if kind == "folder" else Path(payload).stem
-        name, ok = QInputDialog.getText(self, "Rename", "New name:", text=old)
+        name, ok = QInputDialog.getText(self, self.tr("Rename"),
+                                        self.tr("New name:"), text=old)
         if not (ok and name.strip()):
             return
         if kind == "object":
@@ -126,13 +129,16 @@ class TemplateExplorer(QDialog):
     def _move(self):
         sel = self._selected()
         if sel is None or sel[0] != "object":
-            QMessageBox.information(self, "Move", "Select an object to move.")
+            QMessageBox.information(self, self.tr("Move"),
+                                    self.tr("Select an object to move."))
             return
-        choices = ["(top level)"] + ["/".join(p) for p in library.list_folders()]
-        dest, ok = QInputDialog.getItem(self, "Move to", "Destination folder:",
+        top_level = self.tr("(top level)")
+        choices = [top_level] + ["/".join(p) for p in library.list_folders()]
+        dest, ok = QInputDialog.getItem(self, self.tr("Move to"),
+                                        self.tr("Destination folder:"),
                                         choices, 0, False)
         if ok:
-            library.move_object(sel[1], () if dest == "(top level)" else dest)
+            library.move_object(sel[1], () if dest == top_level else dest)
             self._reload()
 
     def _delete(self):
@@ -140,9 +146,11 @@ class TemplateExplorer(QDialog):
         if sel is None:
             return
         kind, payload = sel
-        what = "folder and everything in it" if kind == "folder" else "object"
+        what = (self.tr("folder and everything in it") if kind == "folder"
+                else self.tr("object"))
         if QMessageBox.question(
-                self, "Delete", f"Delete this {what}?") != QMessageBox.Yes:
+                self, self.tr("Delete"),
+                self.tr("Delete this {}?").format(what)) != QMessageBox.Yes:
             return
         if kind == "object":
             library.delete_object(payload)

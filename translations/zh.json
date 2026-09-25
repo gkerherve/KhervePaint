@@ -363,6 +363,27 @@
     "ticks": "刻度",
     "{0} vertices ({1})": "{0} 个顶点（{1}）"
   },
+  "TemplateExplorer": {
+    "Template Explorer": "模板浏览器",
+    "Organise your saved objects into folders. Double-click an object to insert it on the canvas.": "将已保存的对象整理到文件夹中。双击某个对象即可将其插入画布。",
+    "New folder": "新建文件夹",
+    "Rename": "重命名",
+    "Move to…": "移动到…",
+    "Delete": "删除",
+    "Insert": "插入",
+    "Open folder on disk": "在磁盘中打开文件夹",
+    "Close": "关闭",
+    "Folder name:": "文件夹名称：",
+    "New name:": "新名称：",
+    "Move": "移动",
+    "Select an object to move.": "请选择要移动的对象。",
+    "(top level)": "（顶层）",
+    "Move to": "移动到",
+    "Destination folder:": "目标文件夹：",
+    "folder and everything in it": "该文件夹及其全部内容",
+    "object": "该对象",
+    "Delete this {}?": "删除{}？"
+  },
   "WelcomeScreen": {
     "Hybrid raster + vector drawing — science, schematics and 3D": "混合位图 + 矢量绘图 — 科学、示意图与三维",
     "New drawing": "新建绘图",

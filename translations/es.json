@@ -363,6 +363,27 @@
     "ticks": "marcas",
     "{0} vertices ({1})": "{0} vértices ({1})"
   },
+  "TemplateExplorer": {
+    "Template Explorer": "Explorador de plantillas",
+    "Organise your saved objects into folders. Double-click an object to insert it on the canvas.": "Organice sus objetos guardados en carpetas. Haga doble clic en un objeto para insertarlo en el lienzo.",
+    "New folder": "Nueva carpeta",
+    "Rename": "Renombrar",
+    "Move to…": "Mover a…",
+    "Delete": "Eliminar",
+    "Insert": "Insertar",
+    "Open folder on disk": "Abrir carpeta en el disco",
+    "Close": "Cerrar",
+    "Folder name:": "Nombre de la carpeta:",
+    "New name:": "Nuevo nombre:",
+    "Move": "Mover",
+    "Select an object to move.": "Seleccione un objeto para mover.",
+    "(top level)": "(nivel superior)",
+    "Move to": "Mover a",
+    "Destination folder:": "Carpeta de destino:",
+    "folder and everything in it": "la carpeta y todo su contenido",
+    "object": "el objeto",
+    "Delete this {}?": "¿Eliminar {}?"
+  },
   "WelcomeScreen": {
     "Hybrid raster + vector drawing — science, schematics and 3D": "Dibujo híbrido rasterizado + vectorial — ciencia, esquemas y 3D",
     "New drawing": "Dibujo nuevo",

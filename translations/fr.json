@@ -363,6 +363,27 @@
     "ticks": "coches",
     "{0} vertices ({1})": "{0} sommets ({1})"
   },
+  "TemplateExplorer": {
+    "Template Explorer": "Explorateur de modèles",
+    "Organise your saved objects into folders. Double-click an object to insert it on the canvas.": "Organisez vos objets enregistrés en dossiers. Double-cliquez sur un objet pour l'insérer sur le canevas.",
+    "New folder": "Nouveau dossier",
+    "Rename": "Renommer",
+    "Move to…": "Déplacer vers…",
+    "Delete": "Supprimer",
+    "Insert": "Insérer",
+    "Open folder on disk": "Ouvrir le dossier sur le disque",
+    "Close": "Fermer",
+    "Folder name:": "Nom du dossier :",
+    "New name:": "Nouveau nom :",
+    "Move": "Déplacer",
+    "Select an object to move.": "Sélectionnez un objet à déplacer.",
+    "(top level)": "(niveau supérieur)",
+    "Move to": "Déplacer vers",
+    "Destination folder:": "Dossier de destination :",
+    "folder and everything in it": "le dossier et tout son contenu",
+    "object": "l'objet",
+    "Delete this {}?": "Supprimer {} ?"
+  },
   "WelcomeScreen": {
     "Hybrid raster + vector drawing — science, schematics and 3D": "Dessin hybride matriciel + vectoriel — science, schémas et 3D",
     "New drawing": "Nouveau dessin",
