@@ -552,11 +552,13 @@ class MoleculeViewer(QDialog):
 
     def _pick_color(self):
         if self.selected is None or self.selected >= len(self.atoms):
-            self.status.setText("Click an atom first, then pick its colour.")
+            self.status.setText(
+                self.tr("Click an atom first, then pick its colour."))
             return
         atom = self.atoms[self.selected]
         current = molcolor.atom_color(atom, self.colors)
-        color = QColorDialog.getColor(QColor(current), self, "Atom colour")
+        color = QColorDialog.getColor(QColor(current), self,
+                                      self.tr("Atom colour"))
         if not color.isValid():
             return
         if self.editable:                     # colour rides on the atom
@@ -596,33 +598,41 @@ class MoleculeViewer(QDialog):
                 where = f" ({site})" if site else ""
                 cell = ""
                 if self.cells != (1, 1, 1) and self.selected < len(self._owners):
-                    cell = " in cell (" \
-                        + self._owners[self.selected].replace(",", ", ") + ")"
-                tilt = " Tilt-cell spins rotate that whole cell." \
-                    if hasattr(self, "tilt_spins") and cell else ""
-                self.status.setText(
-                    f"Selected {atom[0]}{where}{cell} — Colour… recolours "
-                    f"every {atom[0]} on this site.{tilt}")
+                    cell = " " + self.tr("in cell ({})").format(
+                        self._owners[self.selected].replace(",", ", "))
+                tilt = (" " + self.tr("Tilt-cell spins rotate that whole "
+                                      "cell.")
+                       if hasattr(self, "tilt_spins") and cell else "")
+                self.status.setText(self.tr(
+                    "Selected {}{}{} — Colour… recolours "
+                    "every {} on this site.{}").format(
+                        atom[0], where, cell, atom[0], tilt))
             else:
-                extra = " Set Supercell counts to stack cells; click an " \
-                    "atom, then tilt its cell." if hasattr(self, "tilt_spins") \
-                    else ""
-                self.status.setText("Drag to rotate, pick a standard view, "
-                                    f"or click an atom to recolour it.{extra}")
+                extra = (" " + self.tr(
+                    "Set Supercell counts to stack cells; click an "
+                    "atom, then tilt its cell.")
+                         if hasattr(self, "tilt_spins") else "")
+                self.status.setText(self.tr(
+                    "Drag to rotate, pick a standard view, "
+                    "or click an atom to recolour it.{}").format(extra))
             return
         if self.selected is not None and self.selected < len(self.atoms):
             el = self.atoms[self.selected][0]
             free = molecules.free_valence(self.atoms, self.bonds,
                                           self.selected)
             total = molecules.valence(el)
-            avail = (f"{free} of {total} bonds free — click an element to "
-                     "add one" if free > 0 else f"full ({total} bonds)")
-            self.status.setText(f"Selected {el} (atom {self.selected}): "
-                                f"{avail}. Drag it to adjust the angle.")
+            avail = (self.tr("{} of {} bonds free — click an element to "
+                             "add one").format(free, total) if free > 0
+                     else self.tr("full ({} bonds)").format(total))
+            self.status.setText(self.tr(
+                "Selected {} (atom {}): "
+                "{}. Drag it to adjust the angle.").format(
+                    el, self.selected, avail))
         else:
-            self.status.setText("Click an atom to select it (then add an "
-                                "element), drag an atom to bend it, or drag "
-                                "the background to rotate.")
+            self.status.setText(self.tr(
+                "Click an atom to select it (then add an "
+                "element), drag an atom to bend it, or drag "
+                "the background to rotate."))
 
     # ------------------------------------------------------------- result
     def result(self):
