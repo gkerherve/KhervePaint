@@ -1001,14 +1001,14 @@ class MainWindow(QMainWindow):
     def _build_examples_menu(self, menubar):
         """Examples ▸ <category> ▸ <technique>: labelled A4 schematics."""
         from . import examples
-        menu = menubar.addMenu("E&xamples")
+        menu = menubar.addMenu(self.tr("E&xamples"))
         menu.setObjectName("examplesMenu")   # the welcome screen pops it
         submenus = {}
         for category, name, builder in examples.EXAMPLES:
             sub = submenus.get(category)
             if sub is None:
-                sub = submenus[category] = menu.addMenu(category)
-            sub.addAction(name, lambda _=False, b=builder, n=name:
+                sub = submenus[category] = menu.addMenu(self.tr(category))
+            sub.addAction(self.tr(name), lambda _=False, b=builder, n=name:
                           self.load_example(b, n))
 
     def load_example(self, builder, name=""):
@@ -1023,7 +1023,8 @@ class MainWindow(QMainWindow):
             apply_specs(self.scene, builder())
         except Exception as exc:               # never leave a half doc
             QMessageBox.warning(self, APP_NAME,
-                                f"Could not build example:\n{exc}")
+                                self.tr("Could not build example:\n{}")
+                                .format(exc))
         self.scene.clearSelection()
         self.scene.clear_handles()
         self._path = None
