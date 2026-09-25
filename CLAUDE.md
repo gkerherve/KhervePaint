@@ -420,6 +420,22 @@ into a new module and import.
   - `help.py`        — rich About dialog + in-app User Guide
                        (`Help ▸ User Guide`, F1). Keep the guide and the
                        repo `USERGUIDE.md` in sync when features change.
+                       **Help / User Guide translation scope**: the About
+                       dialog is fully translated; in the User Guide only
+                       the structural text — the dialog title, every
+                       `<h1>`/`<h2>` heading, and the keyboard-shortcut
+                       table's key descriptions — is wrapped in `_()`
+                       (`QCoreApplication.translate("HelpDialogs", …)`,
+                       defined at the top of the module) and translated
+                       in `translations/{fr,es,zh}.json`. The long prose
+                       `<p>`/`<li>` body text under each heading (feature
+                       walk-throughs, tool descriptions) is deliberately
+                       left in English — translating ~450 lines of dense
+                       technical prose accurately was judged
+                       disproportionate to the value versus translating
+                       the headings people scan and the rest of the app's
+                       UI chrome. Revisit this if the guide gets a
+                       dedicated translation pass.
   - `ai_providers.py`— AI back-ends over urllib (no deps): Claude,
                        ChatGPT, Mistral, Ollama, Local. `chat()` (with an
                        optional pasted `image` — `_with_image` attaches a

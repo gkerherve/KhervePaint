@@ -8,7 +8,7 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 """
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QMessageBox,
                              QTextBrowser, QVBoxLayout)
 
@@ -17,27 +17,38 @@ from . import APP_NAME, __version__, icons
 REPO_URL = "https://github.com/gkerherve/khervepaint"
 
 
+def _(text):
+    """Translate a short, static UI string in the 'HelpDialogs' context.
+
+    Only headings, dialog chrome and shortcut labels go through this —
+    the long prose paragraphs of the User Guide are left in English (see
+    the note in CLAUDE.md under "Help / User Guide translation scope")."""
+    return QCoreApplication.translate("HelpDialogs", text)
+
+
 def about_html() -> str:
     return f"""
 <div style="font-family:'Segoe UI',sans-serif;">
   <h2 style="margin-bottom:2px;">{APP_NAME}</h2>
-  <p style="color:#666;margin-top:0;">Version {__version__}</p>
-  <p><b>KhervePaint</b> is a hybrid <b>raster + vector</b> drawing app for
-  figures, diagrams and quick image edits — a native desktop tool in the
-  Kherve family (KherveFitting, KherveSheet, KhervePDF, KherveBook&nbsp;…).</p>
-  <p>Open a photo or PNG and paint on it, or build clean vector artwork
-  with shapes, arrows, text and freehand strokes — then save it as
-  <b>editable SVG</b> or export a publication-ready figure at the exact
-  physical size (ACS column widths, A4, custom inches/mm at any DPI).</p>
-  <p style="margin-bottom:2px;"><b>Highlights</b></p>
+  <p style="color:#666;margin-top:0;">{_("Version")} {__version__}</p>
+  <p><b>KhervePaint</b> {_("is a hybrid")} <b>{_("raster + vector")}</b>
+  {_("drawing app for figures, diagrams and quick image edits — a native "
+  "desktop tool in the Kherve family (KherveFitting, KherveSheet, "
+  "KhervePDF, KherveBook&nbsp;…).")}</p>
+  <p>{_("Open a photo or PNG and paint on it, or build clean vector "
+  "artwork with shapes, arrows, text and freehand strokes — then save "
+  "it as")} <b>{_("editable SVG")}</b> {_("or export a publication-ready "
+  "figure at the exact physical size (ACS column widths, A4, custom "
+  "inches/mm at any DPI).")}</p>
+  <p style="margin-bottom:2px;"><b>{_("Highlights")}</b></p>
   <ul style="margin-top:0;">
-    <li>19 parametric shapes, all resizable, rotatable and explodable</li>
-    <li>Vector pencil, bucket fill (raster or vector), text labels in shapes</li>
-    <li>Move / resize / rotate / mirror, group, crop images</li>
-    <li>Full undo &amp; redo of everything</li>
-    <li>Editable SVG as the native format; PNG &amp; PDF export</li>
+    <li>{_("19 parametric shapes, all resizable, rotatable and explodable")}</li>
+    <li>{_("Vector pencil, bucket fill (raster or vector), text labels in shapes")}</li>
+    <li>{_("Move / resize / rotate / mirror, group, crop images")}</li>
+    <li>{_("Full undo &amp; redo of everything")}</li>
+    <li>{_("Editable SVG as the native format; PNG &amp; PDF export")}</li>
   </ul>
-  <p style="color:#666;">Created by <b>Gwilherm Kerherve</b> · GPL-3.0<br>
+  <p style="color:#666;">{_("Created by")} <b>Gwilherm Kerherve</b> · GPL-3.0<br>
   <a href="{REPO_URL}">{REPO_URL}</a></p>
 </div>
 """
@@ -45,7 +56,7 @@ def about_html() -> str:
 
 def show_about(parent):
     box = QMessageBox(parent)
-    box.setWindowTitle(f"About {APP_NAME}")
+    box.setWindowTitle(_("About {0}").format(APP_NAME))
     box.setIconPixmap(icons.app_icon().pixmap(64, 64))
     box.setTextFormat(Qt.RichText)
     box.setText(about_html())
@@ -64,52 +75,52 @@ def _shortcut_rows(pairs):
 
 def user_guide_html() -> str:
     tools = _shortcut_rows([
-        ("V", "Pointer — select, move, resize, rotate"),
-        ("P", "Pencil — freehand vector stroke (paints onto an image's "
-              "pixels when started over one)"),
-        ("X", "Eraser — rub out the raster layer (to white); over an "
-              "inserted image, erases its pixels to transparent"),
-        ("K", "Colour picker — sample a colour into the stroke "
-              "(Shift+click: into the fill)"),
-        ("B", "Bucket — fill an enclosed region"),
-        ("L", "Line"), ("A", "Arrow"),
-        ("M", "Dimension — measure &amp; label a distance (mm)"),
-        ("R", "Rectangle"), ("C", "Circle"), ("E", "Ellipse"),
-        ("T", "Text"),
+        ("V", _("Pointer — select, move, resize, rotate")),
+        ("P", _("Pencil — freehand vector stroke (paints onto an image's "
+              "pixels when started over one)")),
+        ("X", _("Eraser — rub out the raster layer (to white); over an "
+              "inserted image, erases its pixels to transparent")),
+        ("K", _("Colour picker — sample a colour into the stroke "
+              "(Shift+click: into the fill)")),
+        ("B", _("Bucket — fill an enclosed region")),
+        ("L", _("Line")), ("A", _("Arrow")),
+        ("M", _("Dimension — measure &amp; label a distance (mm)")),
+        ("R", _("Rectangle")), ("C", _("Circle")), ("E", _("Ellipse")),
+        ("T", _("Text")),
     ])
     edit_keys = _shortcut_rows([
-        ("Ctrl+Z / Ctrl+Y", "Undo / Redo"),
-        ("Ctrl+C / Ctrl+V / Ctrl+X", "Copy / Paste / Cut"),
-        ("Ctrl+D", "Duplicate"),
-        ("Ctrl+A", "Select all"),
-        ("Delete", "Delete selection"),
-        ("Ctrl+G / Ctrl+Shift+G", "Group / Ungroup"),
-        ("Ctrl+Shift+E", "Explode shape into edges"),
-        ("Ctrl+Shift+H / Ctrl+Shift+J", "Flip horizontal / vertical"),
+        ("Ctrl+Z / Ctrl+Y", _("Undo / Redo")),
+        ("Ctrl+C / Ctrl+V / Ctrl+X", _("Copy / Paste / Cut")),
+        ("Ctrl+D", _("Duplicate")),
+        ("Ctrl+A", _("Select all")),
+        ("Delete", _("Delete selection")),
+        ("Ctrl+G / Ctrl+Shift+G", _("Group / Ungroup")),
+        ("Ctrl+Shift+E", _("Explode shape into edges")),
+        ("Ctrl+Shift+H / Ctrl+Shift+J", _("Flip horizontal / vertical")),
     ])
     file_keys = _shortcut_rows([
-        ("Ctrl+N / Ctrl+O / Ctrl+S", "New / Open / Save"),
-        ("Ctrl+Shift+N", "New window"),
-        ("Ctrl+Shift+S", "Save As"),
-        ("Ctrl+Shift+P", "Drawing size"),
-        ("Ctrl+E", "Export PNG / PDF"),
-        ("Ctrl+Q", "Quit"),
+        ("Ctrl+N / Ctrl+O / Ctrl+S", _("New / Open / Save")),
+        ("Ctrl+Shift+N", _("New window")),
+        ("Ctrl+Shift+S", _("Save As")),
+        ("Ctrl+Shift+P", _("Drawing size")),
+        ("Ctrl+E", _("Export PNG / PDF")),
+        ("Ctrl+Q", _("Quit")),
     ])
     view_keys = _shortcut_rows([
-        ("Ctrl+Mouse wheel", "Zoom in / out"),
-        ("Ctrl+0", "Reset zoom"),
-        ("Ctrl+'", "Show / hide grid"),
-        ("Ctrl+Shift+'", "Snap to grid on / off"),
-        ("F1", "This user guide"),
+        ("Ctrl+Mouse wheel", _("Zoom in / out")),
+        ("Ctrl+0", _("Reset zoom")),
+        ("Ctrl+'", _("Show / hide grid")),
+        ("Ctrl+Shift+'", _("Snap to grid on / off")),
+        ("F1", _("This user guide")),
     ])
 
     return f"""
 <div style="font-family:'Segoe UI',sans-serif; line-height:1.45;">
-<h1>{APP_NAME} — User Guide</h1>
+<h1>{APP_NAME} — {_("User Guide")}</h1>
 <p><i>A hybrid raster + vector drawing app. This guide covers everything
 from drawing your first shape to exporting a publication-ready figure.</i></p>
 
-<h2>0 · Welcome screen &amp; updates</h2>
+<h2>0 · {_("Welcome screen &amp; updates")}</h2>
 <p>At start-up a <b>welcome screen</b> covers the canvas: new drawing, open,
 recent files, a <b>3D drawing</b> shortcut, examples, the molecule builder
 and this guide. <b>Start drawing</b> (or Esc) lifts it; untick <i>Show this
@@ -122,14 +133,14 @@ git checkout fast-forwards the branch. <b>Help ▸ Check for Updates…</b>
 checks now; <b>Help ▸ Automatically check for updates</b> turns the daily
 check off.</p>
 
-<h2>0a · Items panel</h2>
+<h2>0a · {_("Items panel")}</h2>
 <p><b>Items</b> on the top toolbar (View ▸ Items, Ctrl+Shift+I) opens a tree
 of everything on the canvas, front-most first, with each item's X, Y and
 rotation. Double-click a value to edit it, click a row to select the item,
 expand groups and symbols to see their parts, and press <b>Delete</b> to
 remove the selected rows. All undoable.</p>
 
-<h2>1 · The canvas</h2>
+<h2>1 · {_("The canvas")}</h2>
 <p>A drawing has two layers in one canvas:</p>
 <ul>
   <li><b>Raster layer</b> — a bitmap. <i>Open</i> a PNG to load it here,
@@ -140,7 +151,7 @@ remove the selected rows. All undoable.</p>
 <p>The white rectangle is the drawing area; the faint grid around it is a
 guide and never appears in exports.</p>
 
-<h2>2 · Tools</h2>
+<h2>2 · {_("Tools")}</h2>
 <p>Pick a tool from the left column. The pointer selects; every other
 tool draws. Keyboard shortcuts:</p>
 {tools}
@@ -173,7 +184,7 @@ the top and left edges that track zoom/scroll with a cursor marker. The
 status bar also shows the <b>live size</b> (width × height, or a line's
 length) in mm of whatever you draw, resize or select.</p>
 
-<h2>3 · Colours, width and fill</h2>
+<h2>3 · {_("Colours, width and fill")}</h2>
 <p>On the top toolbar: click the <b>stroke</b> swatch (outline colour) or
 the <b>fill</b> swatch to choose colours, toggle <b>Fill new shapes</b>
 to give new shapes a fill, and pick the <b>line width</b> from the
@@ -196,7 +207,7 @@ from anything on the canvas, including an opened or pasted image —
 into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
 <b>fill</b> colour instead. The last pick is shown in the status bar.</p>
 
-<h2>4 · Selecting, moving, resizing, rotating</h2>
+<h2>4 · {_("Selecting, moving, resizing, rotating")}</h2>
 <ul>
   <li><b>Select</b> with the pointer: click an item, or drag a rubber-band
       box around several. <b>Shift+click</b> (or Ctrl+click) adds an item
@@ -220,7 +231,7 @@ into the <b>stroke</b> colour; <b>Shift+click</b> samples into the
       it turns about its own centre.</li>
 </ul>
 
-<h2>5 · Right-click: properties &amp; more</h2>
+<h2>5 · {_("Right-click: properties &amp; more")}</h2>
 <p>Right-click any item for its menu: <b>Edit properties…</b>,
 Duplicate, Delete, Flip, Bring to front / Send to back, Group / Ungroup,
 Explode, and (for images) Crop and Remove background.</p>
@@ -233,7 +244,7 @@ content and font. Shapes can also carry a <b>text label</b> drawn centred
 inside them (set it in the Label section). Use <b>Apply</b> to preview
 changes live on the canvas without closing the dialog.</p>
 
-<h2>6 · Arrange: group, order, mirror, explode</h2>
+<h2>6 · {_("Arrange: group, order, mirror, explode")}</h2>
 <ul>
   <li><b>Group</b> (Ctrl+G) several items so they move/resize/rotate/flip
       as one; <b>Ungroup</b> (Ctrl+Shift+G) to split them.</li>
@@ -245,7 +256,7 @@ changes live on the canvas without closing the dialog.</p>
       <b>Edit ▸ Arrange</b> (Ctrl+] / Ctrl+[, add Shift for front/back).</li>
 </ul>
 
-<h2>7 · Bucket fill</h2>
+<h2>7 · {_("Bucket fill")}</h2>
 <p>Choose the bucket (B), set the fill colour, and click inside an area
 walled off by shape outlines. By default the fill becomes an
 <b>editable vector path</b> behind the shapes — a normal object you can
@@ -253,7 +264,7 @@ click, move, restyle and delete. Switch the toolbar selector to
 <b>Bucket: Raster</b> to paint it permanently into the raster layer
 instead (raster paint cannot be selected or moved afterwards).</p>
 
-<h2>8 · Images</h2>
+<h2>8 · {_("Images")}</h2>
 <p>Paste a screenshot or copied image with <b>Ctrl+V</b>, or <b>drag and
 drop</b> an image file (PNG, JPEG, BMP, GIF, WebP, TIFF — any format Qt
 can read) onto the canvas; it drops in as a movable picture at the drop
@@ -269,7 +280,7 @@ shows through. Same-coloured regions <i>inside</i> the subject are kept
 — only background connected to the edges is removed. Fully undoable,
 and the transparency survives saving.</p>
 
-<h2>9 · Grid &amp; snap</h2>
+<h2>9 · {_("Grid &amp; snap")}</h2>
 <p>The <b>Grid (mm)</b> box sets the physical distance between grid lines
 in millimetres (using the drawing's DPI) — a smaller value gives a finer
 grid. Toggle the grid, snapping and <b>Infinite paper</b> from the
@@ -278,7 +289,7 @@ the grid and a white background across the whole view with no fixed page
 edge (the page still bounds what you export). Snapping keeps shapes
 aligned as you draw and move them (the pencil stays freehand).</p>
 
-<h2>10 · Object library</h2>
+<h2>10 · {_("Object library")}</h2>
 <p>Reuse a drawing across files. Select one or more items and choose
 <b>Save selection as object…</b> (in the <b>Objects</b> dropdown at the
 bottom of the left toolbar, or <b>Edit ▸ Save Selection as Object…</b>),
@@ -295,7 +306,7 @@ mirrors your folders as nested sub-menus.</p>
 reachable from the <b>Library</b> menu in the menu bar, mirroring the
 left-toolbar dropdowns.</p>
 
-<h2>10a · Chemistry tools</h2>
+<h2>10a · {_("Chemistry tools")}</h2>
 <p>The <b>Chemistry</b> dropdown (left toolbar) draws structures as
 ordinary editable shapes: drag <b>single/double/triple</b> bonds, a solid
 <b>wedge</b>, a <b>hash</b> bond or a dashed <b>hydrogen bond</b>; use
@@ -310,7 +321,7 @@ Bonds snap to a uniform length and 30° angles, so you just click the
 direction. <b>Reaction builder…</b> at the bottom of the dropdown writes
 whole, balanced reaction schemes (see Molecules below).</p>
 
-<h2>10b · Room layout (floor plans)</h2>
+<h2>10b · {_("Room layout (floor plans)")}</h2>
 <p>Start with <b>Room</b> (top of the dropdown): drag it out and it's
 drawn with thin <b>solid walls</b> and an empty square at each corner,
 then drop in the rest. The <b>Room
@@ -328,7 +339,7 @@ shower, washing machine) and <b>decor</b> (plant, rug). Each is a
 grouped, editable item — move, rotate, resize, ungroup, or save
 arrangements as objects.</p>
 
-<h2>10c · Electrical symbols</h2>
+<h2>10c · {_("Electrical symbols")}</h2>
 <p>The <b>Electrical</b> dropdown drops standard (IEC/ANSI) symbols:
 <b>components</b> (resistor, capacitor, inductor, diode, LED, NPN
 transistor, fuse, switch, lamp), <b>sources &amp; ground</b> (battery,
@@ -337,7 +348,7 @@ switches, ceiling/wall lights, consumer unit, junction box, ceiling fan,
 smoke detector). Two-terminal parts have lead stubs so you can wire them
 with the line/chain tools.</p>
 
-<h2>10d · Science symbols</h2>
+<h2>10d · {_("Science symbols")}</h2>
 <p>Four more dropdowns drop schematic symbols where you click (grouped,
 editable, scaled so a whole layout fits the page):</p>
 <ul>
@@ -369,7 +380,7 @@ connector, display, plus flow arrows/lines (each node carries an
 editable text label).</li>
 </ul>
 
-<h2>10e · Diagram &amp; more science symbols</h2>
+<h2>10e · {_("Diagram &amp; more science symbols")}</h2>
 <p>Five more dropdowns (general diagrams plus more science):</p>
 <ul>
 <li><b>Network / IT</b> — desktop, laptop, mobile, user, printer, server,
@@ -469,7 +480,7 @@ dotted <b>ion trail</b>. Combine with the Molecules palette (H₂/O₂/H₂O)
 and Arrows &amp; callouts for a full PCFC-style figure.</li>
 </ul>
 
-<h2>11 · Drawing size &amp; publication figures</h2>
+<h2>11 · {_("Drawing size &amp; publication figures")}</h2>
 <p>New documents open at the <b>ACS single-column</b> figure size
 (3.25 in ≈ 82.6 mm) at 300 dpi. <b>File ▸ Drawing Size</b> sets the
 canvas in <b>pixels, inches or millimetres</b> at a chosen <b>DPI</b>,
@@ -480,12 +491,12 @@ shrink the canvas around your artwork. Exports then carry the true
 physical size (PNG embeds the DPI, PDF pages are the figure's inch size,
 SVG sets its width in inches).</p>
 
-<h2>12 · Undo / redo</h2>
+<h2>12 · {_("Undo / redo")}</h2>
 <p><b>Ctrl+Z</b> undoes and <b>Ctrl+Y</b> redoes <i>everything</i> —
 drawing, moving, resizing, rotating, properties, grouping, cropping,
 fills and canvas resizes.</p>
 
-<h2>13 · Saving, opening &amp; exporting</h2>
+<h2>13 · {_("Saving, opening &amp; exporting")}</h2>
 <ul>
   <li><b>Save</b> writes a standard, <b>editable SVG</b> — the native
       format, fully SVG-compatible so it opens anywhere. Re-opening it
@@ -499,13 +510,13 @@ fills and canvas resizes.</p>
       <b>PDF</b> at the drawing's physical size.</li>
 </ul>
 
-<h2>14 · View &amp; themes</h2>
+<h2>14 · {_("View &amp; themes")}</h2>
 <p>Zoom with <b>Ctrl + mouse wheel</b>, the <b>View ▸ Zoom</b> menu, or
 the zoom controls at the <b>bottom-right of the status bar</b> — a slider
 with −/+ buttons and a percentage you can click to snap back to 100%
 (also <b>Ctrl+0</b>). Pick a colour theme under <b>View ▸ Theme</b>.</p>
 
-<h2>15 · AI assistant</h2>
+<h2>15 · {_("AI assistant")}</h2>
 <p>Open the chat panel with the <b>AI Assistant</b> button on the top
 toolbar (or <b>View ▸ AI Chat</b>). The <b>arrow on the panel's left
 edge</b> collapses it to a thin strip (click again to expand); the
@@ -523,7 +534,7 @@ locally on your machine. You can <b>paste a screenshot</b> into the chat
 box (<b>Ctrl+V</b>) to send it with your message (use a vision-capable
 model such as Claude or GPT-4o); click <b>✕</b> to drop the attachment.</p>
 
-<h2>15a · Connect to Claude — no API key</h2>
+<h2>15a · {_("Connect to Claude — no API key")}</h2>
 <p>The chat is not the only way to get help drawing, and it is not the
 easy one. <b>AI ▸ Connect to Claude (Simple)…</b> hands this drawing
 to <b>Claude Desktop</b> or <b>Claude Code</b> — no API key, it uses
@@ -552,7 +563,7 @@ edits. The connection is local only (127.0.0.1), needs a token that
 changes every session, and is off until you tick the box; the dialog
 shows a live log of what has been called.</p>
 
-<h2>16 · Examples</h2>
+<h2>16 · {_("Examples")}</h2>
 <p>The <b>Examples</b> menu loads ready-made, fully labelled instrument
 schematics onto an A4 page — each with the instrument cross-section, a
 realistic data plot and a caption. They are grouped by category:
@@ -565,11 +576,11 @@ can restyle, relabel and export — or ask the AI assistant to extend.
 Loading an example replaces the current drawing (you are asked first if
 it has unsaved changes).</p>
 
-<h2>Keyboard shortcuts</h2>
-<p><b>Tools</b></p>{tools}
-<p><b>Edit &amp; arrange</b></p>{edit_keys}
-<p><b>File</b></p>{file_keys}
-<p><b>View</b></p>{view_keys}
+<h2>{_("Keyboard shortcuts")}</h2>
+<p><b>{_("Tools")}</b></p>{tools}
+<p><b>{_("Edit &amp; arrange")}</b></p>{edit_keys}
+<p><b>{_("File")}</b></p>{file_keys}
+<p><b>{_("View")}</b></p>{view_keys}
 
 <p style="color:#888;margin-top:18px;">KhervePaint {__version__} · GPL-3.0
 · <a href="{REPO_URL}">{REPO_URL}</a></p>
@@ -580,7 +591,7 @@ it has unsaved changes).</p>
 class UserGuideDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"{APP_NAME} — User Guide")
+        self.setWindowTitle(f'{APP_NAME} — {_("User Guide")}')
         self.resize(720, 640)
         layout = QVBoxLayout(self)
         browser = QTextBrowser()
