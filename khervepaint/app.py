@@ -31,7 +31,11 @@ def main():
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+    app.setOrganizationName("Kherve")
     app.setApplicationName("KhervePaint")
+
+    from .i18n import apply_saved_language
+    apply_saved_language(app)
 
     from .style import apply_style
     apply_style(app)

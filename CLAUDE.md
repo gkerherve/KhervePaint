@@ -356,6 +356,31 @@ into a new module and import.
                        `scene.dpi` round-trips (.kpaint/SVG) and drives
                        physical export size (PNG dpi, PDF page, SVG inch
                        width with px viewBox).
+  - `i18n.py`        — internationalisation: `LANGUAGES` (en/zh/fr/es),
+                       `current_language`/`set_language` (QSettings
+                       `app/language`, default `"en"`, no OS-locale
+                       auto-detect — the user picks it explicitly),
+                       `install_language`/`apply_saved_language`. UI
+                       strings go through the normal Qt `self.tr(...)`/
+                       `QCoreApplication.translate(context, text)` calls;
+                       this checkout only has `pylupdate5` (no
+                       `lrelease`/`pyside*-lupdate`), so there is no way
+                       to compile a binary `.qm` here — `JsonTranslator`
+                       is a `QTranslator` subclass that overrides
+                       `translate()` to look the string up in
+                       `translations/<lang>.json`
+                       (`{"Context": {"Source": "Translated"}}`) instead
+                       of a compiled catalogue, and installs on
+                       `QApplication` the normal way. If `lrelease`
+                       becomes available, real `.ts`/`.qm` files can be
+                       generated from the same `tr()` call sites with no
+                       code change. Switching language (View ▸ Language)
+                       persists the choice and takes effect on next
+                       launch — no live `retranslateUi()`. Coverage is
+                       partial: `mainwindow.py`'s menus/toolbar are
+                       wrapped; the symbol-palette label dicts
+                       (floorplan/electrical/optics/… `LABELS`/
+                       `CATEGORIES`) and most dialogs are not yet.
   - `undo.py`        — `SnapshotCommand`: whole-document snapshot
                        undo/redo (see Undo / redo policy).
   - `welcome.py`     — the **start-up wallpaper**: `WelcomeScreen`, an

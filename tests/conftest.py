@@ -28,7 +28,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt5.QtCore import QSettings
 
-from khervepaint import ai_assistant, mainwindow, mcp_dialog, style
+from khervepaint import ai_assistant, i18n, mainwindow, mcp_dialog, style
 
 _TEST_SETTINGS_FILE = os.path.join(
     tempfile.mkdtemp(prefix="khervepaint-test-settings-"), "settings.ini")
@@ -40,7 +40,7 @@ def _isolated_settings(*_args, **_kwargs):
 
 
 # Redirect every app module's QSettings to the temp file.
-for _module in (ai_assistant, mainwindow, mcp_dialog, style):
+for _module in (ai_assistant, i18n, mainwindow, mcp_dialog, style):
     _module.QSettings = _isolated_settings
 
 

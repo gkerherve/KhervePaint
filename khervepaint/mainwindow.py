@@ -44,6 +44,7 @@ from . import (chemistry, crystals, electrical, floorplan, flowchart, labware,
                optics, vacuum, network, pid, arrows, biology, maths, molecules,
                scheme3d, solids)
 from .style import THEMES, apply_style, current_theme
+from .i18n import LANGUAGES, current_language, set_language
 
 ICON_SIZE = QSize(32, 32)
 #: The left tool column holds many shapes, so its icons are smaller.
@@ -689,28 +690,28 @@ class MainWindow(QMainWindow):
         bar.addWidget(self._width_combo)
         bar.addSeparator()
 
-        self._grid_act = QAction(icons.icon("mdi.grid"), "Grid", self)
+        self._grid_act = QAction(icons.icon("mdi.grid"), self.tr("Grid"), self)
         self._grid_act.setCheckable(True)
         self._grid_act.setChecked(self.scene.show_grid)
-        self._grid_act.setToolTip("Show grid (Ctrl+')")
+        self._grid_act.setToolTip(self.tr("Show grid (Ctrl+')"))
         self._grid_act.setShortcut("Ctrl+'")
         self._grid_act.toggled.connect(self._set_show_grid)
         bar.addAction(self._grid_act)
 
-        self._snap_act = QAction(icons.icon("mdi.magnet"), "Snap", self)
+        self._snap_act = QAction(icons.icon("mdi.magnet"), self.tr("Snap"), self)
         self._snap_act.setCheckable(True)
         self._snap_act.setChecked(self.scene.snap_enabled)
-        self._snap_act.setToolTip("Snap to grid (Ctrl+Shift+')")
+        self._snap_act.setToolTip(self.tr("Snap to grid (Ctrl+Shift+')"))
         self._snap_act.setShortcut("Ctrl+Shift+'")
         self._snap_act.toggled.connect(self._set_snap)
         bar.addAction(self._snap_act)
 
         self._infinite_act = QAction(
-            icons.icon("mdi.infinity"), "Infinite paper", self)
+            icons.icon("mdi.infinity"), self.tr("Infinite paper"), self)
         self._infinite_act.setCheckable(True)
         self._infinite_act.setChecked(self.scene.infinite)
-        self._infinite_act.setToolTip(
-            "Infinite paper — grid fills the view, no fixed page edge")
+        self._infinite_act.setToolTip(self.tr(
+            "Infinite paper — grid fills the view, no fixed page edge"))
         self._infinite_act.toggled.connect(self._set_infinite)
         bar.addAction(self._infinite_act)
 
@@ -720,44 +721,46 @@ class MainWindow(QMainWindow):
         self._grid_spin.setDecimals(1)
         self._grid_spin.setSingleStep(0.5)
         self._grid_spin.setValue(self.scene.grid_mm)
-        self._grid_spin.setToolTip(
+        self._grid_spin.setToolTip(self.tr(
             "Distance between grid lines in millimetres "
-            "(smaller means finer cells)")
+            "(smaller means finer cells)"))
         self._grid_spin.valueChanged.connect(self._set_grid_mm)
         bar.addWidget(self._grid_spin)
         bar.addSeparator()
 
-        bar.addAction(icons.icon("mdi.group"), "Group",
+        bar.addAction(icons.icon("mdi.group"), self.tr("Group"),
                       self.scene.group_selection)
-        bar.addAction(icons.icon("mdi.ungroup"), "Ungroup",
+        bar.addAction(icons.icon("mdi.ungroup"), self.tr("Ungroup"),
                       self.scene.ungroup_selection)
         bar.addAction(icons.icon("mdi.arrow-expand-all"),
-                      "Explode shape", self.scene.explode_selection)
-        bar.addAction(icons.icon("mdi.flip-horizontal"), "Flip horizontal",
+                      self.tr("Explode shape"), self.scene.explode_selection)
+        bar.addAction(icons.icon("mdi.flip-horizontal"),
+                      self.tr("Flip horizontal"),
                       lambda: self.scene.mirror_selection(True))
-        bar.addAction(icons.icon("mdi.flip-vertical"), "Flip vertical",
+        bar.addAction(icons.icon("mdi.flip-vertical"),
+                      self.tr("Flip vertical"),
                       lambda: self.scene.mirror_selection(False))
         bar.addSeparator()
         bar.addAction(icons.icon("mdi.arrange-bring-to-front"),
-                      "Bring to front",
+                      self.tr("Bring to front"),
                       lambda: self._reorder_selection("front"))
         bar.addAction(icons.icon("mdi.arrange-bring-forward"),
-                      "Bring forward",
+                      self.tr("Bring forward"),
                       lambda: self._reorder_selection("forward"))
         bar.addAction(icons.icon("mdi.arrange-send-backward"),
-                      "Send backward",
+                      self.tr("Send backward"),
                       lambda: self._reorder_selection("backward"))
         bar.addAction(icons.icon("mdi.arrange-send-to-back"),
-                      "Send to back",
+                      self.tr("Send to back"),
                       lambda: self._reorder_selection("back"))
         bar.addSeparator()
-        bar.addAction(icons.icon("mdi.delete-outline"), "Delete",
+        bar.addAction(icons.icon("mdi.delete-outline"), self.tr("Delete"),
                       self.scene.delete_selection)
         bar.addSeparator()
         ai_toggle = self.ai_dock.toggleViewAction()   # show/hide chat panel
         ai_toggle.setIcon(icons.icon("mdi.robot-outline"))
-        ai_toggle.setText("AI Chat")
-        ai_toggle.setToolTip("Show / hide the AI Assistant panel")
+        ai_toggle.setText(self.tr("AI Chat"))
+        ai_toggle.setToolTip(self.tr("Show / hide the AI Assistant panel"))
         bar.addAction(ai_toggle)
         items_toggle = self.items_dock.toggleViewAction()
         items_toggle.setIcon(icons.icon("mdi.file-tree-outline"))
@@ -777,65 +780,65 @@ class MainWindow(QMainWindow):
     def _build_menus(self):
         m = self.menuBar()
 
-        file_menu = m.addMenu("&File")
-        file_menu.addAction("&New", self.new_document, QKeySequence.New)
-        file_menu.addAction("New &Window", self.new_window, "Ctrl+Shift+N")
-        file_menu.addAction("&Open...", self.open_file, QKeySequence.Open)
-        self._recent_menu = file_menu.addMenu("Open &Recent")
+        file_menu = m.addMenu(self.tr("&File"))
+        file_menu.addAction(self.tr("&New"), self.new_document, QKeySequence.New)
+        file_menu.addAction(self.tr("New &Window"), self.new_window, "Ctrl+Shift+N")
+        file_menu.addAction(self.tr("&Open..."), self.open_file, QKeySequence.Open)
+        self._recent_menu = file_menu.addMenu(self.tr("Open &Recent"))
         self._recent_menu.aboutToShow.connect(self._rebuild_recent_menu)
-        file_menu.addAction("&Save", self.save_file, QKeySequence.Save)
-        file_menu.addAction("Save &As...", self.save_file_as,
+        file_menu.addAction(self.tr("&Save"), self.save_file, QKeySequence.Save)
+        file_menu.addAction(self.tr("Save &As..."), self.save_file_as,
                             QKeySequence.SaveAs)
         file_menu.addSeparator()
-        file_menu.addAction("&Drawing Size...", self.change_canvas_size,
+        file_menu.addAction(self.tr("&Drawing Size..."), self.change_canvas_size,
                             "Ctrl+Shift+P")
         file_menu.addSeparator()
-        file_menu.addAction("&Export PNG / PDF...",
+        file_menu.addAction(self.tr("&Export PNG / PDF..."),
                             self.export_file, "Ctrl+E")
         file_menu.addSeparator()
-        file_menu.addAction("E&xit", self.close, "Ctrl+Q")
+        file_menu.addAction(self.tr("E&xit"), self.close, "Ctrl+Q")
 
-        edit_menu = m.addMenu("&Edit")
+        edit_menu = m.addMenu(self.tr("&Edit"))
         edit_menu.addAction(self._undo_act)
         edit_menu.addAction(self._redo_act)
         edit_menu.addSeparator()
-        edit_menu.addAction("Cu&t", self.cut_selection, QKeySequence.Cut)
-        edit_menu.addAction("&Copy", self.copy_selection, QKeySequence.Copy)
-        edit_menu.addAction("&Paste", self.paste, QKeySequence.Paste)
-        edit_menu.addAction("D&uplicate", self.duplicate_selection, "Ctrl+D")
-        edit_menu.addAction("Save Selection as &Object…", self.save_object)
+        edit_menu.addAction(self.tr("Cu&t"), self.cut_selection, QKeySequence.Cut)
+        edit_menu.addAction(self.tr("&Copy"), self.copy_selection, QKeySequence.Copy)
+        edit_menu.addAction(self.tr("&Paste"), self.paste, QKeySequence.Paste)
+        edit_menu.addAction(self.tr("D&uplicate"), self.duplicate_selection, "Ctrl+D")
+        edit_menu.addAction(self.tr("Save Selection as &Object…"), self.save_object)
         edit_menu.addSeparator()
-        edit_menu.addAction("Select &All", self._select_all,
+        edit_menu.addAction(self.tr("Select &All"), self._select_all,
                             QKeySequence.SelectAll)
-        edit_menu.addAction("&Delete", self.scene.delete_selection,
+        edit_menu.addAction(self.tr("&Delete"), self.scene.delete_selection,
                             QKeySequence.Delete)
         edit_menu.addSeparator()
-        edit_menu.addAction("&Group", self.scene.group_selection, "Ctrl+G")
-        edit_menu.addAction("&Ungroup", self.scene.ungroup_selection,
+        edit_menu.addAction(self.tr("&Group"), self.scene.group_selection, "Ctrl+G")
+        edit_menu.addAction(self.tr("&Ungroup"), self.scene.ungroup_selection,
                             "Ctrl+Shift+G")
-        edit_menu.addAction("E&xplode shape", self.scene.explode_selection,
+        edit_menu.addAction(self.tr("E&xplode shape"), self.scene.explode_selection,
                             "Ctrl+Shift+E")
         edit_menu.addSeparator()
-        edit_menu.addAction("Flip &Horizontal",
+        edit_menu.addAction(self.tr("Flip &Horizontal"),
                             lambda: self.scene.mirror_selection(True),
                             "Ctrl+Shift+H")
-        edit_menu.addAction("Flip &Vertical",
+        edit_menu.addAction(self.tr("Flip &Vertical"),
                             lambda: self.scene.mirror_selection(False),
                             "Ctrl+Shift+J")
         edit_menu.addSeparator()
-        arrange = edit_menu.addMenu("&Arrange")
-        arrange.addAction("Bring to &Front",
+        arrange = edit_menu.addMenu(self.tr("&Arrange"))
+        arrange.addAction(self.tr("Bring to &Front"),
                           lambda: self._reorder_selection("front"),
                           "Ctrl+Shift+]")
-        arrange.addAction("Bring F&orward",
+        arrange.addAction(self.tr("Bring F&orward"),
                           lambda: self._reorder_selection("forward"), "Ctrl+]")
-        arrange.addAction("Send &Backward",
+        arrange.addAction(self.tr("Send &Backward"),
                           lambda: self._reorder_selection("backward"), "Ctrl+[")
-        arrange.addAction("Send to Bac&k",
+        arrange.addAction(self.tr("Send to Bac&k"),
                           lambda: self._reorder_selection("back"),
                           "Ctrl+Shift+[")
 
-        view_menu = m.addMenu("&View")
+        view_menu = m.addMenu(self.tr("&View"))
         view_menu.addAction(self._grid_act)
         view_menu.addAction(self._snap_act)
         view_menu.addAction(self._infinite_act)
@@ -844,13 +847,15 @@ class MainWindow(QMainWindow):
         panel.setShortcut("Ctrl+Shift+I")
         view_menu.addAction(panel)
         view_menu.addSeparator()
-        view_menu.addAction("Zoom &In", lambda: self.view.zoom(1.25),
+        view_menu.addAction(self.tr("Zoom &In"), lambda: self.view.zoom(1.25),
                             QKeySequence.ZoomIn)
-        view_menu.addAction("Zoom &Out", lambda: self.view.zoom(1 / 1.25),
+        view_menu.addAction(self.tr("Zoom &Out"),
+                            lambda: self.view.zoom(1 / 1.25),
                             QKeySequence.ZoomOut)
-        view_menu.addAction("&Reset Zoom", self.view.zoom_reset, "Ctrl+0")
+        view_menu.addAction(self.tr("&Reset Zoom"), self.view.zoom_reset,
+                            "Ctrl+0")
         view_menu.addSeparator()
-        theme_menu = view_menu.addMenu("&Theme")
+        theme_menu = view_menu.addMenu(self.tr("&Theme"))
         theme_group = QActionGroup(self)
         for name in THEMES:
             act = QAction(name, self, checkable=True)
@@ -860,42 +865,55 @@ class MainWindow(QMainWindow):
             theme_group.addAction(act)
             theme_menu.addAction(act)
 
+        lang_menu = view_menu.addMenu(self.tr("&Language"))
+        lang_group = QActionGroup(self)
+        current_lang = current_language()
+        for code, label in LANGUAGES:
+            act = QAction(label, self, checkable=True)
+            act.setChecked(code == current_lang)
+            act.triggered.connect(
+                lambda _, c=code: self._change_language(c))
+            lang_group.addAction(act)
+            lang_menu.addAction(act)
+
         self._build_library_menu(m)
         self._build_measure_menu(m)
         self._build_examples_menu(m)
 
-        ai_menu = m.addMenu("&AI")
-        mcp_act = ai_menu.addAction("&Connect to Claude (Simple)\u2026",
+        ai_menu = m.addMenu(self.tr("&AI"))
+        mcp_act = ai_menu.addAction(self.tr("&Connect to Claude (Simple)\u2026"),
                                     self._open_mcp_dialog)
         mcp_act.setIcon(icons.icon("mdi.lan-connect"))
-        mcp_act.setToolTip("Let Claude Desktop, Claude Code or another "
-                           "assistant draw in this document \u2014 no "
-                           "API key, it uses the login you already have")
+        mcp_act.setToolTip(self.tr(
+            "Let Claude Desktop, Claude Code or another "
+            "assistant draw in this document \u2014 no "
+            "API key, it uses the login you already have"))
         ai_action = self.ai_dock.toggleViewAction()
-        ai_action.setText("Chat&Box (requires API key)")
+        ai_action.setText(self.tr("Chat&Box (requires API key)"))
         ai_action.setIcon(icons.icon("mdi.robot-outline"))
-        ai_action.setToolTip("A chat box docked in the window; it needs "
-                             "your own Claude, OpenAI or Mistral key")
+        ai_action.setToolTip(self.tr(
+            "A chat box docked in the window; it needs "
+            "your own Claude, OpenAI or Mistral key"))
         ai_menu.addAction(ai_action)
 
-        help_menu = m.addMenu("&Help")
-        help_menu.addAction("&User Guide", self._user_guide, "F1")
-        help_menu.addAction("&Welcome Screen", self.show_welcome)
+        help_menu = m.addMenu(self.tr("&Help"))
+        help_menu.addAction(self.tr("&User Guide"), self._user_guide, "F1")
+        help_menu.addAction(self.tr("&Welcome Screen"), self.show_welcome)
         help_menu.addSeparator()
         from .updater_ui import UpdateManager
         self.updates = UpdateManager(self)
         self.updates.add_menu_actions(help_menu)
         help_menu.addSeparator()
-        help_menu.addAction("&About", self._about)
+        help_menu.addAction(self.tr("&About"), self._about)
 
     def _build_measure_menu(self, menubar):
         """Measure ▸ the mm measuring tools: dimension line, scale bar and
         the edge-ruler toggle."""
-        menu = self._measure_menu = menubar.addMenu("&Measure")
+        menu = self._measure_menu = menubar.addMenu(self.tr("&Measure"))
         menu.addAction(icons.icon("mdi.ruler"),
-                       "&Dimension line\tM", self._activate_dimension)
+                       self.tr("&Dimension line\tM"), self._activate_dimension)
         menu.addAction(icons.icon("mdi.angle-acute"),
-                       "&Protractor (angle)", self._activate_protractor)
+                       self.tr("&Protractor (angle)"), self._activate_protractor)
         menu.addSeparator()
         menu.addAction(icons.icon("mdi.ruler-square-compass"),
                        "&Scale bar…", self._insert_scale_bar)
@@ -940,6 +958,21 @@ class MainWindow(QMainWindow):
     def _activate_protractor(self):
         """Arm the three-click angle-measure tool."""
         self._activate_placement_tool(PROTRACTOR)
+
+    def _change_language(self, code):
+        """Persist the chosen UI language; it takes effect on restart.
+
+        Deliberately NOT a live retranslateUi() — that would need every
+        widget's text rebuilt from scratch, which is out of scope; the
+        setting just takes effect next launch.
+        """
+        if code == current_language():
+            return
+        set_language(code)
+        QMessageBox.information(
+            self, self.tr("Language changed"),
+            self.tr("Restart KhervePaint for the new language to take "
+                     "effect."))
 
     def _build_library_menu(self, menubar):
         """Library ▸ every symbol palette of the left toolbar (chemistry,
