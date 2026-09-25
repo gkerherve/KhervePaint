@@ -436,7 +436,7 @@ class AiSettingsDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("AI Chat Settings")
+        self.setWindowTitle(self.tr("AI Chat Settings"))
         self.setMinimumWidth(440)
         self._settings = QSettings(*_SETTINGS)
         self._worker = None
@@ -448,27 +448,28 @@ class AiSettingsDialog(QDialog):
         self.provider_combo = QComboBox()
         for key in providers.PROVIDERS:
             self.provider_combo.addItem(providers.DISPLAY_NAMES[key], key)
-        form.addRow("Provider:", self.provider_combo)
+        form.addRow(self.tr("Provider:"), self.provider_combo)
 
         model_row = QHBoxLayout()
         self.model_combo = QComboBox()
         self.model_combo.setEditable(True)
         self.refresh_btn = QToolButton()
         self.refresh_btn.setIcon(icons.icon("mdi.refresh"))
-        self.refresh_btn.setToolTip("Refresh the model list from the provider")
+        self.refresh_btn.setToolTip(
+            self.tr("Refresh the model list from the provider"))
         model_row.addWidget(self.model_combo, 1)
         model_row.addWidget(self.refresh_btn)
-        form.addRow("Model:", model_row)
+        form.addRow(self.tr("Model:"), model_row)
 
         self.key_edit = QLineEdit()
         self.key_edit.setEchoMode(QLineEdit.Password)
-        form.addRow("API Key:", self.key_edit)
+        form.addRow(self.tr("API Key:"), self.key_edit)
 
-        self.base_label = QLabel("Base URL:")
+        self.base_label = QLabel(self.tr("Base URL:"))
         self.base_edit = QLineEdit()
         form.addRow(self.base_label, self.base_edit)
 
-        self.help_box = QGroupBox("How to get an API key")
+        self.help_box = QGroupBox(self.tr("How to get an API key"))
         help_layout = QVBoxLayout(self.help_box)
         self.help_label = QLabel()
         self.help_label.setWordWrap(True)
@@ -523,7 +524,8 @@ class AiSettingsDialog(QDialog):
     def _models_ready(self, models):
         self.refresh_btn.setEnabled(True)
         if not models:
-            QMessageBox.information(self, "AI Chat", "No models returned.")
+            QMessageBox.information(self, self.tr("AI Chat"),
+                                    self.tr("No models returned."))
             return
         current = self.model_combo.currentText()
         self.model_combo.clear()
@@ -533,8 +535,9 @@ class AiSettingsDialog(QDialog):
 
     def _refresh_failed(self, message):
         self.refresh_btn.setEnabled(True)
-        QMessageBox.warning(self, "AI Chat",
-                            f"Could not list models:\n{message}")
+        QMessageBox.warning(self, self.tr("AI Chat"),
+                            self.tr("Could not list models:\n{}")
+                            .format(message))
 
     def _accept(self):
         provider = self._provider()
@@ -581,7 +584,8 @@ class _ChatInput(QPlainTextEdit):
 
 class AiDock(QDockWidget):
     def __init__(self, scene, parent=None):
-        super().__init__("AI Chat", parent)
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("AI Chat"))
         self.scene = scene
         self.setObjectName("AiAssistant")
         self._worker = None
@@ -604,19 +608,19 @@ class AiDock(QDockWidget):
 
         header = QHBoxLayout()
         header.setSpacing(2)
-        header.addWidget(QLabel("<b>AI Assistant</b>"))
+        header.addWidget(QLabel(self.tr("<b>AI Assistant</b>")))
         self.provider_label = QLabel()
         self.provider_label.setStyleSheet("color:#888;")
         header.addWidget(self.provider_label, 1)
-        self.smaller_btn = self._tool("A−", "Smaller text",
+        self.smaller_btn = self._tool("A−", self.tr("Smaller text"),
                                        lambda: self._change_font(-1))
-        self.larger_btn = self._tool("A+", "Larger text",
+        self.larger_btn = self._tool("A+", self.tr("Larger text"),
                                       lambda: self._change_font(1))
-        self.help_btn = self._tool(None, "Help", self._show_help,
+        self.help_btn = self._tool(None, self.tr("Help"), self._show_help,
                                    "mdi.help-circle-outline")
-        self.settings_btn = self._tool(None, "AI Chat settings",
+        self.settings_btn = self._tool(None, self.tr("AI Chat settings"),
                                        self._open_settings, "mdi.cog-outline")
-        self.clear_btn = self._tool(None, "Clear chat", self._clear,
+        self.clear_btn = self._tool(None, self.tr("Clear chat"), self._clear,
                                     "mdi.notification-clear-all")
         for btn in (self.smaller_btn, self.larger_btn, self.help_btn,
                     self.settings_btn, self.clear_btn):
@@ -638,9 +642,9 @@ class AiDock(QDockWidget):
         attach = QHBoxLayout(self.attach_row)
         attach.setContentsMargins(0, 0, 0, 0)
         self.attach_thumb = QLabel()
-        self.attach_label = QLabel("Image attached")
+        self.attach_label = QLabel(self.tr("Image attached"))
         self.attach_label.setStyleSheet("color:#888;")
-        remove = self._tool(None, "Remove image", self._clear_image,
+        remove = self._tool(None, self.tr("Remove image"), self._clear_image,
                             "mdi.close")
         attach.addWidget(self.attach_thumb)
         attach.addWidget(self.attach_label, 1)
@@ -650,10 +654,11 @@ class AiDock(QDockWidget):
 
         input_row = QHBoxLayout()
         self.input = _ChatInput()
-        self.input.setPlaceholderText("Ask Claude to draw… (paste a "
-                                      "screenshot with Ctrl+V)")
+        self.input.setPlaceholderText(self.tr("Ask Claude to draw… (paste a "
+                                              "screenshot with Ctrl+V)"))
         self.input.setFixedHeight(70)
-        self.send_btn = self._tool(None, "Send", self._send_or_stop, "mdi.send")
+        self.send_btn = self._tool(None, self.tr("Send"), self._send_or_stop,
+                                   "mdi.send")
         self.send_btn.setIconSize(QSize(24, 24))
         input_row.addWidget(self.input, 1)
         input_row.addWidget(self.send_btn, 0, Qt.AlignBottom)
@@ -670,7 +675,7 @@ class AiDock(QDockWidget):
         self.collapse_btn = QToolButton()
         self.collapse_btn.setAutoRaise(True)
         self.collapse_btn.setArrowType(Qt.RightArrow)
-        self.collapse_btn.setToolTip("Collapse the chat panel")
+        self.collapse_btn.setToolTip(self.tr("Collapse the chat panel"))
         self.collapse_btn.setFixedWidth(16)
         self.collapse_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.collapse_btn.clicked.connect(self._toggle_collapse)
@@ -694,7 +699,7 @@ class AiDock(QDockWidget):
             self._expanded_w = max(self.width(), 220)
             self.body.setVisible(False)
             self.collapse_btn.setArrowType(Qt.LeftArrow)
-            self.collapse_btn.setToolTip("Expand the chat panel")
+            self.collapse_btn.setToolTip(self.tr("Expand the chat panel"))
             self.setFixedWidth(self.collapse_btn.width() + 6)
             self._collapsed = True
         else:
@@ -702,7 +707,7 @@ class AiDock(QDockWidget):
             self.setMaximumWidth(16777215)
             self.body.setVisible(True)
             self.collapse_btn.setArrowType(Qt.RightArrow)
-            self.collapse_btn.setToolTip("Collapse the chat panel")
+            self.collapse_btn.setToolTip(self.tr("Collapse the chat panel"))
             self._collapsed = False
             if main is not None:
                 main.resizeDocks([self], [self._expanded_w], Qt.Horizontal)
@@ -726,8 +731,9 @@ class AiDock(QDockWidget):
         self._pending_image = image
         self.attach_thumb.setPixmap(QPixmap.fromImage(image).scaledToHeight(
             36, Qt.SmoothTransformation))
-        self.attach_label.setText(f"Screenshot attached "
-                                  f"({image.width()}×{image.height()})")
+        self.attach_label.setText(
+            self.tr("Screenshot attached ({}×{})").format(
+                image.width(), image.height()))
         self.attach_row.setVisible(True)
 
     def _clear_image(self):
@@ -793,19 +799,19 @@ class AiDock(QDockWidget):
             self._welcome()
 
     def _welcome(self):
-        self._log("system",
-                  "Hello! I can help you build your drawing — ask me to add "
-                  "shapes, a flowchart or a diagram and I'll place them on "
-                  "the canvas. Set your provider (Anthropic, OpenAI, Mistral, "
-                  "Ollama or Local) and API key via the gear icon.")
+        self._log("system", self.tr(
+            "Hello! I can help you build your drawing — ask me to add "
+            "shapes, a flowchart or a diagram and I'll place them on "
+            "the canvas. Set your provider (Anthropic, OpenAI, Mistral, "
+            "Ollama or Local) and API key via the gear icon."))
 
     def _show_help(self):
-        self._log("system",
-                  "Describe what to draw, e.g. “a blue box labelled Start "
-                  "with an arrow to a circle below”. Shapes are added as real, "
-                  "editable, undoable items. A−/A+ resize this text; the "
-                  "gear sets the provider/model/key; the last icon clears the "
-                  "chat.")
+        self._log("system", self.tr(
+            "Describe what to draw, e.g. “a blue box labelled Start "
+            "with an arrow to a circle below”. Shapes are added as real, "
+            "editable, undoable items. A−/A+ resize this text; the "
+            "gear sets the provider/model/key; the last icon clears the "
+            "chat."))
 
     def _clear(self):
         self.transcript.clear()
@@ -820,8 +826,8 @@ class AiDock(QDockWidget):
     def _log(self, role, text):
         colours = {"you": "#2176c7", "ai": "#2e7d4f",
                    "system": "#888", "error": "#c0392b"}
-        who = {"you": "You", "ai": "Assistant", "system": "",
-               "error": "Error"}.get(role, role)
+        who = {"you": self.tr("You"), "ai": self.tr("Assistant"),
+               "system": "", "error": self.tr("Error")}.get(role, role)
         prefix = f"<b style='color:{colours.get(role, '#000')}'>{who}:</b> " \
             if who else ""
         safe = (text.replace("&", "&amp;").replace("<", "&lt;")
@@ -832,20 +838,20 @@ class AiDock(QDockWidget):
         self._is_busy = busy
         if busy:
             self._think_dots = 0
-            self.thinking_label.setText("Assistant is thinking")
+            self.thinking_label.setText(self.tr("Assistant is thinking"))
             self.thinking_label.setVisible(True)
             self._think_timer.start()
             self.send_btn.setIcon(icons.icon("mdi.stop"))
-            self.send_btn.setToolTip("Stop")
+            self.send_btn.setToolTip(self.tr("Stop"))
         else:
             self._think_timer.stop()
             self.thinking_label.setVisible(False)
             self.send_btn.setIcon(icons.icon("mdi.send"))
-            self.send_btn.setToolTip("Send")
+            self.send_btn.setToolTip(self.tr("Send"))
 
     def _tick(self):
         self._think_dots = (self._think_dots + 1) % 4
-        self.thinking_label.setText("Assistant is thinking"
+        self.thinking_label.setText(self.tr("Assistant is thinking")
                                     + "." * self._think_dots)
 
     def _send_or_stop(self):
@@ -861,7 +867,7 @@ class AiDock(QDockWidget):
                     pass
             self._worker = None
         self._busy(False)
-        self._log("system", "Stopped.")
+        self._log("system", self.tr("Stopped."))
 
     # ------------------------------------------------------- history
     def _history_prev(self):
@@ -902,11 +908,13 @@ class AiDock(QDockWidget):
         key = self._settings.value(f"ai/key/{provider}", "")
         base = self._settings.value(f"ai/base/{provider}", "")
         if not model:
-            self._log("error", "Open Settings and choose a model first.")
+            self._log("error", self.tr(
+                "Open Settings and choose a model first."))
             return
         if provider in providers.NEEDS_KEY and not key.strip():
-            self._log("error", "Set your API key for this provider in "
-                              "Settings (the gear icon).")
+            self._log("error", self.tr(
+                "Set your API key for this provider in "
+                "Settings (the gear icon)."))
             return
         # A pasted screenshot is sent with THIS message only (not stored in
         # history, which stays text). Clear the attachment once consumed.
@@ -919,7 +927,8 @@ class AiDock(QDockWidget):
         self._sent.append(text)
         self._hist_index = None
         self._draft = ""
-        self._log("you", text + ("  🖼 [screenshot]" if image_b64 else ""))
+        self._log("you", text + (self.tr("  🖼 [screenshot]")
+                                 if image_b64 else ""))
         self._history.append({"role": "user", "content": text or "(image)"})
         self._save_history()
 
@@ -946,8 +955,9 @@ class AiDock(QDockWidget):
         prose = prose_only(reply)
         if specs:
             created = apply_specs(self.scene, specs)
-            self._log("ai", prose or "Done.")
-            self._log("system", f"Drew {len(created)} shape(s) on the canvas.")
+            self._log("ai", prose or self.tr("Done."))
+            self._log("system", self.tr("Drew {} shape(s) on the canvas.")
+                      .format(len(created)))
         else:
             self._log("ai", prose or reply)
 
