@@ -84,7 +84,12 @@ class JsonTranslator(QTranslator):
             hit = ctx.get(source_text)
             if hit:
                 return hit
-        return ""  # fall back to the source text (Qt's default behaviour)
+        # None (not "") is required here: PyQt turns a Python "" into a
+        # valid, non-null QString, which Qt reads as "translated to
+        # nothing" rather than "no translation" - blanking every string
+        # missing from this language's JSON instead of falling back to
+        # the English source text.
+        return None
 
     def isEmpty(self):
         return not self._data
