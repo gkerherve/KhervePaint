@@ -110,7 +110,7 @@ class CanvasSizeDialog(QDialog):
 
         self.preset_combo = QComboBox()
         for label, data in PRESETS:
-            self.preset_combo.addItem(label, data)
+            self.preset_combo.addItem(self.tr(label), data)
         form.addRow(self.tr("Preset"), self.preset_combo)
 
         self.unit_combo = QComboBox()
