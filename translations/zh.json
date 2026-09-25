@@ -406,6 +406,28 @@
     "ticks": "刻度",
     "{0} vertices ({1})": "{0} 个顶点（{1}）"
   },
+  "ReactionBuilder": {
+    "Reaction builder": "反应式编辑器",
+    "Equation:": "方程式：",
+    "e.g.  CH4 + 2 O2 -> CO2 + 2 H2O   ·   N2 + 3 H2 <=>[Fe][450 °C] 2 NH3": "例如  CH4 + 2 O2 -> CO2 + 2 H2O   ·   N2 + 3 H2 <=>[Fe][450 °C] 2 NH3",
+    "Type a reaction and press Enter.\nArrows: ->  <=> (equilibrium)  <-> (resonance)  => (retro)  -/-> (no reaction)\nConditions in brackets after the arrow: ->[H2SO4][reflux]\nStates: H2O(l), NaCl(aq)   Charges: Na+, SO4^2-, Fe^3+": "输入反应式并按 Enter。\n箭头：->  <=>（平衡）  <->（共振）  =>（逆合成）  -/->（不反应）\n箭头后方括号中的条件：->[H2SO4][reflux]\n状态：H2O(l)、NaCl(aq)   电荷：Na+、SO4^2-、Fe^3+",
+    "Apply": "应用",
+    "Reactants": "反应物",
+    "Products": "生成物",
+    "How the molecules are drawn (each species can override it under Draw as)": "分子的绘制方式（每个物种都可以在“绘制方式”中单独设置）",
+    "reagent / catalyst, e.g. H2SO4": "试剂/催化剂，例如 H2SO4",
+    "conditions, e.g. Δ, 80 °C, 2 h": "条件，例如 Δ、80 °C、2 h",
+    "Arrow:": "箭头：",
+    "Above arrow:": "箭头上方：",
+    "Draw molecules as:": "分子绘制方式：",
+    "Below arrow:": "箭头下方：",
+    "State symbols": "状态符号",
+    "Name labels": "名称标签",
+    "Caption each library molecule with its name": "为每个库中的分子标注其名称",
+    "Balance": "配平",
+    "Set the smallest whole-number coefficients that conserve every element and the charge": "设置能守恒每种元素和电荷的最小整数系数",
+    "Insert a symbol": "插入符号"
+  },
   "TemplateExplorer": {
     "Template Explorer": "模板浏览器",
     "Organise your saved objects into folders. Double-click an object to insert it on the canvas.": "将已保存的对象整理到文件夹中。双击某个对象即可将其插入画布。",
@@ -445,6 +467,25 @@
     "Show this screen at start-up": "启动时显示此屏幕",
     "Start drawing  ›": "开始绘图  ›",
     "3D solids: click to place a cube (pick other solids and colours from the 3D solids button); double-click a solid and drag to spin it.": "三维立体图形：点击放置一个立方体（可从“三维立体图形”按钮选择其他立体图形和颜色）；双击某个立体图形并拖动即可旋转。"
+  },
+  "_SideTable": {
+    "Coef.": "系数",
+    "Species": "物种",
+    "State": "状态",
+    "Draw as": "绘制方式",
+    "Add ▾": "添加 ▾",
+    "Add a library molecule, a formula / name, or build a new molecule": "添加一个库中的分子、一个化学式/名称，或构建一个新分子",
+    "Remove": "移除",
+    "Remove the selected species": "移除选中的物种",
+    "Move up": "上移",
+    "Move down": "下移",
+    "Formula or name…": "化学式或名称…",
+    "Build a molecule…": "构建分子…",
+    "Hand-built molecule — type over it to replace it": "手工构建的分子 —— 直接输入以替换它",
+    "Type a name or formula (ethanol, H2O, Fe2O3, SO4^2-…)": "输入名称或化学式（如 ethanol、H2O、Fe2O3、SO4^2-…）",
+    "(scheme style)": "（方案样式）",
+    "Add species": "添加物种",
+    "Name or formula — e.g. ethanol, H2O, CH3COOH, Fe2O3, NH4+, SO4^2-:": "名称或化学式 —— 例如 ethanol、H2O、CH3COOH、Fe2O3、NH4+、SO4^2-："
   },
   "arrows": {
     "Arrow down": "下箭头",
@@ -778,6 +819,14 @@
     "Water (H₂O)": "水 (H₂O)",
     "Zinc blende (ZnS)": "闪锌矿 (ZnS)"
   },
+  "molrepr": {
+    "3D ball-and-stick": "三维球棍模型",
+    "Skeletal (line-angle)": "骨架式（键线式）",
+    "Structural formula": "结构式",
+    "Lewis structure": "路易斯结构式",
+    "Condensed formula": "缩合式",
+    "Molecular formula": "分子式"
+  },
   "network": {
     "Cloud": "云",
     "Database": "数据库",
@@ -854,6 +903,14 @@
     "Tank": "储罐",
     "Valves": "阀门",
     "Vessels": "容器"
+  },
+  "reaction": {
+    "→  Reaction": "→  反应",
+    "⇌  Equilibrium": "⇌  平衡",
+    "⇄  Reversible": "⇄  可逆",
+    "↔  Resonance": "↔  共振",
+    "⇒  Retrosynthesis": "⇒  逆合成",
+    "↛  No reaction": "↛  不反应"
   },
   "solids": {
     "3D arrow": "三维箭头",

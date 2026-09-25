@@ -406,6 +406,28 @@
     "ticks": "marcas",
     "{0} vertices ({1})": "{0} vértices ({1})"
   },
+  "ReactionBuilder": {
+    "Reaction builder": "Editor de reacciones",
+    "Equation:": "Ecuación:",
+    "e.g.  CH4 + 2 O2 -> CO2 + 2 H2O   ·   N2 + 3 H2 <=>[Fe][450 °C] 2 NH3": "p. ej.  CH4 + 2 O2 -> CO2 + 2 H2O   ·   N2 + 3 H2 <=>[Fe][450 °C] 2 NH3",
+    "Type a reaction and press Enter.\nArrows: ->  <=> (equilibrium)  <-> (resonance)  => (retro)  -/-> (no reaction)\nConditions in brackets after the arrow: ->[H2SO4][reflux]\nStates: H2O(l), NaCl(aq)   Charges: Na+, SO4^2-, Fe^3+": "Escriba una reacción y pulse Intro.\nFlechas: ->  <=> (equilibrio)  <-> (resonancia)  => (retro)  -/-> (sin reacción)\nCondiciones entre corchetes tras la flecha: ->[H2SO4][reflux]\nEstados: H2O(l), NaCl(aq)   Cargas: Na+, SO4^2-, Fe^3+",
+    "Apply": "Aplicar",
+    "Reactants": "Reactivos",
+    "Products": "Productos",
+    "How the molecules are drawn (each species can override it under Draw as)": "Cómo se dibujan las moléculas (cada especie puede anularlo en Dibujar como)",
+    "reagent / catalyst, e.g. H2SO4": "reactivo/catalizador, ej. H2SO4",
+    "conditions, e.g. Δ, 80 °C, 2 h": "condiciones, ej. Δ, 80 °C, 2 h",
+    "Arrow:": "Flecha:",
+    "Above arrow:": "Encima de la flecha:",
+    "Draw molecules as:": "Dibujar moléculas como:",
+    "Below arrow:": "Debajo de la flecha:",
+    "State symbols": "Símbolos de estado",
+    "Name labels": "Etiquetas de nombre",
+    "Caption each library molecule with its name": "Rotular cada molécula de la biblioteca con su nombre",
+    "Balance": "Equilibrar",
+    "Set the smallest whole-number coefficients that conserve every element and the charge": "Establecer los coeficientes enteros más pequeños que conservan cada elemento y la carga",
+    "Insert a symbol": "Insertar un símbolo"
+  },
   "TemplateExplorer": {
     "Template Explorer": "Explorador de plantillas",
     "Organise your saved objects into folders. Double-click an object to insert it on the canvas.": "Organice sus objetos guardados en carpetas. Haga doble clic en un objeto para insertarlo en el lienzo.",
@@ -445,6 +467,25 @@
     "Show this screen at start-up": "Mostrar esta pantalla al iniciar",
     "Start drawing  ›": "Empezar a dibujar  ›",
     "3D solids: click to place a cube (pick other solids and colours from the 3D solids button); double-click a solid and drag to spin it.": "Sólidos 3D: haga clic para colocar un cubo (elija otros sólidos y colores desde el botón Sólidos 3D); haga doble clic en un sólido y arrastre para girarlo."
+  },
+  "_SideTable": {
+    "Coef.": "Coef.",
+    "Species": "Especie",
+    "State": "Estado",
+    "Draw as": "Dibujar como",
+    "Add ▾": "Añadir ▾",
+    "Add a library molecule, a formula / name, or build a new molecule": "Añadir una molécula de la biblioteca, una fórmula/nombre, o construir una nueva molécula",
+    "Remove": "Quitar",
+    "Remove the selected species": "Quitar la especie seleccionada",
+    "Move up": "Subir",
+    "Move down": "Bajar",
+    "Formula or name…": "Fórmula o nombre…",
+    "Build a molecule…": "Construir una molécula…",
+    "Hand-built molecule — type over it to replace it": "Molécula construida a mano — escriba encima para reemplazarla",
+    "Type a name or formula (ethanol, H2O, Fe2O3, SO4^2-…)": "Escriba un nombre o fórmula (etanol, H2O, Fe2O3, SO4^2-…)",
+    "(scheme style)": "(estilo del esquema)",
+    "Add species": "Añadir especie",
+    "Name or formula — e.g. ethanol, H2O, CH3COOH, Fe2O3, NH4+, SO4^2-:": "Nombre o fórmula — p. ej. etanol, H2O, CH3COOH, Fe2O3, NH4+, SO4^2-:"
   },
   "arrows": {
     "Arrow down": "Flecha abajo",
@@ -778,6 +819,14 @@
     "Water (H₂O)": "Agua (H₂O)",
     "Zinc blende (ZnS)": "Blenda de cinc (ZnS)"
   },
+  "molrepr": {
+    "3D ball-and-stick": "Bolas y varillas 3D",
+    "Skeletal (line-angle)": "Esquelética (líneas-ángulos)",
+    "Structural formula": "Fórmula estructural",
+    "Lewis structure": "Estructura de Lewis",
+    "Condensed formula": "Fórmula semidesarrollada",
+    "Molecular formula": "Fórmula molecular"
+  },
   "network": {
     "Cloud": "Nube",
     "Database": "Base de datos",
@@ -854,6 +903,14 @@
     "Tank": "Tanque",
     "Valves": "Válvulas",
     "Vessels": "Recipientes"
+  },
+  "reaction": {
+    "→  Reaction": "→  Reacción",
+    "⇌  Equilibrium": "⇌  Equilibrio",
+    "⇄  Reversible": "⇄  Reversible",
+    "↔  Resonance": "↔  Resonancia",
+    "⇒  Retrosynthesis": "⇒  Retrosíntesis",
+    "↛  No reaction": "↛  Sin reacción"
   },
   "solids": {
     "3D arrow": "Flecha 3D",

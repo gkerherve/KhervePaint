@@ -28,7 +28,7 @@ the Free Software Foundation, either version 3 of the License, or
 import copy
 import math
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import QCoreApplication, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox,
                              QDialog, QDialogButtonBox, QGraphicsScene,
@@ -143,8 +143,9 @@ class _SideTable(QGroupBox):
         self._filling = False
         lay = QVBoxLayout(self)
         self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["Coef.", "Species", "State",
-                                              "Draw as"])
+        self.table.setHorizontalHeaderLabels(
+            [self.tr("Coef."), self.tr("Species"), self.tr("State"),
+             self.tr("Draw as")])
         head = self.table.horizontalHeader()
         head.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         head.setSectionResizeMode(1, QHeaderView.Stretch)
@@ -157,16 +158,17 @@ class _SideTable(QGroupBox):
         lay.addWidget(self.table)
         row = QHBoxLayout()
         add = QToolButton()
-        add.setText("Add ▾")
+        add.setText(self.tr("Add ▾"))
         add.setPopupMode(QToolButton.InstantPopup)
         add.setMenu(self._add_menu())
-        add.setToolTip("Add a library molecule, a formula / name, or build "
-                       "a new molecule")
+        add.setToolTip(self.tr("Add a library molecule, a formula / name, "
+                               "or build a new molecule"))
         row.addWidget(add)
-        for text, tip, slot in (("Remove", "Remove the selected species",
-                                 self._remove),
-                                ("▲", "Move up", lambda: self._move(-1)),
-                                ("▼", "Move down", lambda: self._move(1))):
+        for text, tip, slot in (
+                (self.tr("Remove"), self.tr("Remove the selected species"),
+                 self._remove),
+                ("▲", self.tr("Move up"), lambda: self._move(-1)),
+                ("▼", self.tr("Move down"), lambda: self._move(1))):
             btn = QToolButton()
             btn.setText(text)
             btn.setToolTip(tip)
@@ -177,15 +179,18 @@ class _SideTable(QGroupBox):
 
     def _add_menu(self):
         menu = QMenu(self)
-        menu.addAction("Formula or name…", self._add_typed)
-        menu.addAction("Build a molecule…", self._add_built)
+        menu.addAction(self.tr("Formula or name…"), self._add_typed)
+        menu.addAction(self.tr("Build a molecule…"), self._add_built)
         menu.addSeparator()
         for title, names in molecules.CATEGORIES:
             if title == "Polymers":
                 continue
-            sub = menu.addMenu(title)
+            sub = menu.addMenu(
+                QCoreApplication.translate("molecules", title))
             for key in names:
-                sub.addAction(molecules.LABELS.get(key, key),
+                label = QCoreApplication.translate(
+                    "molecules", molecules.LABELS.get(key, key))
+                sub.addAction(label,
                               lambda _=False, k=key: self.add({"name": k}))
         return menu
 
@@ -213,9 +218,10 @@ class _SideTable(QGroupBox):
             t.setItem(r, 0, coef)
             name = QTableWidgetItem(reaction.species_text(sp))
             name.setToolTip(
-                "Hand-built molecule — type over it to replace it"
+                self.tr("Hand-built molecule — type over it to replace it")
                 if sp.get("atoms") else
-                "Type a name or formula (ethanol, H2O, Fe2O3, SO4^2-…)")
+                self.tr("Type a name or formula (ethanol, H2O, Fe2O3, "
+                        "SO4^2-…)"))
             t.setItem(r, 1, name)
             state = QComboBox()
             state.addItems(["—", "(s)", "(l)", "(g)", "(aq)"])
@@ -224,9 +230,10 @@ class _SideTable(QGroupBox):
                 lambda i, row=r: self._set(row, "state", reaction.STATES[i]))
             t.setCellWidget(r, 2, state)
             mode = QComboBox()
-            mode.addItem("(scheme style)", None)
+            mode.addItem(self.tr("(scheme style)"), None)
             for m in reaction.STYLES:
-                mode.addItem(molrepr.MODE_LABELS[m], m)
+                mode.addItem(QCoreApplication.translate(
+                    "molrepr", molrepr.MODE_LABELS[m]), m)
             mode.setCurrentIndex(max(0, mode.findData(sp.get("mode"))))
             mode.setEnabled(reaction.species_atoms(sp)[0] is not None)
             mode.currentIndexChanged.connect(
@@ -284,9 +291,9 @@ class _SideTable(QGroupBox):
 
     def _add_typed(self):
         text, ok = QInputDialog.getText(
-            self, "Add species",
-            "Name or formula — e.g. ethanol, H2O, CH3COOH, Fe2O3, NH4+, "
-            "SO4^2-:")
+            self, self.tr("Add species"),
+            self.tr("Name or formula — e.g. ethanol, H2O, CH3COOH, Fe2O3, "
+                    "NH4+, SO4^2-:"))
         sp = reaction.resolve_species(text) if ok else None
         if sp:
             self.add(sp)
@@ -305,7 +312,7 @@ class ReactionBuilder(QDialog):
 
     def __init__(self, rxn=None, seed=(), parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Reaction builder")
+        self.setWindowTitle(self.tr("Reaction builder"))
         self.setMinimumSize(860, 660)
         start = reaction.normalise(rxn or reaction.new_reaction())
         if seed and not start["reactants"]:
@@ -314,19 +321,20 @@ class ReactionBuilder(QDialog):
         lay = QVBoxLayout(self)
 
         row = QHBoxLayout()
-        row.addWidget(QLabel("Equation:"))
+        row.addWidget(QLabel(self.tr("Equation:")))
         self.eq = QLineEdit()
-        self.eq.setPlaceholderText("e.g.  CH4 + 2 O2 -> CO2 + 2 H2O   ·   "
-                                   "N2 + 3 H2 <=>[Fe][450 °C] 2 NH3")
-        self.eq.setToolTip(
+        self.eq.setPlaceholderText(self.tr(
+            "e.g.  CH4 + 2 O2 -> CO2 + 2 H2O   ·   "
+            "N2 + 3 H2 <=>[Fe][450 °C] 2 NH3"))
+        self.eq.setToolTip(self.tr(
             "Type a reaction and press Enter.\n"
             "Arrows: ->  <=> (equilibrium)  <-> (resonance)  => (retro)  "
             "-/-> (no reaction)\n"
             "Conditions in brackets after the arrow: ->[H2SO4][reflux]\n"
-            "States: H2O(l), NaCl(aq)   Charges: Na+, SO4^2-, Fe^3+")
+            "States: H2O(l), NaCl(aq)   Charges: Na+, SO4^2-, Fe^3+"))
         self.eq.returnPressed.connect(self._parse)
         row.addWidget(self.eq, 1)
-        apply_btn = QPushButton("Apply")
+        apply_btn = QPushButton(self.tr("Apply"))
         apply_btn.clicked.connect(self._parse)
         row.addWidget(apply_btn)
         lay.addLayout(row)
@@ -336,8 +344,8 @@ class ReactionBuilder(QDialog):
         lay.addWidget(self.eq_error)
 
         sides = QHBoxLayout()
-        self.left = _SideTable("Reactants")
-        self.right = _SideTable("Products")
+        self.left = _SideTable(self.tr("Reactants"))
+        self.right = _SideTable(self.tr("Products"))
         sides.addWidget(self.left)
         sides.addWidget(self.right)
         lay.addLayout(sides, 2)
@@ -345,27 +353,33 @@ class ReactionBuilder(QDialog):
         grid = QGridLayout()
         self.arrow = QComboBox()
         for key in reaction.ARROWS:
-            self.arrow.addItem(reaction.ARROW_LABELS[key], key)
+            self.arrow.addItem(QCoreApplication.translate(
+                "reaction", reaction.ARROW_LABELS[key]), key)
         self.style = QComboBox()
         for key in reaction.STYLES:
-            self.style.addItem(molrepr.MODE_LABELS[key], key)
-        self.style.setToolTip("How the molecules are drawn (each species "
-                              "can override it under Draw as)")
+            self.style.addItem(QCoreApplication.translate(
+                "molrepr", molrepr.MODE_LABELS[key]), key)
+        self.style.setToolTip(self.tr(
+            "How the molecules are drawn (each species "
+            "can override it under Draw as)"))
         self.above = QLineEdit()
-        self.above.setPlaceholderText("reagent / catalyst, e.g. H2SO4")
+        self.above.setPlaceholderText(
+            self.tr("reagent / catalyst, e.g. H2SO4"))
         self.below = QLineEdit()
-        self.below.setPlaceholderText("conditions, e.g. Δ, 80 °C, 2 h")
-        grid.addWidget(QLabel("Arrow:"), 0, 0)
+        self.below.setPlaceholderText(
+            self.tr("conditions, e.g. Δ, 80 °C, 2 h"))
+        grid.addWidget(QLabel(self.tr("Arrow:")), 0, 0)
         grid.addWidget(self.arrow, 0, 1)
-        grid.addWidget(QLabel("Above arrow:"), 0, 2)
+        grid.addWidget(QLabel(self.tr("Above arrow:")), 0, 2)
         grid.addLayout(self._with_symbols(self.above), 0, 3)
-        grid.addWidget(QLabel("Draw molecules as:"), 1, 0)
+        grid.addWidget(QLabel(self.tr("Draw molecules as:")), 1, 0)
         grid.addWidget(self.style, 1, 1)
-        grid.addWidget(QLabel("Below arrow:"), 1, 2)
+        grid.addWidget(QLabel(self.tr("Below arrow:")), 1, 2)
         grid.addLayout(self._with_symbols(self.below), 1, 3)
-        self.states = QCheckBox("State symbols")
-        self.labels = QCheckBox("Name labels")
-        self.labels.setToolTip("Caption each library molecule with its name")
+        self.states = QCheckBox(self.tr("State symbols"))
+        self.labels = QCheckBox(self.tr("Name labels"))
+        self.labels.setToolTip(
+            self.tr("Caption each library molecule with its name"))
         checks = QHBoxLayout()
         checks.addWidget(self.states)
         checks.addWidget(self.labels)
@@ -377,9 +391,10 @@ class ReactionBuilder(QDialog):
         row = QHBoxLayout()
         self.status = QLabel()
         row.addWidget(self.status, 1)
-        balance = QPushButton("Balance")
-        balance.setToolTip("Set the smallest whole-number coefficients that "
-                           "conserve every element and the charge")
+        balance = QPushButton(self.tr("Balance"))
+        balance.setToolTip(self.tr(
+            "Set the smallest whole-number coefficients that "
+            "conserve every element and the charge"))
         balance.clicked.connect(self._balance)
         row.addWidget(balance)
         lay.addLayout(row)
@@ -411,7 +426,7 @@ class ReactionBuilder(QDialog):
         row.addWidget(edit, 1)
         btn = QToolButton()
         btn.setText("Ω ▾")
-        btn.setToolTip("Insert a symbol")
+        btn.setToolTip(self.tr("Insert a symbol"))
         btn.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu(btn)
         for sym in _SYMBOLS:
