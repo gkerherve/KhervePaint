@@ -432,7 +432,7 @@ class MainWindow(QMainWindow):
         button.setPopupMode(QToolButton.InstantPopup)
         button.setToolButtonStyle(Qt.ToolButtonIconOnly)
         button.setIcon(icons.icon("mdi.molecule"))
-        button.setToolTip("Chemistry — bonds, rings, atoms")
+        button.setToolTip(self.tr("Chemistry — bonds, rings, atoms"))
         menu = QMenu(button)
         self._populate_chemistry_menu(menu)
         button.setMenu(menu)
@@ -441,23 +441,24 @@ class MainWindow(QMainWindow):
     def _populate_chemistry_menu(self, menu):
         """Fill *menu* with the chemistry tools (shared between the left
         toolbar dropdown and the Library menu)."""
-        menu.addSection("Bonds")
+        menu.addSection(self.tr("Bonds"))
         for tool, label in CHEM_BOND_TOOLS:
             self._add_grouped_tool(menu, tool, label)
-        menu.addSection("Rings")
+        menu.addSection(self.tr("Rings"))
         for tool, label in CHEM_RING_TOOLS:
             self._add_grouped_tool(menu, tool, label)
-        atoms = menu.addMenu("Atom / group label")
+        atoms = menu.addMenu(self.tr("Atom / group label"))
         for sym in chemistry.ATOMS:
             atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
-        menu.addSection("Reactions")
-        menu.addAction(icons.icon("mdi.flask-outline"), "Reaction builder…",
+        menu.addSection(self.tr("Reactions"))
+        menu.addAction(icons.icon("mdi.flask-outline"),
+                       self.tr("Reaction builder…"),
                        self.open_reaction_builder)
 
     def _add_grouped_tool(self, menu, tool, label):
         """A checkable tool action in the shared tool group (so it lights up
         when active) added to *menu*."""
-        act = QAction(label, self, checkable=True)
+        act = QAction(self.tr(label), self, checkable=True)
         act.setData(tool)
         act.triggered.connect(lambda _, t=tool: self._set_tool(t))
         self._tool_group.addAction(act)
@@ -987,7 +988,7 @@ class MainWindow(QMainWindow):
         room layout, electrical, … math) plus the reusable-object library,
         so the palettes are also reachable from the menu bar."""
         menu = menubar.addMenu("&Library")
-        chem = menu.addMenu(icons.icon("mdi.molecule"), "Chemistry")
+        chem = menu.addMenu(icons.icon("mdi.molecule"), self.tr("Chemistry"))
         self._populate_chemistry_menu(chem)
         for title, glyph, _tip, module, attr, tool in SYMBOL_LIBRARIES:
             sub = menu.addMenu(icons.icon(glyph), title)
@@ -1334,11 +1335,11 @@ class MainWindow(QMainWindow):
             for tool, glyph, lbl, _sc in items:
                 sub.addAction(self._tool_icon(tool, glyph), lbl,
                               lambda _=False, t=tool: self._activate_tool(t))
-        chem = tools.addMenu(icons.icon("mdi.molecule"), "Chemistry")
+        chem = tools.addMenu(icons.icon("mdi.molecule"), self.tr("Chemistry"))
         for tool, lbl in CHEM_BOND_TOOLS + CHEM_RING_TOOLS:
-            chem.addAction(lbl,
+            chem.addAction(self.tr(lbl),
                            lambda _=False, t=tool: self._activate_tool(t))
-        atoms = chem.addMenu("Atom / group label")
+        atoms = chem.addMenu(self.tr("Atom / group label"))
         for sym in chemistry.ATOMS:
             atoms.addAction(sym, lambda _=False, s=sym: self._set_chem_atom(s))
         chem.addAction(icons.icon("mdi.flask-outline"), "Reaction builder…",
